@@ -114,6 +114,21 @@
       pointer-events: none;
     }
     .needle-checkmark.gore { left: auto; right: 36px; }
+    .arc-label {
+      font-size: 15px;
+      font-weight: 700;
+      fill: #fff;
+      text-shadow: 0 2px 8px #111a, 0 0 3px #111;
+      font-family: 'Inter', sans-serif;
+      pointer-events: none;
+      dominant-baseline: middle;
+      text-anchor: middle;
+    }
+    .arc-label-center {
+      font-size: 17px;
+      font-weight: 900;
+      fill: #fff;
+    }
     .needle-arrow { fill: #fff; stroke: #222; stroke-width: 2.2; filter: drop-shadow(0 2px 6px #0008);}
     .needle-dot { fill: #191d22; stroke: #fff; stroke-width: 3.5; filter: drop-shadow(0 1px 8px #000a);}
     .arc-very-likely-bush { stroke: #e74c3c; }
@@ -213,7 +228,7 @@
       <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
       <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
       <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
-      <!-- Arc Labels: Removed per request -->
+      <!-- Arc Labels: inner, centered at angle for each wedge -->
       <g id="arc-labels-group"></g>
       <!-- Needle -->
       <g id="needle-group">
@@ -251,11 +266,10 @@ let stateStats = null;
 Promise.all([
   fetch('data/county-geo.json').then(r => r.json()).then(data => { countiesGeoJSON = data; }),
   fetch('data/election-stats-county.json').then(r => r.json()).then(data => { countyElectionStats = data; }),
-  fetch('data/us-states.geojson').then(r => r.json()).then(data => { statesGeoJSON = data; }),
+  fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; }),
   fetch('data/election2000-stats.json').then(r => r.json()).then(data => { stateStats = data; })
 ]).then(() => initializeMainMap());
 
-// NYT Needle arc math for new layout
 const arcSegs = [
   { label: "Very likely Bush", start: -90, end: -60 },
   { label: "Likely Bush", start: -60, end: -30 },
@@ -289,7 +303,11 @@ function setArcSegs() {
   document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 30, 60));
   document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 60, 90));
 }
-setArcSegs();
+function setArcLabels() {
+  const labelsGroup = document.getElementById('arc-labels-group');
+  labelsGroup.innerHTML = '';
+}
+setArcSegs(); setArcLabels();
 
 let mainMap = null;
 let statePopup = null;
@@ -426,7 +444,7 @@ function initializeMainMap() {
   });
 }
 
-// COUNTY MODAL LOGIC (with robust FIPS lookup and map removal)
+// COUNTY MODAL LOGIC
 const countyModal = document.getElementById('county-modal');
 const countyMapDiv = document.getElementById('county-map');
 const countyModalTitle = document.getElementById('county-modal-title');
@@ -440,70 +458,36 @@ function showCountyModal(stateName, stateAbbr) {
   countyModalTitle.textContent = `County Results - ${stateName}`;
   countyMapDiv.innerHTML = "";
 
-  // More robust lookup for STATEFP based on either name or abbreviation
   let stateFP = null;
   for (const f of statesGeoJSON.features) {
-    if (
-      f.properties.name.toLowerCase() === stateName.toLowerCase() ||
-      (f.properties.state_abbr && f.properties.state_abbr.toLowerCase() === String(stateAbbr).toLowerCase()) ||
-      (f.properties.state_abbreviation && f.properties.state_abbreviation.toLowerCase() === String(stateAbbr).toLowerCase())
-    ) {
+    if (f.properties.name === stateName || f.properties.state_abbr === stateAbbr) {
       stateFP = f.properties.STATEFP || f.properties.statefp || f.properties.STATEFP10;
       break;
     }
   }
-  // Fallback: try matching common abbreviations or FIPS (user can extend as needed)
-  if (!stateFP) {
-    const abbrevMap = {
-      'AL': '01','AK':'02','AZ':'04','AR':'05','CA':'06','CO':'08','CT':'09','DE':'10','FL':'12','GA':'13','HI':'15','ID':'16',
-      'IL':'17','IN':'18','IA':'19','KS':'20','KY':'21','LA':'22','ME':'23','MD':'24','MA':'25','MI':'26','MN':'27','MS':'28','MO':'29',
-      'MT':'30','NE':'31','NV':'32','NH':'33','NJ':'34','NM':'35','NY':'36','NC':'37','ND':'38','OH':'39','OK':'40','OR':'41','PA':'42',
-      'RI':'44','SC':'45','SD':'46','TN':'47','TX':'48','UT':'49','VT':'50','VA':'51','WA':'53','WV':'54','WI':'55','WY':'56','DC':'11'
-    };
-    if (abbrevMap[String(stateAbbr).toUpperCase()]) stateFP = abbrevMap[String(stateAbbr).toUpperCase()];
-  }
-  if (!stateFP) {
-    console.warn("Couldn't find STATEFP for", stateName, stateAbbr);
-    stateFP = countiesGeoJSON.features[0].properties.STATEFP;
-  }
+  if (!stateFP && (stateName === "Texas" || stateAbbr === "TX")) stateFP = "48";
 
   const stateCounties = {
     ...countiesGeoJSON,
-    features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
+    features: countiesGeoJSON.features.filter(f => {
+      return (f.properties.STATEFP === stateFP);
+    })
   };
 
-  // Center and zoom auto-fit for the state (using bbox if possible)
-  let bbox = [180, 90, -180, -90];
-  stateCounties.features.forEach(f => {
-    (f.geometry.coordinates || []).forEach(coordList => {
-      (coordList || []).forEach(coord => {
-        if (!Array.isArray(coord)) return;
-        const [x, y] = Array.isArray(coord[0]) ? coord[0] : coord;
-        if (typeof x === "number" && typeof y === "number") {
-          if (x < bbox[0]) bbox[0] = x;
-          if (y < bbox[1]) bbox[1] = y;
-          if (x > bbox[2]) bbox[2] = x;
-          if (y > bbox[3]) bbox[3] = y;
-        }
-      });
-    });
-  });
-  const center = [
-    (bbox[0] + bbox[2]) / 2,
-    (bbox[1] + bbox[3]) / 2
-  ];
-  let zoom = 6;
-  if (stateFP === "48") { center[0] = -99.5; center[1] = 31.0; zoom = 5.5; }
+  let center = [-99.5, 31.0], zoom = 5.5;
+  if (stateFP === "48") { center = [-99.5, 31.0]; zoom = 5.5; }
+  else if (stateCounties.features.length) {
+    const first = stateCounties.features[0];
+    if (first.geometry && first.geometry.coordinates && first.geometry.coordinates[0] && first.geometry.coordinates[0][0]) {
+      center = first.geometry.coordinates[0][0];
+      zoom = 6;
+    }
+  }
 
   stateCounties.features.forEach(f => {
     const countyStats = countyElectionStats[f.properties.GEOID];
     f.properties.winner = countyStats ? countyStats.winner : null;
   });
-
-  if (countyMapInstance) {
-    countyMapInstance.remove();
-    countyMapInstance = null;
-  }
 
   countyMapInstance = new mapboxgl.Map({
     container: countyMapDiv,
