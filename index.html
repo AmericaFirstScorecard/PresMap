@@ -7,7 +7,7 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; font-family: sans-serif; }
+    html, body { height: 100%; margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background: #11161b;}
     #header {
       background: #222; color: white; padding: 15px 20px;
       z-index: 1000; display: flex; flex-direction: column; align-items: center;
@@ -56,7 +56,6 @@
       font-size: 30px; font-weight: bold; margin-bottom: 10px;
     }
 
-    /* Map below header, fills viewport */
     #map {
       position: relative;
       width: 100vw;
@@ -64,6 +63,7 @@
       min-height: 400px;
       max-height: 80vh;
       z-index: 1;
+      background: #ccc;
     }
     @media (max-width:700px) {
       #map { min-height: 300px; }
@@ -80,63 +80,67 @@
       justify-content: center;
       position: relative;
       z-index: 2;
-      min-height: 330px;
+      min-height: 380px;
       border-top: 2px solid #303540;
       margin-top: 0;
     }
     .nyt-projection-title {
       color: #fff;
-      font-size: 22px;
-      font-weight: 600;
+      font-size: 2.4rem;
+      font-weight: 900;
       letter-spacing: 0.5px;
-      margin-bottom: 12px;
+      margin-bottom: 22px;
       text-align: center;
-      text-shadow: 0 1px 8px #000;
+      text-shadow: 0 2px 16px #000, 0 0 10px #111;
     }
     .needle-svg-wrap {
-      width: 390px;
-      max-width: 90vw;
-      margin: 0 auto;
-      position: relative;
+      width: 420px; max-width: 97vw; margin: 0 auto; position: relative;
     }
-    .needle-labels {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
+    .arc-label {
+      font-size: 1.12rem;
+      fill: #fff;
       font-weight: bold;
-      font-size: 18px;
-      margin-top: 8px;
-      color: #fff;
-      letter-spacing: 0.2px;
+      text-shadow: 0 2px 6px #222, 0 0 6px #000;
+      letter-spacing: 0.6px;
+      font-family: 'Inter', sans-serif;
+      pointer-events: none;
     }
-    .needle-labels .left { color: #e74c3c; }
-    .needle-labels .right { color: #3498db; }
-    .nyt-prob-row {
-      text-align: center;
-      margin-top: 8px;
-      color: #eee;
-      font-size: 15px;
+    .arc-label-center {
+      font-size: 1.18rem;
+      font-weight: 900;
+      fill: #fff;
     }
+    .needle-arrow { fill: #fff; stroke: #222; stroke-width: 2.2; filter: drop-shadow(0 2px 6px #0008);}
+    .needle-dot { fill: #191d22; stroke: #fff; stroke-width: 3.5; filter: drop-shadow(0 1px 8px #000a);}
     .arc-very-likely-bush { stroke: #e74c3c; }
     .arc-likely-bush { stroke: #f7a49a; }
-    .arc-lean-bush { stroke: #ffd6c2; }
+    .arc-lean-bush { stroke: #ffe5d2; }
     .arc-tossup { stroke: #cccccc; }
     .arc-lean-gore { stroke: #b8d8f8; }
     .arc-likely-gore { stroke: #74b0e7; }
     .arc-very-likely-gore { stroke: #3498db; }
-    .needle-arrow { fill: #444; stroke: #fff; stroke-width: 1.1; }
-    .needle-dot { fill: #fff; stroke: #444; stroke-width: 2.3; }
-    .arc-label {
-      font-size: 12px;
-      fill: #eee;
-      font-weight: bold;
-      text-shadow: 0 1px 6px #222, 0 0 3px #000;
-      letter-spacing: 0.4px;
-      pointer-events: none;
-      font-family: sans-serif;
+    .needle-candidate-labels {
+      width: 100%; display: flex; justify-content: space-between;
+      margin-top: 6px;
+      font-size: 2.0rem;
+      font-weight: 800;
+      text-shadow: 0 2px 10px #000d;
     }
-    @media (max-width:500px){
-      .needle-svg-wrap { width: 98vw; }
+    .needle-bush-label { color: #e74c3c; margin-left: 8px;}
+    .needle-gore-label { color: #3498db; margin-right: 8px;}
+    .nyt-prob-row {
+      margin-top: 24px; text-align: center;
+      font-size: 1.65rem; font-weight: 900; letter-spacing: 0.3px;
+      text-shadow: 0 1px 4px #000b;
+    }
+    .proj-big-num { font-size: 2.1rem; font-weight: 900; margin: 0 8px;}
+    .proj-big-num.bush { color: #e74c3c;}
+    .proj-big-num.gore { color: #3498db;}
+    .proj-divider { font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0 8px;}
+    @media (max-width:550px){
+      .needle-svg-wrap { width: 99vw; }
+      .needle-candidate-labels { font-size: 1.25rem;}
+      .proj-big-num { font-size: 1.38rem;}
     }
   </style>
 </head>
@@ -171,44 +175,42 @@
 </div>
 <div id="map"></div>
 
-<!-- (optional) Any other content you want between map and ticker can go here -->
-
+<!-- NYT-style ticker BELOW the map, scroll to see -->
 <div id="projection-ticker-wrap">
-  <div class="nyt-projection-title">Chance of Winning (Projection)</div>
+  <div class="nyt-projection-title">Chance of Winning <span style="font-weight:400;">(Projection)</span></div>
   <div class="needle-svg-wrap">
     <svg id="nyt-needle-svg" width="390" height="210" viewBox="0 0 390 210">
       <!-- Arc Segments -->
-      <path id="arc-vl-bush" class="arc-very-likely-bush" fill="none" stroke-width="16"/>
-      <path id="arc-l-bush" class="arc-likely-bush" fill="none" stroke-width="16"/>
-      <path id="arc-le-bush" class="arc-lean-bush" fill="none" stroke-width="16"/>
-      <path id="arc-tossup" class="arc-tossup" fill="none" stroke-width="16"/>
-      <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="16"/>
-      <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="16"/>
-      <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="16"/>
+      <path id="arc-vl-bush" class="arc-very-likely-bush" fill="none" stroke-width="20"/>
+      <path id="arc-l-bush" class="arc-likely-bush" fill="none" stroke-width="20"/>
+      <path id="arc-le-bush" class="arc-lean-bush" fill="none" stroke-width="20"/>
+      <path id="arc-tossup" class="arc-tossup" fill="none" stroke-width="20"/>
+      <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
+      <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
+      <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
       <!-- Arc Labels -->
-      <text class="arc-label" x="38" y="95">Very likely Bush</text>
-      <text class="arc-label" x="90" y="38">Likely Bush</text>
-      <text class="arc-label" x="150" y="18">Lean Bush</text>
-      <text class="arc-label" x="192" y="8">Tossup</text>
-      <text class="arc-label" x="235" y="18">Lean Gore</text>
-      <text class="arc-label" x="295" y="38">Likely Gore</text>
-      <text class="arc-label" x="345" y="95">Very likely Gore</text>
+      <text class="arc-label" x="42" y="120">Very likely Bush</text>
+      <text class="arc-label" x="94" y="48">Likely Bush</text>
+      <text class="arc-label" x="150" y="22">Lean Bush</text>
+      <text class="arc-label arc-label-center" x="192" y="14">Tossup</text>
+      <text class="arc-label" x="245" y="22">Lean Gore</text>
+      <text class="arc-label" x="300" y="48">Likely Gore</text>
+      <text class="arc-label" x="353" y="120">Very likely Gore</text>
       <!-- Needle -->
       <g id="needle-group">
         <polygon id="nyt-needle" class="needle-arrow"
-          points="195,45 190,105 200,105"/>
-        <circle id="needle-dot" class="needle-dot" cx="195" cy="105" r="9"/>
+          points="195,42 190,115 200,115"/>
+        <circle id="needle-dot" class="needle-dot" cx="195" cy="110" r="13"/>
       </g>
     </svg>
-    <div class="needle-labels">
-      <span class="left">Bush</span>
-      <span class="right">Gore</span>
+    <div class="needle-candidate-labels">
+      <span class="needle-bush-label">Bush</span>
+      <span class="needle-gore-label">Gore</span>
     </div>
     <div class="nyt-prob-row">
-      <span style="color:#e74c3c;font-weight:600">Bush</span>
-      <span id="nyt-proj-bush" style="font-weight:600;"> -- % </span> &nbsp;|&nbsp;
-      <span style="color:#3498db;font-weight:600">Gore</span>
-      <span id="nyt-proj-gore" style="font-weight:600;"> -- % </span>
+      <span id="nyt-proj-bush-big" class="proj-big-num bush">--%</span>
+      <span class="proj-divider">|</span>
+      <span id="nyt-proj-gore-big" class="proj-big-num gore">--%</span>
     </div>
   </div>
 </div>
@@ -240,7 +242,7 @@ function polar(cx, cy, r, angleDeg) {
 }
 function setArcSegs() {
   // 7 segments: [-90,-60] VL Bush | [-60,-30] L Bush | [-30,-10] Lean Bush | [-10,10] Tossup | [10,30] Lean Gore | [30,60] L Gore | [60,90] VL Gore
-  const cx=195, cy=105, r=86;
+  const cx=195, cy=110, r=86;
   document.getElementById('arc-vl-bush').setAttribute('d', arcPath(cx,cy,r, -90, -60));
   document.getElementById('arc-l-bush').setAttribute('d', arcPath(cx,cy,r, -60, -30));
   document.getElementById('arc-le-bush').setAttribute('d', arcPath(cx,cy,r, -30, -10));
@@ -321,12 +323,12 @@ map.on('load', async () => {
     else angle = -90 + 180 * projGore;
 
     const needleGroup = document.getElementById('needle-group');
-    needleGroup.setAttribute('transform', `rotate(${angle},195,105)`);
+    needleGroup.setAttribute('transform', `rotate(${angle},195,110)`);
 
-    document.getElementById('nyt-proj-bush').textContent =
-      Math.round(projBush*100) + " %";
-    document.getElementById('nyt-proj-gore').textContent =
-      Math.round(projGore*100) + " %";
+    document.getElementById('nyt-proj-bush-big').textContent =
+      Math.round(projBush*100) + "%";
+    document.getElementById('nyt-proj-gore-big').textContent =
+      Math.round(projGore*100) + "%";
     // ------ END NYT-STYLE PROJECTION ------
 
     map.addSource('states', { type: 'geojson', data: states });
