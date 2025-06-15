@@ -114,8 +114,6 @@
       pointer-events: none;
     }
     .needle-checkmark.gore { left: auto; right: 36px; }
-    .arc-label { display: none; }
-    .arc-label-center { display: none; }
     .ticker-center-block {
       width: 100%;
       display: flex;
@@ -201,25 +199,21 @@
 <div id="projection-ticker-wrap">
   <div class="nyt-projection-title">Chance of Winning <span style="font-weight:400;">(Projection)</span></div>
   <div class="needle-svg-wrap" style="position: relative;">
-    <!-- Bush Image -->
     <img src="images/George-W-Bush.jpg" class="needle-img-candidate needle-img-bush" id="needle-img-bush" alt="Bush"/>
-    <!-- Gore Image -->
     <img src="images/Al_Gore.jpg" class="needle-img-candidate needle-img-gore" id="needle-img-gore" alt="Gore"/>
-    <!-- Checkmarks -->
     <svg class="needle-checkmark" id="needle-check-bush" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#e74c3c"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg class="needle-checkmark gore" id="needle-check-gore" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#3498db"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg id="nyt-needle-svg" width="500" height="270" viewBox="0 0 500 270">
-      <!-- Arc Segments -->
-      <path id="arc-vl-bush" class="arc-very-likely-bush" fill="none" stroke-width="20"/>
-      <path id="arc-l-bush" class="arc-likely-bush" fill="none" stroke-width="20"/>
-      <path id="arc-le-bush" class="arc-lean-bush" fill="none" stroke-width="20"/>
-      <path id="arc-tossup" class="arc-tossup" fill="none" stroke-width="20"/>
-      <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
-      <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
-      <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
-      <g id="arc-labels-group"></g>
+      <!-- Arcs as filled wedges for NYT look -->
+      <path id="arc-vl-bush" fill="#e74c3c" d=""/>
+      <path id="arc-l-bush" fill="#ffb6b6" d=""/>
+      <path id="arc-le-bush" fill="#ffe5d2" d=""/>
+      <path id="arc-tossup" fill="#e5e5e5" d=""/>
+      <path id="arc-le-gore" fill="#c8e3f9" d=""/>
+      <path id="arc-l-gore" fill="#80c2fa" d=""/>
+      <path id="arc-vl-gore" fill="#3498db" d=""/>
       <g id="needle-group">
-        <polygon id="nyt-needle" class="needle-arrow" points="250,64 243,162 257,162"/>
+        <polygon id="nyt-needle" class="needle-arrow" points="250,74 243,162 257,162"/>
         <circle id="needle-dot" class="needle-dot" cx="250" cy="154" r="16"/>
       </g>
     </svg>
@@ -246,25 +240,31 @@ const map = new mapboxgl.Map({
   zoom: 3
 });
 
-// NYT Needle arc math for new layout
+// NYT Needle arc math for filled arc segments
 const arcSegs = [
-  { label: "Very likely Bush", start: -90, end: -60 },
-  { label: "Likely Bush", start: -60, end: -30 },
-  { label: "Lean Bush", start: -30, end: -10 },
-  { label: "Tossup", start: -10, end: 10 },
-  { label: "Lean Gore", start: 10, end: 30 },
-  { label: "Likely Gore", start: 30, end: 60 },
-  { label: "Very likely Gore", start: 60, end: 90 }
+  { id: "arc-vl-bush", start: -90, end: -60, color: "#e74c3c" },
+  { id: "arc-l-bush", start: -60, end: -30, color: "#ffb6b6" },
+  { id: "arc-le-bush", start: -30, end: -10, color: "#ffe5d2" },
+  { id: "arc-tossup", start: -10, end: 10, color: "#e5e5e5" },
+  { id: "arc-le-gore", start: 10, end: 30, color: "#c8e3f9" },
+  { id: "arc-l-gore", start: 30, end: 60, color: "#80c2fa" },
+  { id: "arc-vl-gore", start: 60, end: 90, color: "#3498db" }
 ];
-const svgCx = 250, svgCy = 154, arcR = 110;
+const svgCx = 250, svgCy = 154, outerR = 110, innerR = 70;
 
-function arcPath(cx, cy, r, startAngle, endAngle) {
-  const start = polar(cx, cy, r, startAngle);
-  const end = polar(cx, cy, r, endAngle);
-  const arcSweep = endAngle - startAngle <= 180 ? "0" : "1";
+// Draw filled arc wedge paths
+function filledArcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
+  const start = polar(cx, cy, rOuter, startAngle);
+  const end = polar(cx, cy, rOuter, endAngle);
+  const startInner = polar(cx, cy, rInner, endAngle);
+  const endInner = polar(cx, cy, rInner, startAngle);
+  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
   return [
     "M", start.x, start.y,
-    "A", r, r, 0, arcSweep, 1, end.x, end.y
+    "A", rOuter, rOuter, 0, largeArc, 1, end.x, end.y,
+    "L", startInner.x, startInner.y,
+    "A", rInner, rInner, 0, largeArc, 0, endInner.x, endInner.y,
+    "Z"
   ].join(" ");
 }
 function polar(cx, cy, r, angleDeg) {
@@ -272,15 +272,12 @@ function polar(cx, cy, r, angleDeg) {
   return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
 }
 
-// Draw arc paths
+// Draw filled arc wedges
 function setArcSegs() {
-  document.getElementById('arc-vl-bush').setAttribute('d', arcPath(svgCx,svgCy,arcR, -90, -60));
-  document.getElementById('arc-l-bush').setAttribute('d', arcPath(svgCx,svgCy,arcR, -60, -30));
-  document.getElementById('arc-le-bush').setAttribute('d', arcPath(svgCx,svgCy,arcR, -30, -10));
-  document.getElementById('arc-tossup').setAttribute('d', arcPath(svgCx,svgCy,arcR, -10, 10));
-  document.getElementById('arc-le-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 10, 30));
-  document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 30, 60));
-  document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 60, 90));
+  arcSegs.forEach(seg => {
+    document.getElementById(seg.id).setAttribute('d',
+      filledArcPath(svgCx, svgCy, outerR, innerR, seg.start, seg.end));
+  });
 }
 setArcSegs();
 
@@ -354,7 +351,6 @@ map.on('load', async () => {
     document.getElementById('nyt-proj-bush-big').textContent = Math.round(projBush*100) + "%";
     document.getElementById('nyt-proj-gore-big').textContent = Math.round(projGore*100) + "%";
 
-    // Show checkmark if 100%
     document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
     document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
     // ------ END NYT-STYLE PROJECTION ------
