@@ -96,18 +96,18 @@
       width: 420px; max-width: 97vw; margin: 0 auto; position: relative;
     }
     .arc-label {
-      font-size: 14px;
-      font-weight: bold;
+      font-size: 13px;
+      font-weight: 700;
       fill: #fff;
       text-shadow: 0 2px 6px #222, 0 0 6px #000;
-      letter-spacing: 0.2px;
       font-family: 'Inter', sans-serif;
       pointer-events: none;
       dominant-baseline: middle;
       text-anchor: middle;
+      letter-spacing: 0.7px;
     }
     .arc-label-center {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 900;
       fill: #fff;
     }
@@ -142,6 +142,7 @@
       .needle-svg-wrap { width: 99vw; }
       .needle-candidate-labels { font-size: 1.25rem;}
       .proj-big-num { font-size: 1.38rem;}
+      .nyt-projection-title { font-size: 1.3rem; }
     }
   </style>
 </head>
@@ -189,15 +190,15 @@
       <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
       <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
       <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
-      <!-- Label Arcs (for textPath labels, match segment math exactly) -->
+      <!-- Label Arcs (for textPath labels, match segment math exactly but slightly bigger radius) -->
       <defs>
-        <path id="label-vl-bush" d="M78,150 A86,86 0 0,1 126,44"/>
-        <path id="label-l-bush" d="M126,44 A86,86 0 0,1 164,28"/>
-        <path id="label-le-bush" d="M164,28 A86,86 0 0,1 187,22"/>
-        <path id="label-tossup" d="M187,22 A86,86 0 0,1 203,22"/>
-        <path id="label-le-gore" d="M203,22 A86,86 0 0,1 226,28"/>
-        <path id="label-l-gore" d="M226,28 A86,86 0 0,1 264,44"/>
-        <path id="label-vl-gore" d="M264,44 A86,86 0 0,1 312,150"/>
+        <path id="label-vl-bush" d="M70,147 A96,96 0 0,1 123,37"/>
+        <path id="label-l-bush" d="M123,37 A96,96 0 0,1 167,22"/>
+        <path id="label-le-bush" d="M167,22 A96,96 0 0,1 189,17"/>
+        <path id="label-tossup" d="M189,17 A96,96 0 0,1 201,17"/>
+        <path id="label-le-gore" d="M201,17 A96,96 0 0,1 223,22"/>
+        <path id="label-l-gore" d="M223,22 A96,96 0 0,1 267,37"/>
+        <path id="label-vl-gore" d="M267,37 A96,96 0 0,1 320,147"/>
       </defs>
       <!-- Arc Labels with textPath, centered along each segment -->
       <text class="arc-label"><textPath href="#label-vl-bush" startOffset="50%" text-anchor="middle">Very likely Bush</textPath></text>
