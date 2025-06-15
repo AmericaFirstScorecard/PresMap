@@ -114,21 +114,6 @@
       pointer-events: none;
     }
     .needle-checkmark.gore { left: auto; right: 36px; }
-    .arc-label {
-      font-size: 15px;
-      font-weight: 700;
-      fill: #fff;
-      text-shadow: 0 2px 8px #111a, 0 0 3px #111;
-      font-family: 'Inter', sans-serif;
-      pointer-events: none;
-      dominant-baseline: middle;
-      text-anchor: middle;
-    }
-    .arc-label-center {
-      font-size: 17px;
-      font-weight: 900;
-      fill: #fff;
-    }
     .needle-arrow { fill: #fff; stroke: #222; stroke-width: 2.2; filter: drop-shadow(0 2px 6px #0008);}
     .needle-dot { fill: #191d22; stroke: #fff; stroke-width: 3.5; filter: drop-shadow(0 1px 8px #000a);}
     .arc-very-likely-bush { stroke: #e74c3c; }
@@ -138,21 +123,26 @@
     .arc-lean-gore { stroke: #b8d8f8; }
     .arc-likely-gore { stroke: #74b0e7; }
     .arc-very-likely-gore { stroke: #3498db; }
+    /* Remove side label spacing */
     .needle-candidate-labels {
-      width: 100%; display: flex; justify-content: space-between;
-      margin-top: 16px;
-      font-size: 2.0rem;
-      font-weight: 800;
-      text-shadow: 0 2px 10px #000d;
+      width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 18px;
+      font-size: 2.0rem; font-weight: 800; text-shadow: 0 2px 10px #000d;
     }
-    .needle-bush-label { color: #e74c3c; margin-left: 16px;}
-    .needle-gore-label { color: #3498db; margin-right: 16px;}
+    .needle-bush-label, .needle-gore-label {
+      color: #e74c3c;
+      margin: 0;
+      font-size: 2.1rem;
+      font-weight: 800;
+      display: block;
+    }
+    .needle-gore-label { color: #3498db; margin-top: 5px;}
     .nyt-prob-row {
-      margin-top: 24px; text-align: center;
+      margin-top: 7px; text-align: center;
       font-size: 1.65rem; font-weight: 900; letter-spacing: 0.3px;
       text-shadow: 0 1px 4px #000b;
+      display: flex; flex-direction: row; justify-content: center; gap: 18px;
     }
-    .proj-big-num { font-size: 2.1rem; font-weight: 900; margin: 0 8px;}
+    .proj-big-num { font-size: 2.1rem; font-weight: 900;}
     .proj-big-num.bush { color: #e74c3c;}
     .proj-big-num.gore { color: #3498db;}
     .proj-divider { font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0 8px;}
@@ -161,8 +151,6 @@
       .needle-img-candidate { width: 44px; height: 44px; top: 125px;}
       .needle-checkmark { width: 22px; height: 22px; top: 148px; left: 19px;}
       .needle-checkmark.gore { right: 19px;}
-      .arc-label { font-size: 11px;}
-      .arc-label-center { font-size: 13px;}
     }
   </style>
 </head>
@@ -209,7 +197,7 @@
     <svg class="needle-checkmark" id="needle-check-bush" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#e74c3c"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg class="needle-checkmark gore" id="needle-check-gore" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#3498db"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg id="nyt-needle-svg" width="500" height="270" viewBox="0 0 500 270">
-      <!-- Arc Segments -->
+      <!-- Arc Segments (NO LABELS) -->
       <path id="arc-vl-bush" class="arc-very-likely-bush" fill="none" stroke-width="20"/>
       <path id="arc-l-bush" class="arc-likely-bush" fill="none" stroke-width="20"/>
       <path id="arc-le-bush" class="arc-lean-bush" fill="none" stroke-width="20"/>
@@ -217,7 +205,7 @@
       <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
       <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
       <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
-      <!-- Arc Labels: inner, centered at angle for each wedge -->
+      <!-- NO Arc Labels -->
       <g id="arc-labels-group"></g>
       <!-- Needle -->
       <g id="needle-group">
@@ -225,11 +213,12 @@
         <circle id="needle-dot" class="needle-dot" cx="250" cy="154" r="16"/>
       </g>
     </svg>
+    <!-- Candidate names and odds, centered vertically below gauge -->
     <div class="needle-candidate-labels">
-      <span class="needle-bush-label">Bush</span>
-      <span class="needle-gore-label">Gore</span>
+      <span class="needle-bush-label" id="needle-bush-name">Bush</span>
+      <span class="needle-gore-label" id="needle-gore-name">Gore</span>
     </div>
-    <div class="nyt-prob-row">
+    <div class="nyt-prob-row" style="justify-content: center;">
       <span id="nyt-proj-bush-big" class="proj-big-num bush">--%</span>
       <span class="proj-divider">|</span>
       <span id="nyt-proj-gore-big" class="proj-big-num gore">--%</span>
@@ -248,15 +237,15 @@ const map = new mapboxgl.Map({
 
 // NYT Needle arc math for new layout
 const arcSegs = [
-  { label: "Very likely Bush", start: -90, end: -60 },
-  { label: "Likely Bush", start: -60, end: -30 },
-  { label: "Lean Bush", start: -30, end: -10 },
-  { label: "Tossup", start: -10, end: 10 },
-  { label: "Lean Gore", start: 10, end: 30 },
-  { label: "Likely Gore", start: 30, end: 60 },
-  { label: "Very likely Gore", start: 60, end: 90 }
+  { start: -90, end: -60 },
+  { start: -60, end: -30 },
+  { start: -30, end: -10 },
+  { start: -10, end: 10 },
+  { start: 10, end: 30 },
+  { start: 30, end: 60 },
+  { start: 60, end: 90 }
 ];
-const svgCx = 250, svgCy = 154, arcR = 110, labelR = 82;
+const svgCx = 250, svgCy = 154, arcR = 110;
 
 function arcPath(cx, cy, r, startAngle, endAngle) {
   const start = polar(cx, cy, r, startAngle);
@@ -272,7 +261,7 @@ function polar(cx, cy, r, angleDeg) {
   return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
 }
 
-// Draw arc paths
+// Draw arc paths (NO labels)
 function setArcSegs() {
   document.getElementById('arc-vl-bush').setAttribute('d', arcPath(svgCx,svgCy,arcR, -90, -60));
   document.getElementById('arc-l-bush').setAttribute('d', arcPath(svgCx,svgCy,arcR, -60, -30));
@@ -282,22 +271,7 @@ function setArcSegs() {
   document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 30, 60));
   document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 60, 90));
 }
-// Draw inside arc labels at segment center
-function setArcLabels() {
-  const labelsGroup = document.getElementById('arc-labels-group');
-  labelsGroup.innerHTML = '';
-  arcSegs.forEach(seg => {
-    const angle = (seg.start + seg.end) / 2;
-    const pt = polar(svgCx, svgCy, labelR, angle);
-    const rot = angle < 0 ? angle+90 : angle-90;
-    let labelClass = "arc-label";
-    if (seg.label === "Tossup") labelClass += " arc-label-center";
-    labelsGroup.innerHTML +=
-      `<text x="${pt.x}" y="${pt.y}" class="${labelClass}" style="transform:rotate(${rot}deg);" text-anchor="middle" dominant-baseline="middle">${seg.label}</text>`;
-  });
-}
 setArcSegs();
-setArcLabels();
 
 // ---- Main election map and projection logic ----
 map.on('load', async () => {
