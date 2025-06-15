@@ -114,87 +114,35 @@
       pointer-events: none;
     }
     .needle-checkmark.gore { left: auto; right: 36px; }
-    .needle-arrow { fill: #fff; stroke: #222; stroke-width: 2.2; filter: drop-shadow(0 2px 6px #0008);}
-    .needle-dot { fill: #191d22; stroke: #fff; stroke-width: 3.5; filter: drop-shadow(0 1px 8px #000a);}
-    .arc-very-likely-bush { stroke: #e74c3c; }
-    .arc-likely-bush { stroke: #f7a49a; }
-    .arc-lean-bush { stroke: #ffe5d2; }
-    .arc-tossup { stroke: #cccccc; }
-    .arc-lean-gore { stroke: #b8d8f8; }
-    .arc-likely-gore { stroke: #74b0e7; }
-    .arc-very-likely-gore { stroke: #3498db; }
+    .arc-label { display: none; }
+    .arc-label-center { display: none; }
     .needle-candidate-labels {
-      width: 100%; 
-      display: flex; 
-      flex-direction: row; 
-      justify-content: center; 
-      align-items: center; 
-      gap: 60px;
-      margin-top: 22px;
-      font-size: 2.1rem; 
-      font-weight: 800; 
+      width: 100%; display: flex; justify-content: center; align-items: center;
+      gap: 32px;
+      margin-top: 18px;
+      font-size: 2.1rem;
+      font-weight: 800;
       text-shadow: 0 2px 10px #000d;
     }
-    .needle-bush-label { color: #e74c3c; }
-    .needle-gore-label { color: #3498db; }
+    .needle-bush-label { color: #e74c3c;}
+    .needle-gore-label { color: #3498db;}
     .nyt-prob-row {
-      margin-top: 8px; 
-      text-align: center;
-      font-size: 1.65rem; 
-      font-weight: 900; 
-      letter-spacing: 0.3px;
+      margin-top: 12px; text-align: center; display: flex; justify-content: center; align-items: center;
+      font-size: 2.2rem; font-weight: 900; letter-spacing: 0.3px;
       text-shadow: 0 1px 4px #000b;
-      display: flex; 
-      flex-direction: row; 
-      justify-content: center; 
-      gap: 18px;
     }
-    .proj-big-num { font-size: 2.1rem; font-weight: 900; margin: 0 8px;}
+    .proj-big-num { font-size: 2.4rem; font-weight: 900; margin: 0 8px;}
     .proj-big-num.bush { color: #e74c3c;}
     .proj-big-num.gore { color: #3498db;}
-    .proj-divider { font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0 8px;}
-    /* Modal for County Map */
-    .modal {
-      display: none; position: fixed; z-index: 9999; left: 0; top: 0;
-      width: 100vw; height: 100vh; overflow: auto;
-      background: rgba(24,28,38,0.85);
-      align-items: center; justify-content: center;
-    }
-    .modal-content {
-      background: #232833;
-      margin: auto;
-      padding: 32px 28px 28px 28px;
-      border-radius: 16px;
-      width: 92vw; max-width: 800px;
-      box-shadow: 0 8px 40px #000a;
-      position: relative;
-      color: #fff;
-    }
-    .modal-close {
-      position: absolute; right: 22px; top: 18px;
-      font-size: 2rem; color: #fff;
-      background: none; border: none; cursor: pointer;
-      opacity: 0.85; transition: 0.12s;
-    }
-    .modal-close:hover { opacity: 1; }
-    .modal-title { font-size: 2.2rem; font-weight: bold; margin-bottom: 10px;}
-    .county-map-placeholder {
-      width: 100%; min-height: 340px; background: #333946;
-      margin: 16px 0 20px 0; display: flex; align-items: center; justify-content: center;
-      color: #fff7; font-size: 2rem; font-weight: bold; letter-spacing: 1px; border-radius: 14px;
-    }
-    .county-details { font-size: 1.2rem; line-height: 1.6; }
+    .proj-divider { font-size: 2.3rem; font-weight: 800; color: #fff; margin: 0 18px;}
     @media (max-width:700px){
       .needle-svg-wrap { width: 99vw;}
       .needle-img-candidate { width: 44px; height: 44px; top: 125px;}
       .needle-checkmark { width: 22px; height: 22px; top: 148px; left: 19px;}
       .needle-checkmark.gore { right: 19px;}
-      .needle-candidate-labels { font-size: 1.12rem; gap: 28px; }
-      .proj-big-num { font-size: 1.3rem; }
-      .nyt-projection-title { font-size: 1.25rem; }
-      .modal-content { padding: 20px 4vw; }
-      .county-map-placeholder { min-height: 160px; font-size: 1.1rem; }
-      .modal-title { font-size: 1.25rem; }
+      .needle-candidate-labels { font-size: 1.3rem;}
+      .proj-big-num { font-size: 1.4rem;}
+      .proj-divider { font-size: 1.2rem; margin: 0 8px;}
     }
   </style>
 </head>
@@ -241,7 +189,7 @@
     <svg class="needle-checkmark" id="needle-check-bush" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#e74c3c"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg class="needle-checkmark gore" id="needle-check-gore" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#3498db"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg id="nyt-needle-svg" width="500" height="270" viewBox="0 0 500 270">
-      <!-- Arc Segments (no labels!) -->
+      <!-- Arc Segments -->
       <path id="arc-vl-bush" class="arc-very-likely-bush" fill="none" stroke-width="20"/>
       <path id="arc-l-bush" class="arc-likely-bush" fill="none" stroke-width="20"/>
       <path id="arc-le-bush" class="arc-lean-bush" fill="none" stroke-width="20"/>
@@ -249,34 +197,23 @@
       <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
       <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
       <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
+      <!-- Arc Labels: removed per your instructions -->
+      <g id="arc-labels-group"></g>
       <!-- Needle -->
       <g id="needle-group">
         <polygon id="nyt-needle" class="needle-arrow" points="250,64 243,162 257,162"/>
         <circle id="needle-dot" class="needle-dot" cx="250" cy="154" r="16"/>
       </g>
     </svg>
-    <div class="needle-candidate-labels">
-      <span class="needle-bush-label" id="needle-bush-name">Bush</span>
-      <span class="needle-gore-label" id="needle-gore-name">Gore</span>
-    </div>
-    <div class="nyt-prob-row">
+    <div class="needle-candidate-labels" style="justify-content: center; gap:48px;">
+      <span class="needle-bush-label">Bush</span>
       <span id="nyt-proj-bush-big" class="proj-big-num bush">--%</span>
       <span class="proj-divider">|</span>
       <span id="nyt-proj-gore-big" class="proj-big-num gore">--%</span>
+      <span class="needle-gore-label">Gore</span>
     </div>
   </div>
 </div>
-
-<!-- Modal for County Map -->
-<div id="county-modal" class="modal">
-  <div class="modal-content">
-    <button class="modal-close" onclick="document.getElementById('county-modal').style.display='none'">&times;</button>
-    <div class="modal-title" id="county-modal-title">State Results</div>
-    <div class="county-map-placeholder" id="county-map-placeholder">County Map Here</div>
-    <div class="county-details" id="county-details"></div>
-  </div>
-</div>
-
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
 
@@ -289,15 +226,15 @@ const map = new mapboxgl.Map({
 
 // NYT Needle arc math for new layout
 const arcSegs = [
-  { start: -90, end: -60 },
-  { start: -60, end: -30 },
-  { start: -30, end: -10 },
-  { start: -10, end: 10 },
-  { start: 10, end: 30 },
-  { start: 30, end: 60 },
-  { start: 60, end: 90 }
+  { label: "Very likely Bush", start: -90, end: -60 },
+  { label: "Likely Bush", start: -60, end: -30 },
+  { label: "Lean Bush", start: -30, end: -10 },
+  { label: "Tossup", start: -10, end: 10 },
+  { label: "Lean Gore", start: 10, end: 30 },
+  { label: "Likely Gore", start: 30, end: 60 },
+  { label: "Very likely Gore", start: 60, end: 90 }
 ];
-const svgCx = 250, svgCy = 154, arcR = 110;
+const svgCx = 250, svgCy = 154, arcR = 110, labelR = 82;
 
 function arcPath(cx, cy, r, startAngle, endAngle) {
   const start = polar(cx, cy, r, startAngle);
@@ -324,6 +261,9 @@ function setArcSegs() {
   document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 60, 90));
 }
 setArcSegs();
+
+// ---- Main election map and projection logic ----
+let hoverPopup = null;
 
 map.on('load', async () => {
   try {
@@ -425,9 +365,12 @@ map.on('load', async () => {
         'line-width': 2
       }
     });
-    // Hover effect: show details popup
+
+    // --- Hover logic: only one popup at a time ---
     map.on('mousemove', 'states-fill', (e) => {
       map.getCanvas().style.cursor = 'pointer';
+      if (hoverPopup) hoverPopup.remove();
+
       const p = e.features[0].properties;
       const gop = +p.votes_gop || 0;
       const dem = +p.votes_dem || 0;
@@ -439,7 +382,8 @@ map.on('load', async () => {
       const demName = p.dem_candidate || 'Gore';
       const gopCheck = winner === gopName ? '✓ ' : '';
       const demCheck = winner === demName ? '✓ ' : '';
-      const popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
+
+      hoverPopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
         .setLngLat(e.lngLat)
         .setHTML(`
           <strong>${p.name}</strong><br/>
@@ -450,26 +394,23 @@ map.on('load', async () => {
           <b>Winner:</b> ${winner}
         `)
         .addTo(map);
-      map.once('mouseleave', 'states-fill', () => {
-        map.getCanvas().style.cursor = '';
-        popup.remove();
-      });
     });
-    // Click effect: open modal with county map placeholder
+
+    map.on('mouseleave', 'states-fill', () => {
+      map.getCanvas().style.cursor = '';
+      if (hoverPopup) hoverPopup.remove();
+      hoverPopup = null;
+    });
+
+    // --- On click: county-level map (to be implemented by you) ---
     map.on('click', 'states-fill', (e) => {
+      // Placeholder: You could open a modal here for county-wide map.
+      // Example: loadCountiesForState(e.features[0].properties.name);
+      // For now, just a popup:
       const p = e.features[0].properties;
-      document.getElementById('county-modal-title').textContent = `${p.name} Results`;
-      document.getElementById('county-map-placeholder').textContent = `County Map of ${p.name} (placeholder)`;
-      document.getElementById('county-details').innerHTML = `
-        <b>Electoral Votes:</b> ${p.electoral_votes}<br/>
-        <b>Reporting:</b> ${p.reporting}%<br/>
-        <b style="color:#d12c0f;">${p.gop_candidate || 'Bush'}:</b> ${(p.votes_gop || 0).toLocaleString()}<br/>
-        <b style="color:#3498db;">${p.dem_candidate || 'Gore'}:</b> ${(p.votes_dem || 0).toLocaleString()}<br/>
-        <b>Winner:</b> ${p.winner || 'Uncalled'}<br/>
-        <br><i>County results map coming soon...</i>
-      `;
-      document.getElementById('county-modal').style.display = 'flex';
+      alert(`Show county map for ${p.name} (feature to be implemented)`);
     });
+
   } catch (error) {
     console.error('Map load error:', error);
     document.getElementById('map').innerHTML = '<p style="color: red; text-align: center;">Failed to load map. Please check your data file and internet connection.</p>';
