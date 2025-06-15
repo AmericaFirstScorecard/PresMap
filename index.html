@@ -7,12 +7,11 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
   <style>
-    body { margin: 0; padding: 0; font-family: sans-serif; }
-    #map { position: absolute; top: 160px; bottom: 0; width: 100%; }
+    html, body { height: 100%; margin: 0; padding: 0; font-family: sans-serif; }
     #header {
-      position: absolute; top: 0; left: 0; right: 0;
       background: #222; color: white; padding: 15px 20px;
       z-index: 1000; display: flex; flex-direction: column; align-items: center;
+      position: relative;
     }
     .progress-container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 10px; }
     .progress-bar-wrapper {
@@ -56,11 +55,25 @@
     .title {
       font-size: 30px; font-weight: bold; margin-bottom: 10px;
     }
-    /* --- NYT Needle Projection Section Below Map --- */
+
+    /* Map below header, fills viewport */
+    #map {
+      position: relative;
+      width: 100vw;
+      height: 70vh;
+      min-height: 400px;
+      max-height: 80vh;
+      z-index: 1;
+    }
+    @media (max-width:700px) {
+      #map { min-height: 300px; }
+    }
+
+    /* NYT-style needle ticker BELOW map */
     #projection-ticker-wrap {
       width: 100%;
       background: #191d22;
-      padding: 50px 0 60px 0;
+      padding: 60px 0 60px 0;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -69,6 +82,7 @@
       z-index: 2;
       min-height: 330px;
       border-top: 2px solid #303540;
+      margin-top: 0;
     }
     .nyt-projection-title {
       color: #fff;
@@ -103,7 +117,6 @@
       color: #eee;
       font-size: 15px;
     }
-    /* Arc segment coloring */
     .arc-very-likely-bush { stroke: #e74c3c; }
     .arc-likely-bush { stroke: #f7a49a; }
     .arc-lean-bush { stroke: #ffd6c2; }
@@ -111,10 +124,8 @@
     .arc-lean-gore { stroke: #b8d8f8; }
     .arc-likely-gore { stroke: #74b0e7; }
     .arc-very-likely-gore { stroke: #3498db; }
-    /* Needle and dot */
     .needle-arrow { fill: #444; stroke: #fff; stroke-width: 1.1; }
     .needle-dot { fill: #fff; stroke: #444; stroke-width: 2.3; }
-    /* Segment labels on arc */
     .arc-label {
       font-size: 12px;
       fill: #eee;
@@ -160,7 +171,8 @@
 </div>
 <div id="map"></div>
 
-<!-- NYT Needle Projection ticker BELOW the map, scroll to see -->
+<!-- (optional) Any other content you want between map and ticker can go here -->
+
 <div id="projection-ticker-wrap">
   <div class="nyt-projection-title">Chance of Winning (Projection)</div>
   <div class="needle-svg-wrap">
@@ -290,10 +302,8 @@ map.on('load', async () => {
     document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
 
     // ------ NYT-STYLE PROJECTION NEEDLE LOGIC ------
-    // Calculate percent of 270
     const bushProj = Math.min(ev_bush / 270, 1);
     const goreProj = Math.min(ev_gore / 270, 1);
-    // Normalize so their sum = 1 if both under 270, else show 100% to the winner
     let projBush, projGore;
     if (ev_bush >= 270 && ev_bush > ev_gore) {
       projBush = 1; projGore = 0;
@@ -305,19 +315,14 @@ map.on('load', async () => {
     } else {
       projBush = projGore = 0.5;
     }
-    // Needle angle: 0.0 = leftmost (Bush certain win), 1.0 = rightmost (Gore certain win)
-    // But our arc is -90deg (left) to +90deg (right), so: angle = -90 + 180*projGore
-    // More "tossup" in the center, "very likely Bush" at left, "very likely Gore" at right
     let angle;
     if (projBush === 1) angle = -90;
     else if (projGore === 1) angle = 90;
     else angle = -90 + 180 * projGore;
 
-    // Animate needle
     const needleGroup = document.getElementById('needle-group');
     needleGroup.setAttribute('transform', `rotate(${angle},195,105)`);
 
-    // Update projection percentages
     document.getElementById('nyt-proj-bush').textContent =
       Math.round(projBush*100) + " %";
     document.getElementById('nyt-proj-gore').textContent =
