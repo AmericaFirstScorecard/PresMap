@@ -8,5 +8,15 @@
     "reporting": 100,
     "gop_candidate": "Bush",
     "dem_candidate": "Gore"
+  },
+  "TX": {
+    "votes_gop": 3799639,
+    "votes_dem": 2433747,
+    "electoral_votes": 32,
+    "status": "GOP Win",
+    "winner": "Bush",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
   }
 }
