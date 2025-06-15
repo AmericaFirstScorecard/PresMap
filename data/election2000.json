@@ -1,361 +1,55 @@
-function doGet(e) {
-  var geojson = {
-    "type": "FeatureCollection",
-    "features": [
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Alabama", "abbr": "AL", "votes_gop": 941173, "votes_dem": 692611, "electoral_votes": 9, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-88, 35], [-85, 35], [-85, 32], [-88, 32], [-88, 35]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Alaska", "abbr": "AK", "votes_gop": 167398, "votes_dem": 79004, "electoral_votes": 3, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-170, 70], [-130, 70], [-130, 55], [-170, 55], [-170, 70]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Arizona", "abbr": "AZ", "votes_gop": 781652, "votes_dem": 685341, "electoral_votes": 8, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-115, 37], [-109, 37], [-109, 31], [-115, 31], [-115, 37]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Arkansas", "abbr": "AR", "votes_gop": 472940, "votes_dem": 422768, "electoral_votes": 6, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-94, 36.5], [-89.5, 36.5], [-89.5, 33], [-94, 33], [-94, 36.5]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "California", "abbr": "CA", "votes_gop": 4567429, "votes_dem": 5861203, "electoral_votes": 54, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-124, 42], [-114, 42], [-114, 32], [-124, 32], [-124, 42]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Colorado", "abbr": "CO", "votes_gop": 883748, "votes_dem": 738227, "electoral_votes": 8, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-109, 41], [-102, 41], [-102, 37], [-109, 37], [-109, 41]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Connecticut", "abbr": "CT", "votes_gop": 561094, "votes_dem": 816015, "electoral_votes": 8, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-73.7, 42.1], [-71.8, 42.1], [-71.8, 40.9], [-73.7, 40.9], [-73.7, 42.1]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Delaware", "abbr": "DE", "votes_gop": 137288, "votes_dem": 180068, "electoral_votes": 3, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-75.8, 39.8], [-75, 39.8], [-75, 38.5], [-75.8, 38.5], [-75.8, 39.8]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Florida", "abbr": "FL", "votes_gop": 2912790, "votes_dem": 2912253, "electoral_votes": 25, "status": "Uncalled", "winner": "UNKNOWN", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-87.6, 31], [-80, 31], [-80, 24.5], [-87.6, 24.5], [-87.6, 31]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Georgia", "abbr": "GA", "votes_gop": 1419720, "votes_dem": 1116239, "electoral_votes": 13, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-85.6, 35], [-81, 35], [-81, 30.4], [-85.6, 30.4], [-85.6, 35]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Hawaii", "abbr": "HI", "votes_gop": 137845, "votes_dem": 205286, "electoral_votes": 4, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-160.5, 21.7], [-154.8, 21.7], [-154.8, 18.9], [-160.5, 18.9], [-160.5, 21.7]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Idaho", "abbr": "ID", "votes_gop": 336937, "votes_dem": 138637, "electoral_votes": 4, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-117, 49], [-111, 49], [-111, 42], [-117, 42], [-117, 49]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Illinois", "abbr": "IL", "votes_gop": 2019534, "votes_dem": 2569446, "electoral_votes": 22, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-91.5, 42.5], [-87.5, 42.5], [-87.5, 37], [-91.5, 37], [-91.5, 42.5]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Indiana", "abbr": "IN", "votes_gop": 1245836, "votes_dem": 901980, "electoral_votes": 12, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-88.1, 41.8], [-84.8, 41.8], [-84.8, 37.8], [-88.1, 37.8], [-88.1, 41.8]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Iowa", "abbr": "IA", "votes_gop": 634373, "votes_dem": 638517, "electoral_votes": 7, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-96.6, 43.5], [-90.1, 43.5], [-90.1, 40.4], [-96.6, 40.4], [-96.6, 43.5]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Kansas", "abbr": "KS", "votes_gop": 622332, "votes_dem": 399276, "electoral_votes": 6, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-102, 40], [-94.6, 40], [-94.6, 37], [-102, 37], [-102, 40]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Kentucky", "abbr": "KY", "votes_gop": 872492, "votes_dem": 638898, "electoral_votes": 8, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-89.6, 39.1], [-81.9, 39.1], [-81.9, 36.5], [-89.6, 36.5], [-89.6, 39.1]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Louisiana", "abbr": "LA", "votes_gop": 927871, "votes_dem": 792344, "electoral_votes": 9, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-94, 33], [-89, 33], [-89, 29], [-94, 29], [-94, 33]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Maine", "abbr": "ME", "votes_gop": 286616, "votes_dem": 319951, "electoral_votes": 4, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-71, 47.5], [-66.9, 47.5], [-66.9, 43], [-71, 43], [-71, 47.5]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Maryland", "abbr": "MD", "votes_gop": 813797, "votes_dem": 1092179, "electoral_votes": 10, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-79.5, 39.7], [-75, 39.7], [-75, 37.9], [-79.5, 37.9], [-79.5, 39.7]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Massachusetts", "abbr": "MA", "votes_gop": 878502, "votes_dem": 1616039, "electoral_votes": 12, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-73.5, 42.9], [-69.9, 42.9], [-69.9, 41.2], [-73.5, 41.2], [-73.5, 42.9]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Michigan", "abbr": "MI", "votes_gop": 1953139, "votes_dem": 2173139, "electoral_votes": 18, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-90.5, 48.3], [-82.4, 48.3], [-82.4, 41.7], [-90.5, 41.7], [-90.5, 48.3]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Minnesota", "abbr": "MN", "votes_gop": 1109654, "votes_dem": 1191203, "electoral_votes": 10, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-97.2, 49.4], [-89.5, 49.4], [-89.5, 43.5], [-97.2, 43.5], [-97.2, 49.4]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Mississippi", "abbr": "MS", "votes_gop": 573844, "votes_dem": 404614, "electoral_votes": 7, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-91.6, 35], [-88.1, 35], [-88.1, 30.2], [-91.6, 30.2], [-91.6, 35]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Missouri", "abbr": "MO", "votes_gop": 1181676, "votes_dem": 1111138, "electoral_votes": 11, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-95.8, 40.6], [-89.1, 40.6], [-89.1, 36], [-95.8, 36], [-95.8, 40.6]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Montana", "abbr": "MT", "votes_gop": 240178, "votes_dem": 137126, "electoral_votes": 3, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-116, 49], [-104, 49], [-104, 44.4], [-116, 44.4], [-116, 49]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Nebraska", "abbr": "NE", "votes_gop": 433862, "votes_dem": 231780, "electoral_votes": 5, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-104, 43], [-95.3, 43], [-95.3, 40], [-104, 40], [-104, 43]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Nevada", "abbr": "NV", "votes_gop": 301575, "votes_dem": 279978, "electoral_votes": 4, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-120, 42], [-114, 42], [-114, 35], [-120, 35], [-120, 42]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "New Hampshire", "abbr": "NH", "votes_gop": 273559, "votes_dem": 266348, "electoral_votes": 4, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-72.6, 45.3], [-70.6, 45.3], [-70.6, 42.7], [-72.6, 42.7], [-72.6, 45.3]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "New Jersey", "abbr": "NJ", "votes_gop": 1284173, "votes_dem": 1788855, "electoral_votes": 15, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-75.6, 41.4], [-73.9, 41.4], [-73.9, 38.9], [-75.6, 38.9], [-75.6, 41.4]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "New Mexico", "abbr": "NM", "votes_gop": 286417, "votes_dem": 286783, "electoral_votes": 5, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-109, 37], [-103, 37], [-103, 31.3], [-109, 31.3], [-109, 37]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "New York", "abbr": "NY", "votes_gop": 2404178, "votes_dem": 4270901, "electoral_votes": 33, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-79.8, 45], [-71.8, 45], [-71.8, 40.5], [-79.8, 40.5], [-79.8, 45]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "North Carolina", "abbr": "NC", "votes_gop": 1680592, "votes_dem": 1446515, "electoral_votes": 14, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-84.3, 36.6], [-75.5, 36.6], [-75.5, 33.8], [-84.3, 33.8], [-84.3, 36.6]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "North Dakota", "abbr": "ND", "votes_gop": 174852, "votes_dem": 95212, "electoral_votes": 3, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-104, 49], [-96.5, 49], [-96.5, 45.9], [-104, 45.9], [-104, 49]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Ohio", "abbr": "OH", "votes_gop": 2351209, "votes_dem": 2187131, "electoral_votes": 21, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-84.8, 42], [-80.5, 42], [-80.5, 38.4], [-84.8, 38.4], [-84.8, 42]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Oklahoma", "abbr": "OK", "votes_gop": 744337, "votes_dem": 474276, "electoral_votes": 8, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-103, 37], [-94.4, 37], [-94.4, 33.6], [-103, 33.6], [-103, 37]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Oregon", "abbr": "OR", "votes_gop": 713577, "votes_dem": 720342, "electoral_votes": 7, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-124.6, 46.3], [-116.5, 46.3], [-116.5, 42], [-124.6, 42], [-124.6, 46.3]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Pennsylvania", "abbr": "PA", "votes_gop": 2239677, "votes_dem": 2564389, "electoral_votes": 23, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-80.5, 42.3], [-74.7, 42.3], [-74.7, 39.7], [-80.5, 39.7], [-80.5, 42.3]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Rhode Island", "abbr": "RI", "votes_gop": 130555, "votes_dem": 249508, "electoral_votes": 4, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-71.9, 42], [-71, 42], [-71, 41.1], [-71.9, 41.1], [-71.9, 42]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "South Carolina", "abbr": "SC", "votes_gop": 786426, "votes_dem": 566039, "electoral_votes": 8, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-83.4, 35.2], [-78.5, 35.2], [-78.5, 32], [-83.4, 32], [-83.4, 35.2]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "South Dakota", "abbr": "SD", "votes_gop": 190700, "votes_dem": 118804, "electoral_votes": 3, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-104, 45.9], [-96.4, 45.9], [-96.4, 42.5], [-104, 42.5], [-104, 45.9]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Tennessee", "abbr": "TN", "votes_gop": 1060184, "votes_dem": 981720, "electoral_votes": 11, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-90.3, 36.7], [-81.6, 36.7], [-81.6, 34.9], [-90.3, 34.9], [-90.3, 36.7]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Texas", "abbr": "TX", "votes_gop": 3799639, "votes_dem": 2433747, "electoral_votes": 32, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-106.6, 36.5], [-93.5, 36.5], [-93.5, 25.8], [-106.6, 25.8], [-106.6, 36.5]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Utah", "abbr": "UT", "votes_gop": 515096, "votes_dem": 203053, "electoral_votes": 5, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-114, 42], [-109, 42], [-109, 37], [-114, 37], [-114, 42]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Vermont", "abbr": "VT", "votes_gop": 119775, "votes_dem": 149022, "electoral_votes": 3, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-73.4, 45], [-71.5, 45], [-71.5, 42.7], [-73.4, 42.7], [-73.4, 45]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Virginia", "abbr": "VA", "votes_gop": 1437490, "votes_dem": 1221672, "electoral_votes": 13, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-83.7, 39.5], [-75.2, 39.5], [-75.2, 36.5], [-83.7, 36.5], [-83.7, 39.5]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Washington", "abbr": "WA", "votes_gop": 1200690, "votes_dem": 1320239, "electoral_votes": 11, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-124.8, 49], [-117, 49], [-117, 45.5], [-124.8, 45.5], [-124.8, 49]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "West Virginia", "abbr": "WV", "votes_gop": 336475, "votes_dem": 295497, "electoral_votes": 5, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-82.7, 40.6], [-77.7, 40.6], [-77.7, 37.2], [-82.7, 37.2], [-82.7, 40.6]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Wisconsin", "abbr": "WI", "votes_gop": 1237279, "votes_dem": 1242988, "electoral_votes": 11, "status": "DEM Win", "winner": "Gore", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-92.9, 47], [-86.7, 47], [-86.7, 42.5], [-92.9, 42.5], [-92.9, 47]]] }
-      },
-      {
-        "type": "Feature",
-        "properties": {
-          "NAME": "Wyoming", "abbr": "WY", "votes_gop": 147947, "votes_dem": 60481, "electoral_votes": 3, "status": "GOP Win", "winner": "Bush", "reporting": 100, "gop_candidate": "Bush", "dem_candidate": "Gore"
-        },
-        "geometry": { "type": "Polygon", "coordinates": [[[-111, 45], [-104, 45], [-104, 41], [-111, 41], [-111, 45]]] }
-      }
-    ]
-  };
-
-  return ContentService
-    .createTextOutput(JSON.stringify(geojson))
-    .setMimeType(ContentService.MimeType.JSON);
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"NAME":"Alabama","abbr":"AL","votes_gop":941173,"votes_dem":692611,"electoral_votes":9,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-88,35],[-85,35],[-85,32],[-88,32],[-88,35]]]}},
+    {"type":"Feature","properties":{"NAME":"Alaska","abbr":"AK","votes_gop":167398,"votes_dem":79004,"electoral_votes":3,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-170,70],[-130,70],[-130,55],[-170,55],[-170,70]]]}},
+    {"type":"Feature","properties":{"NAME":"Arizona","abbr":"AZ","votes_gop":781652,"votes_dem":685341,"electoral_votes":8,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-115,37],[-109,37],[-109,31],[-115,31],[-115,37]]]}},
+    {"type":"Feature","properties":{"NAME":"Arkansas","abbr":"AR","votes_gop":472940,"votes_dem":422768,"electoral_votes":6,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-94,36.5],[-89.5,36.5],[-89.5,33],[-94,33],[-94,36.5]]]}},
+    {"type":"Feature","properties":{"NAME":"California","abbr":"CA","votes_gop":4567429,"votes_dem":5861203,"electoral_votes":54,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-124,42],[-114,42],[-114,32],[-124,32],[-124,42]]]}},
+    {"type":"Feature","properties":{"NAME":"Colorado","abbr":"CO","votes_gop":883748,"votes_dem":738227,"electoral_votes":8,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-109,41],[-102,41],[-102,37],[-109,37],[-109,41]]]}},
+    {"type":"Feature","properties":{"NAME":"Connecticut","abbr":"CT","votes_gop":561094,"votes_dem":816015,"electoral_votes":8,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-73.7,42.1],[-71.8,42.1],[-71.8,40.9],[-73.7,40.9],[-73.7,42.1]]]}},
+    {"type":"Feature","properties":{"NAME":"Delaware","abbr":"DE","votes_gop":137288,"votes_dem":180068,"electoral_votes":3,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-75.8,39.8],[-75,39.8],[-75,38.5],[-75.8,38.5],[-75.8,39.8]]]}},
+    {"type":"Feature","properties":{"NAME":"Florida","abbr":"FL","votes_gop":2912790,"votes_dem":2912253,"electoral_votes":25,"status":"Uncalled","winner":"UNKNOWN","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-87.6,31],[-80,31],[-80,24.5],[-87.6,24.5],[-87.6,31]]]}},
+    {"type":"Feature","properties":{"NAME":"Georgia","abbr":"GA","votes_gop":1419720,"votes_dem":1116239,"electoral_votes":13,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-85.6,35],[-81,35],[-81,30.4],[-85.6,30.4],[-85.6,35]]]}},
+    {"type":"Feature","properties":{"NAME":"Hawaii","abbr":"HI","votes_gop":137845,"votes_dem":205286,"electoral_votes":4,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-160.5,21.7],[-154.8,21.7],[-154.8,18.9],[-160.5,18.9],[-160.5,21.7]]]}},
+    {"type":"Feature","properties":{"NAME":"Idaho","abbr":"ID","votes_gop":336937,"votes_dem":138637,"electoral_votes":4,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-117,49],[-111,49],[-111,42],[-117,42],[-117,49]]]}},
+    {"type":"Feature","properties":{"NAME":"Illinois","abbr":"IL","votes_gop":2019534,"votes_dem":2569446,"electoral_votes":22,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-91.5,42.5],[-87.5,42.5],[-87.5,37],[-91.5,37],[-91.5,42.5]]]}},
+    {"type":"Feature","properties":{"NAME":"Indiana","abbr":"IN","votes_gop":1245836,"votes_dem":901980,"electoral_votes":12,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-88.1,41.8],[-84.8,41.8],[-84.8,37.8],[-88.1,37.8],[-88.1,41.8]]]}},
+    {"type":"Feature","properties":{"NAME":"Iowa","abbr":"IA","votes_gop":634373,"votes_dem":638517,"electoral_votes":7,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-96.6,43.5],[-90.1,43.5],[-90.1,40.4],[-96.6,40.4],[-96.6,43.5]]]}},
+    {"type":"Feature","properties":{"NAME":"Kansas","abbr":"KS","votes_gop":622332,"votes_dem":399276,"electoral_votes":6,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-102,40],[-94.6,40],[-94.6,37],[-102,37],[-102,40]]]}},
+    {"type":"Feature","properties":{"NAME":"Kentucky","abbr":"KY","votes_gop":872492,"votes_dem":638898,"electoral_votes":8,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-89.6,39.1],[-81.9,39.1],[-81.9,36.5],[-89.6,36.5],[-89.6,39.1]]]}},
+    {"type":"Feature","properties":{"NAME":"Louisiana","abbr":"LA","votes_gop":927871,"votes_dem":792344,"electoral_votes":9,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-94,33],[-89,33],[-89,29],[-94,29],[-94,33]]]}},
+    {"type":"Feature","properties":{"NAME":"Maine","abbr":"ME","votes_gop":286616,"votes_dem":319951,"electoral_votes":4,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-71,47.5],[-66.9,47.5],[-66.9,43],[-71,43],[-71,47.5]]]}},
+    {"type":"Feature","properties":{"NAME":"Maryland","abbr":"MD","votes_gop":813797,"votes_dem":1092179,"electoral_votes":10,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-79.5,39.7],[-75,39.7],[-75,37.9],[-79.5,37.9],[-79.5,39.7]]]}},
+    {"type":"Feature","properties":{"NAME":"Massachusetts","abbr":"MA","votes_gop":878502,"votes_dem":1616039,"electoral_votes":12,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-73.5,42.9],[-69.9,42.9],[-69.9,41.2],[-73.5,41.2],[-73.5,42.9]]]}},
+    {"type":"Feature","properties":{"NAME":"Michigan","abbr":"MI","votes_gop":1953139,"votes_dem":2173139,"electoral_votes":18,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-90.5,48.3],[-82.4,48.3],[-82.4,41.7],[-90.5,41.7],[-90.5,48.3]]]}},
+    {"type":"Feature","properties":{"NAME":"Minnesota","abbr":"MN","votes_gop":1109654,"votes_dem":1191203,"electoral_votes":10,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-97.2,49.4],[-89.5,49.4],[-89.5,43.5],[-97.2,43.5],[-97.2,49.4]]]}},
+    {"type":"Feature","properties":{"NAME":"Mississippi","abbr":"MS","votes_gop":573844,"votes_dem":404614,"electoral_votes":7,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-91.6,35],[-88.1,35],[-88.1,30.2],[-91.6,30.2],[-91.6,35]]]}},
+    {"type":"Feature","properties":{"NAME":"Missouri","abbr":"MO","votes_gop":1181676,"votes_dem":1111138,"electoral_votes":11,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-95.8,40.6],[-89.1,40.6],[-89.1,36],[-95.8,36],[-95.8,40.6]]]}},
+    {"type":"Feature","properties":{"NAME":"Montana","abbr":"MT","votes_gop":240178,"votes_dem":137126,"electoral_votes":3,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-116,49],[-104,49],[-104,44.4],[-116,44.4],[-116,49]]]}},
+    {"type":"Feature","properties":{"NAME":"Nebraska","abbr":"NE","votes_gop":433862,"votes_dem":231780,"electoral_votes":5,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-104,43],[-95.3,43],[-95.3,40],[-104,40],[-104,43]]]}},
+    {"type":"Feature","properties":{"NAME":"Nevada","abbr":"NV","votes_gop":301575,"votes_dem":279978,"electoral_votes":4,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-120,42],[-114,42],[-114,35],[-120,35],[-120,42]]]}},
+    {"type":"Feature","properties":{"NAME":"New Hampshire","abbr":"NH","votes_gop":273559,"votes_dem":266348,"electoral_votes":4,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-72.6,45.3],[-70.6,45.3],[-70.6,42.7],[-72.6,42.7],[-72.6,45.3]]]}},
+    {"type":"Feature","properties":{"NAME":"New Jersey","abbr":"NJ","votes_gop":1284173,"votes_dem":1788855,"electoral_votes":15,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-75.6,41.4],[-73.9,41.4],[-73.9,38.9],[-75.6,38.9],[-75.6,41.4]]]}},
+    {"type":"Feature","properties":{"NAME":"New Mexico","abbr":"NM","votes_gop":286417,"votes_dem":286783,"electoral_votes":5,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-109,37],[-103,37],[-103,31.3],[-109,31.3],[-109,37]]]}},
+    {"type":"Feature","properties":{"NAME":"New York","abbr":"NY","votes_gop":2404178,"votes_dem":4270901,"electoral_votes":33,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-79.8,45],[-71.8,45],[-71.8,40.5],[-79.8,40.5],[-79.8,45]]]}},
+    {"type":"Feature","properties":{"NAME":"North Carolina","abbr":"NC","votes_gop":1680592,"votes_dem":1446515,"electoral_votes":14,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-84.3,36.6],[-75.5,36.6],[-75.5,33.8],[-84.3,33.8],[-84.3,36.6]]]}},
+    {"type":"Feature","properties":{"NAME":"North Dakota","abbr":"ND","votes_gop":174852,"votes_dem":95212,"electoral_votes":3,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-104,49],[-96.5,49],[-96.5,45.9],[-104,45.9],[-104,49]]]}},
+    {"type":"Feature","properties":{"NAME":"Ohio","abbr":"OH","votes_gop":2351209,"votes_dem":2187131,"electoral_votes":21,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-84.8,42],[-80.5,42],[-80.5,38.4],[-84.8,38.4],[-84.8,42]]]}},
+    {"type":"Feature","properties":{"NAME":"Oklahoma","abbr":"OK","votes_gop":744337,"votes_dem":474276,"electoral_votes":8,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-103,37],[-94.4,37],[-94.4,33.6],[-103,33.6],[-103,37]]]}},
+    {"type":"Feature","properties":{"NAME":"Oregon","abbr":"OR","votes_gop":713577,"votes_dem":720342,"electoral_votes":7,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-124.6,46.3],[-116.5,46.3],[-116.5,42],[-124.6,42],[-124.6,46.3]]]}},
+    {"type":"Feature","properties":{"NAME":"Pennsylvania","abbr":"PA","votes_gop":2239677,"votes_dem":2564389,"electoral_votes":23,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-80.5,42.3],[-74.7,42.3],[-74.7,39.7],[-80.5,39.7],[-80.5,42.3]]]}},
+    {"type":"Feature","properties":{"NAME":"Rhode Island","abbr":"RI","votes_gop":130555,"votes_dem":249508,"electoral_votes":4,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-71.9,42],[-71,42],[-71,41.1],[-71.9,41.1],[-71.9,42]]]}},
+    {"type":"Feature","properties":{"NAME":"South Carolina","abbr":"SC","votes_gop":786426,"votes_dem":566039,"electoral_votes":8,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-83.4,35.2],[-78.5,35.2],[-78.5,32],[-83.4,32],[-83.4,35.2]]]}},
+    {"type":"Feature","properties":{"NAME":"South Dakota","abbr":"SD","votes_gop":190700,"votes_dem":118804,"electoral_votes":3,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-104,45.9],[-96.4,45.9],[-96.4,42.5],[-104,42.5],[-104,45.9]]]}},
+    {"type":"Feature","properties":{"NAME":"Tennessee","abbr":"TN","votes_gop":1060184,"votes_dem":981720,"electoral_votes":11,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-90.3,36.7],[-81.6,36.7],[-81.6,34.9],[-90.3,34.9],[-90.3,36.7]]]}},
+    {"type":"Feature","properties":{"NAME":"Texas","abbr":"TX","votes_gop":3799639,"votes_dem":2433747,"electoral_votes":32,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-106.6,36.5],[-93.5,36.5],[-93.5,25.8],[-106.6,25.8],[-106.6,36.5]]]}},
+    {"type":"Feature","properties":{"NAME":"Utah","abbr":"UT","votes_gop":515096,"votes_dem":203053,"electoral_votes":5,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-114,42],[-109,42],[-109,37],[-114,37],[-114,42]]]}},
+    {"type":"Feature","properties":{"NAME":"Vermont","abbr":"VT","votes_gop":119775,"votes_dem":149022,"electoral_votes":3,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-73.4,45],[-71.5,45],[-71.5,42.7],[-73.4,42.7],[-73.4,45]]]}},
+    {"type":"Feature","properties":{"NAME":"Virginia","abbr":"VA","votes_gop":1437490,"votes_dem":1221672,"electoral_votes":13,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-83.7,39.5],[-75.2,39.5],[-75.2,36.5],[-83.7,36.5],[-83.7,39.5]]]}},
+    {"type":"Feature","properties":{"NAME":"Washington","abbr":"WA","votes_gop":1200690,"votes_dem":1320239,"electoral_votes":11,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-124.8,49],[-117,49],[-117,45.5],[-124.8,45.5],[-124.8,49]]]}},
+    {"type":"Feature","properties":{"NAME":"West Virginia","abbr":"WV","votes_gop":336475,"votes_dem":295497,"electoral_votes":5,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-82.7,40.6],[-77.7,40.6],[-77.7,37.2],[-82.7,37.2],[-82.7,40.6]]]}},
+    {"type":"Feature","properties":{"NAME":"Wisconsin","abbr":"WI","votes_gop":1237279,"votes_dem":1242988,"electoral_votes":11,"status":"DEM Win","winner":"Gore","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-92.9,47],[-86.7,47],[-86.7,42.5],[-92.9,42.5],[-92.9,47]]]}},
+    {"type":"Feature","properties":{"NAME":"Wyoming","abbr":"WY","votes_gop":147947,"votes_dem":60481,"electoral_votes":3,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-111,45],[-104,45],[-104,41],[-111,41],[-111,45]]]}}
+  ]
 }
