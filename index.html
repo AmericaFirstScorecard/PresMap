@@ -114,53 +114,93 @@
       pointer-events: none;
     }
     .needle-checkmark.gore { left: auto; right: 36px; }
-    .ticker-center-block {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 20px;
-      margin-bottom: 0;
+    .arc-label {
+      font-size: 15px;
+      font-weight: 700;
+      fill: #fff;
+      text-shadow: 0 2px 8px #111a, 0 0 3px #111;
+      font-family: 'Inter', sans-serif;
+      pointer-events: none;
+      dominant-baseline: middle;
+      text-anchor: middle;
     }
+    .arc-label-center {
+      font-size: 17px;
+      font-weight: 900;
+      fill: #fff;
+    }
+    .needle-arrow { fill: #fff; stroke: #222; stroke-width: 2.2; filter: drop-shadow(0 2px 6px #0008);}
+    .needle-dot { fill: #191d22; stroke: #fff; stroke-width: 3.5; filter: drop-shadow(0 1px 8px #000a);}
+    .arc-very-likely-bush { stroke: #e74c3c; }
+    .arc-likely-bush { stroke: #f7a49a; }
+    .arc-lean-bush { stroke: #ffe5d2; }
+    .arc-tossup { stroke: #cccccc; }
+    .arc-lean-gore { stroke: #b8d8f8; }
+    .arc-likely-gore { stroke: #74b0e7; }
+    .arc-very-likely-gore { stroke: #3498db; }
     .needle-candidate-labels {
-      width: 380px;
-      max-width: 90vw;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 2.2rem;
+      width: 100%; display: flex; justify-content: space-between;
+      margin-top: 16px;
+      font-size: 2.0rem;
       font-weight: 800;
       text-shadow: 0 2px 10px #000d;
-      margin: 0 auto 0 auto;
-      letter-spacing: 1.5px;
     }
-    .ticker-odds-row {
-      width: 380px;
-      max-width: 90vw;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 2.3rem;
-      font-weight: 900;
-      letter-spacing: 1px;
+    .needle-bush-label { color: #e74c3c; margin-left: 16px;}
+    .needle-gore-label { color: #3498db; margin-right: 16px;}
+    .nyt-prob-row {
+      margin-top: 24px; text-align: center;
+      font-size: 1.65rem; font-weight: 900; letter-spacing: 0.3px;
       text-shadow: 0 1px 4px #000b;
-      margin: 0 auto;
-      margin-top: 6px;
+      display: flex; justify-content: center; align-items: center;
+      gap: 16px;
     }
-    .proj-big-num { font-size: 2.4rem; font-weight: 900;}
+    .proj-big-num { font-size: 2.1rem; font-weight: 900; margin: 0 8px;}
     .proj-big-num.bush { color: #e74c3c;}
     .proj-big-num.gore { color: #3498db;}
-    .proj-divider { color: #fff; font-size: 2.2rem; font-weight: 800;}
-    .needle-bush-label { color: #e74c3c;}
-    .needle-gore-label { color: #3498db;}
+    .proj-divider { font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0 8px;}
     @media (max-width:700px){
       .needle-svg-wrap { width: 99vw;}
       .needle-img-candidate { width: 44px; height: 44px; top: 125px;}
       .needle-checkmark { width: 22px; height: 22px; top: 148px; left: 19px;}
       .needle-checkmark.gore { right: 19px;}
-      .needle-candidate-labels, .ticker-odds-row { font-size: 1.3rem; width: 90vw; }
-      .proj-big-num { font-size: 1.3rem;}
-      .proj-divider { font-size: 1.2rem;}
+      .arc-label { font-size: 11px;}
+      .arc-label-center { font-size: 13px;}
+    }
+    /* Modal for county map */
+    #county-modal {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      background: rgba(22,23,29,0.96);
+      align-items: center; justify-content: center;
+      flex-direction: column;
+    }
+    #county-modal .county-map-wrap {
+      background: #23272f;
+      border-radius: 15px;
+      padding: 24px;
+      box-shadow: 0 6px 32px #000a;
+      min-width: 60vw; min-height: 40vh; max-width: 90vw;
+      position: relative;
+    }
+    #close-county-btn {
+      position: absolute;
+      top: 12px; right: 18px;
+      font-size: 2.2rem;
+      color: #fff;
+      background: none;
+      border: none;
+      cursor: pointer;
+      z-index: 10;
+      opacity: 0.9;
+    }
+    #county-map {
+      width: 700px; height: 460px; max-width: 80vw; min-height: 300px;
+    }
+    @media (max-width:800px){
+      #county-map { width: 98vw; min-width: 98vw; }
+      #county-modal .county-map-wrap { min-width: 96vw; padding: 6px; }
     }
   </style>
 </head>
@@ -199,72 +239,83 @@
 <div id="projection-ticker-wrap">
   <div class="nyt-projection-title">Chance of Winning <span style="font-weight:400;">(Projection)</span></div>
   <div class="needle-svg-wrap" style="position: relative;">
+    <!-- Bush Image -->
     <img src="images/George-W-Bush.jpg" class="needle-img-candidate needle-img-bush" id="needle-img-bush" alt="Bush"/>
+    <!-- Gore Image -->
     <img src="images/Al_Gore.jpg" class="needle-img-candidate needle-img-gore" id="needle-img-gore" alt="Gore"/>
+    <!-- Checkmarks -->
     <svg class="needle-checkmark" id="needle-check-bush" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#e74c3c"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg class="needle-checkmark gore" id="needle-check-gore" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#3498db"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg id="nyt-needle-svg" width="500" height="270" viewBox="0 0 500 270">
-      <!-- Arcs as filled wedges for NYT look -->
-      <path id="arc-vl-bush" fill="#e74c3c" d=""/>
-      <path id="arc-l-bush" fill="#ffb6b6" d=""/>
-      <path id="arc-le-bush" fill="#ffe5d2" d=""/>
-      <path id="arc-tossup" fill="#e5e5e5" d=""/>
-      <path id="arc-le-gore" fill="#c8e3f9" d=""/>
-      <path id="arc-l-gore" fill="#80c2fa" d=""/>
-      <path id="arc-vl-gore" fill="#3498db" d=""/>
+      <!-- Arc Segments -->
+      <path id="arc-vl-bush" class="arc-very-likely-bush" fill="none" stroke-width="20"/>
+      <path id="arc-l-bush" class="arc-likely-bush" fill="none" stroke-width="20"/>
+      <path id="arc-le-bush" class="arc-lean-bush" fill="none" stroke-width="20"/>
+      <path id="arc-tossup" class="arc-tossup" fill="none" stroke-width="20"/>
+      <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
+      <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
+      <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
+      <!-- Arc Labels: inner, centered at angle for each wedge -->
+      <g id="arc-labels-group"></g>
+      <!-- Needle -->
       <g id="needle-group">
-        <polygon id="nyt-needle" class="needle-arrow" points="250,74 243,162 257,162"/>
+        <polygon id="nyt-needle" class="needle-arrow" points="250,64 243,162 257,162"/>
         <circle id="needle-dot" class="needle-dot" cx="250" cy="154" r="16"/>
       </g>
     </svg>
-    <div class="ticker-center-block">
-      <div class="needle-candidate-labels">
-        <span class="needle-bush-label">Bush</span>
-        <span class="needle-gore-label">Gore</span>
-      </div>
-      <div class="ticker-odds-row">
-        <span id="nyt-proj-bush-big" class="proj-big-num bush">--%</span>
-        <span class="proj-divider">|</span>
-        <span id="nyt-proj-gore-big" class="proj-big-num gore">--%</span>
-      </div>
+    <div class="needle-candidate-labels">
+      <span class="needle-bush-label">Bush</span>
+      <span class="proj-big-num bush" id="nyt-proj-bush-big">--%</span>
+      <span class="proj-divider">|</span>
+      <span class="proj-big-num gore" id="nyt-proj-gore-big">--%</span>
+      <span class="needle-gore-label">Gore</span>
     </div>
   </div>
 </div>
+
+<!-- COUNTY MAP MODAL (hidden until state is clicked) -->
+<div id="county-modal">
+  <div class="county-map-wrap">
+    <button id="close-county-btn" title="Back">&times;</button>
+    <div id="county-map"></div>
+    <!-- We’ll render the county map here dynamically -->
+  </div>
+</div>
+
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
 
-const map = new mapboxgl.Map({
-  container: 'map',
-  style: 'mapbox://styles/mapbox/light-v10',
-  center: [-98.5795, 39.8283],
-  zoom: 3
+// County data will be loaded for click events
+let countiesGeoJSON, countyResults;
+
+// Load all county shapes and results
+Promise.all([
+  fetch('data/cb_2017_us_county_20m.geojson').then(r => r.json()),
+  fetch('data/county_results_2000.json').then(r => r.json())
+]).then(([geojson, results]) => {
+  countiesGeoJSON = geojson;
+  countyResults = results;
 });
 
-// NYT Needle arc math for filled arc segments
+// NYT Needle arc math for new layout
 const arcSegs = [
-  { id: "arc-vl-bush", start: -90, end: -60, color: "#e74c3c" },
-  { id: "arc-l-bush", start: -60, end: -30, color: "#ffb6b6" },
-  { id: "arc-le-bush", start: -30, end: -10, color: "#ffe5d2" },
-  { id: "arc-tossup", start: -10, end: 10, color: "#e5e5e5" },
-  { id: "arc-le-gore", start: 10, end: 30, color: "#c8e3f9" },
-  { id: "arc-l-gore", start: 30, end: 60, color: "#80c2fa" },
-  { id: "arc-vl-gore", start: 60, end: 90, color: "#3498db" }
+  { label: "Very likely Bush", start: -90, end: -60 },
+  { label: "Likely Bush", start: -60, end: -30 },
+  { label: "Lean Bush", start: -30, end: -10 },
+  { label: "Tossup", start: -10, end: 10 },
+  { label: "Lean Gore", start: 10, end: 30 },
+  { label: "Likely Gore", start: 30, end: 60 },
+  { label: "Very likely Gore", start: 60, end: 90 }
 ];
-const svgCx = 250, svgCy = 154, outerR = 110, innerR = 70;
+const svgCx = 250, svgCy = 154, arcR = 110, labelR = 82;
 
-// Draw filled arc wedge paths
-function filledArcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
-  const start = polar(cx, cy, rOuter, startAngle);
-  const end = polar(cx, cy, rOuter, endAngle);
-  const startInner = polar(cx, cy, rInner, endAngle);
-  const endInner = polar(cx, cy, rInner, startAngle);
-  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+function arcPath(cx, cy, r, startAngle, endAngle) {
+  const start = polar(cx, cy, r, startAngle);
+  const end = polar(cx, cy, r, endAngle);
+  const arcSweep = endAngle - startAngle <= 180 ? "0" : "1";
   return [
     "M", start.x, start.y,
-    "A", rOuter, rOuter, 0, largeArc, 1, end.x, end.y,
-    "L", startInner.x, startInner.y,
-    "A", rInner, rInner, 0, largeArc, 0, endInner.x, endInner.y,
-    "Z"
+    "A", r, r, 0, arcSweep, 1, end.x, end.y
   ].join(" ");
 }
 function polar(cx, cy, r, angleDeg) {
@@ -272,18 +323,41 @@ function polar(cx, cy, r, angleDeg) {
   return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
 }
 
-// Draw filled arc wedges
+// Draw arc paths
 function setArcSegs() {
+  document.getElementById('arc-vl-bush').setAttribute('d', arcPath(svgCx,svgCy,arcR, -90, -60));
+  document.getElementById('arc-l-bush').setAttribute('d', arcPath(svgCx,svgCy,arcR, -60, -30));
+  document.getElementById('arc-le-bush').setAttribute('d', arcPath(svgCx,svgCy,arcR, -30, -10));
+  document.getElementById('arc-tossup').setAttribute('d', arcPath(svgCx,svgCy,arcR, -10, 10));
+  document.getElementById('arc-le-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 10, 30));
+  document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 30, 60));
+  document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 60, 90));
+}
+// Draw inside arc labels at segment center
+function setArcLabels() {
+  const labelsGroup = document.getElementById('arc-labels-group');
+  labelsGroup.innerHTML = '';
   arcSegs.forEach(seg => {
-    document.getElementById(seg.id).setAttribute('d',
-      filledArcPath(svgCx, svgCy, outerR, innerR, seg.start, seg.end));
+    if (seg.label === "Tossup") return; // skip for clarity
+    const angle = (seg.start + seg.end) / 2;
+    const pt = polar(svgCx, svgCy, labelR, angle);
+    labelsGroup.innerHTML +=
+      `<text x="${pt.x}" y="${pt.y}" class="arc-label">${seg.label.replace('Bush','').replace('Gore','')}</text>`;
   });
 }
-setArcSegs();
+setArcSegs(); setArcLabels();
 
-// ---- Main election map and projection logic ----
-let hoverPopup = null;
+// Main election map and projection logic
+const map = new mapboxgl.Map({
+  container: 'map',
+  style: 'mapbox://styles/mapbox/light-v10',
+  center: [-98.5795, 39.8283],
+  zoom: 3
+});
 
+let popup;
+
+// ------ MAIN ELECTION MAP ------
 map.on('load', async () => {
   try {
     const [states, stats] = await Promise.all([
@@ -327,7 +401,7 @@ map.on('load', async () => {
     document.getElementById('gore-pv').textContent = `Gore: ${total_dem_votes.toLocaleString()} (${perc_dem}%)`;
     document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
 
-    // ------ NYT-STYLE PROJECTION NEEDLE LOGIC ------
+    // NYT-STYLE PROJECTION NEEDLE LOGIC
     const bushProj = Math.min(ev_bush / 270, 1);
     const goreProj = Math.min(ev_gore / 270, 1);
     let projBush, projGore;
@@ -345,15 +419,11 @@ map.on('load', async () => {
     if (projBush === 1) angle = -90;
     else if (projGore === 1) angle = 90;
     else angle = -90 + 180 * projGore;
-
     document.getElementById('needle-group').setAttribute('transform', `rotate(${angle},250,154)`);
-
     document.getElementById('nyt-proj-bush-big').textContent = Math.round(projBush*100) + "%";
     document.getElementById('nyt-proj-gore-big').textContent = Math.round(projGore*100) + "%";
-
     document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
     document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
-    // ------ END NYT-STYLE PROJECTION ------
 
     map.addSource('states', { type: 'geojson', data: states });
     map.addLayer({
@@ -384,49 +454,42 @@ map.on('load', async () => {
       }
     });
 
-    // --- Hover logic: only one popup at a time ---
+    // Hover: one popup only, closes previous on new hover
     map.on('mousemove', 'states-fill', (e) => {
-      map.getCanvas().style.cursor = 'pointer';
-      if (window.hoverPopup) window.hoverPopup.remove();
-
-      const p = e.features[0].properties;
-      const gop = +p.votes_gop || 0;
-      const dem = +p.votes_dem || 0;
-      const total = gop + dem;
-      const gopPerc = total > 0 ? ((gop / total) * 100).toFixed(1) : 0;
-      const demPerc = total > 0 ? ((dem / total) * 100).toFixed(1) : 0;
-      const winner = p.winner || 'Uncalled';
-      const gopName = p.gop_candidate || 'Bush';
-      const demName = p.dem_candidate || 'Gore';
-      const gopCheck = winner === gopName ? '✓ ' : '';
-      const demCheck = winner === demName ? '✓ ' : '';
-
-      window.hoverPopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
-        .setLngLat(e.lngLat)
-        .setHTML(`
-          <strong>${p.name}</strong><br/>
-          <b>Electoral Votes:</b> ${p.electoral_votes}<br/>
-          <b>Reporting:</b> ${p.reporting}%<br/>
-          <b style="color:#d12c0f;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
-          <b style="color:#0e47e6;">${demCheck}${demName}:</b> ${dem.toLocaleString()} (${demPerc}%)<br/>
-          <b>Winner:</b> ${winner}
-        `)
-        .addTo(map);
+      if (e.features.length) {
+        const p = e.features[0].properties;
+        const gop = +p.votes_gop || 0;
+        const dem = +p.votes_dem || 0;
+        const total = gop + dem;
+        const gopPerc = total > 0 ? ((gop / total) * 100).toFixed(1) : 0;
+        const demPerc = total > 0 ? ((dem / total) * 100).toFixed(1) : 0;
+        const winner = p.winner || 'Uncalled';
+        const gopName = p.gop_candidate || 'Bush';
+        const demName = p.dem_candidate || 'Gore';
+        const gopCheck = winner === gopName ? '✓ ' : '';
+        const demCheck = winner === demName ? '✓ ' : '';
+        if (popup) popup.remove();
+        popup = new mapboxgl.Popup({closeButton: false, closeOnClick: false})
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <strong>${p.name}</strong><br/>
+            <b>Electoral Votes:</b> ${p.electoral_votes}<br/>
+            <b>Reporting:</b> ${p.reporting}%<br/>
+            <b style="color:#d12c0f;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
+            <b style="color:#0e47e6;">${demCheck}${demName}:</b> ${dem.toLocaleString()} (${demPerc}%)<br/>
+            <b>Winner:</b> ${winner}
+          `)
+          .addTo(map);
+      }
     });
+    map.on('mouseleave', 'states-fill', () => { if (popup) popup.remove(); });
 
-    map.on('mouseleave', 'states-fill', () => {
-      map.getCanvas().style.cursor = '';
-      if (window.hoverPopup) window.hoverPopup.remove();
-      window.hoverPopup = null;
-    });
-
-    // --- On click: county-level map (to be implemented by you) ---
+    // On click: show county modal for that state
     map.on('click', 'states-fill', (e) => {
-      // Placeholder: You could open a modal here for county-wide map.
-      // Example: loadCountiesForState(e.features[0].properties.name);
-      // For now, just a popup:
-      const p = e.features[0].properties;
-      alert(`Show county map for ${p.name} (feature to be implemented)`);
+      if (!countiesGeoJSON) return;
+      const stateFP = e.features[0].properties.STATEFP || e.features[0].properties.statefp;
+      const stateName = e.features[0].properties.name;
+      showCountyModal(stateFP, stateName);
     });
 
   } catch (error) {
@@ -434,6 +497,51 @@ map.on('load', async () => {
     document.getElementById('map').innerHTML = '<p style="color: red; text-align: center;">Failed to load map. Please check your data file and internet connection.</p>';
   }
 });
+
+// County modal logic
+function showCountyModal(stateFP, stateName) {
+  const modal = document.getElementById('county-modal');
+  modal.style.display = 'flex';
+
+  // Filter counties for selected state
+  const stateCounties = {
+    "type": "FeatureCollection",
+    "features": countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
+  };
+  // Remove previous county map if present
+  const prevMapDiv = document.getElementById('county-map').firstChild;
+  if (prevMapDiv) document.getElementById('county-map').removeChild(prevMapDiv);
+
+  // Display with mapbox-gl
+  const countyMap = new mapboxgl.Map({
+    container: 'county-map',
+    style: 'mapbox://styles/mapbox/light-v10',
+    center: [-98.5, 39.8],
+    zoom: 6
+  });
+  countyMap.on('load', () => {
+    countyMap.addSource('counties', { type: 'geojson', data: stateCounties });
+    countyMap.addLayer({
+      id: 'counties-fill',
+      type: 'fill',
+      source: 'counties',
+      paint: { 'fill-color': '#999', 'fill-opacity': 0.4 }
+    });
+    countyMap.addLayer({
+      id: 'counties-outline',
+      type: 'line',
+      source: 'counties',
+      paint: { 'line-color': '#444', 'line-width': 1.8 }
+    });
+    // TODO: Connect county results, popup on click/hover
+  });
+  // Optional: Add state name somewhere
+}
+
+document.getElementById('close-county-btn').onclick = () => {
+  document.getElementById('county-modal').style.display = 'none';
+  document.getElementById('county-map').innerHTML = '';
+};
 </script>
 </body>
 </html>
