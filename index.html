@@ -2,220 +2,204 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>2000 Live Election Map</title>
+  <title>2000 Election Map - Enhanced</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    body { margin: 0; padding: 0; font-family: sans-serif; }
-    #map { position: absolute; top: 160px; bottom: 0; width: 100%; }
-    #header {
-      position: absolute; top: 0; left: 0; right: 0;
-      background: #222; color: white; padding: 15px 20px;
-      z-index: 1000; display: flex; flex-direction: column; align-items: center;
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #f2f2f2;
+      color: #222;
     }
-    .progress-container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 10px; }
-    .progress-bar-wrapper {
-      display: flex; align-items: center; position: relative;
-      width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden;
+    #map { position: absolute; top: 0; bottom: 0; left: 300px; right: 300px; }
+
+    #sidebar, #news {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 300px;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      padding: 20px;
+      overflow-y: auto;
     }
-    .progress-bar { height: 100%; transition: width 0.5s ease-in-out; }
-    .progress-bar.bush { background: #e74c3c; }
-    .progress-bar.gore { background: #3498db; position: absolute; right: 0; }
-    .vote-label {
-      position: absolute; color: white; font-size: 12px;
-      font-weight: bold; text-shadow: 0 0 2px rgba(0,0,0,0.7);
+    #sidebar { left: 0; }
+    #news { right: 0; }
+
+    .toggle-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
     }
-    .threshold-marker {
-      position: absolute; left: calc(270 / 538 * 100%);
-      width: 2px; height: 100%; background: #fff; z-index: 10;
+    .toggle-group button {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      background: #ddd;
+      cursor: pointer;
     }
-    .threshold-label {
-      position: relative; left: calc(270 / 538 * 100% - 20px);
-      color: white; font-size: 12px; font-weight: bold;
-      margin-bottom: 5px; text-align: left;
+
+    .headline {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
     }
-    .candidate-labels {
-      display: flex; justify-content: space-between;
-      font-size: 14px; font-weight: bold; margin-bottom: 5px;
+
+    .bar {
+      background: #eee;
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 10px;
     }
-    .stat-box { margin-top: 5px; font-size: 12px; }
-    .candidate-image {
-      width: 70px; height: 70px; border-radius: 50%; object-fit: cover;
+    .bar-inner {
+      height: 100%;
+      transition: width 0.5s ease;
     }
-    .progress-bar-container {
-      display: flex; align-items: center; width: 100%; gap: 15px;
+    .bar-inner.gop { background: #d12c0f; }
+    .bar-inner.dem { background: #0e47e6; }
+
+    .status-filter {
+      margin-top: 20px;
     }
-    .candidate-stats {
-      display: flex; justify-content: space-between;
-      width: 100%; max-width: 800px; font-size: 12px;
-    }
-    .candidate-stat-left, .candidate-stat-right {
-      text-align: center; width: 150px;
-    }
-    .title {
-      font-size: 30px; font-weight: bold; margin-bottom: 10px;
+    .status-filter select {
+      width: 100%;
+      padding: 5px;
     }
   </style>
 </head>
 <body>
-<div id="header">
-  <div class="title">2000 Live Election Map</div>
-  <div class="progress-container">
-    <div class="candidate-labels">
-      <span>Bush: <span id="bush-votes">0</span></span>
-      <span>Gore: <span id="gore-votes">0</span></span>
+  <div id="sidebar">
+    <div class="headline">Victory Projection</div>
+    <div class="bar">
+      <div id="bar-gop" class="bar-inner gop" style="width: 0%"></div>
     </div>
-    <div class="progress-bar-container">
-      <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image">
-      <div style="width: 100%; position: relative;">
-        <div class="threshold-label">270 to Win</div>
-        <div class="progress-bar-wrapper">
-          <div class="threshold-marker"></div>
-          <div class="progress-bar bush" id="bush-bar" style="width: 0%"></div>
-          <div class="progress-bar gore" id="gore-bar" style="width: 0%"></div>
-          <div class="vote-label" id="bush-label" style="left: 5px">0</div>
-          <div class="vote-label" id="gore-label" style="right: 5px">0</div>
-        </div>
-      </div>
-      <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image">
+    <div class="bar">
+      <div id="bar-dem" class="bar-inner dem" style="width: 0%"></div>
+    </div>
+    <div class="toggle-group">
+      <button onclick="toggleFade()">Toggle Vote Fade</button>
+    </div>
+    <div class="status-filter">
+      <label for="status-select">Filter by Status:</label>
+      <select id="status-select" onchange="filterByStatus()">
+        <option value="all">All States</option>
+        <option value="called">Called Only</option>
+        <option value="uncalled">Uncalled Only</option>
+      </select>
     </div>
   </div>
-  <div class="candidate-stats">
-    <div class="candidate-stat-left" id="bush-pv">Bush: 0 (0%)</div>
-    <div class="stat-box" id="reporting">Reporting: 0%</div>
-    <div class="candidate-stat-right" id="gore-pv">Gore: 0 (0%)</div>
+
+  <div id="news">
+    <div class="headline">Live Updates</div>
+    <ul>
+      <li>Florida called for Gore, tipping balance eastward.</li>
+      <li>Bush claims victory in key battlegrounds.</li>
+      <li>Turnout highest in Midwest since 1984.</li>
+    </ul>
   </div>
-</div>
-<div id="map"></div>
 
-<script>
-mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
+  <div id="map"></div>
 
-const map = new mapboxgl.Map({
-  container: 'map',
-  style: 'mapbox://styles/mapbox/light-v10',
-  center: [-98.5795, 39.8283],
-  zoom: 3
-});
-
-map.on('load', async () => {
-  try {
-    const [states, stats] = await Promise.all([
-      fetch('data/us-states.geojson').then(r => r.json()),
-      fetch('data/election2000-stats.json').then(r => r.json())
-    ]);
-
-    let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
-
-    states.features.forEach(f => {
-      const stateName = f.properties.name;
-      const s = stats[stateName];
-      if (!s) {
-        console.warn(`⚠️ No stats for: ${stateName}`);
-        return;
-      }
-
-      Object.assign(f.properties, s);
-
-      const gop = +s.votes_gop || 0;
-      const dem = +s.votes_dem || 0;
-      const reporting = +s.reporting || 0;
-      const total = gop + dem;
-
-      total_gop_votes += gop;
-      total_dem_votes += dem;
-      total_votes += total;
-
-      if (reporting === 100) {
-        if (gop > dem) ev_bush += +s.electoral_votes;
-        else if (dem > gop) ev_gore += +s.electoral_votes;
-      }
+  <script>
+    mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/light-v10',
+      center: [-98.5795, 39.8283],
+      zoom: 3
     });
 
-    const total_registered = 105405100;
-    const perc_gop = ((total_gop_votes / total_registered) * 100).toFixed(1);
-    const perc_dem = ((total_dem_votes / total_registered) * 100).toFixed(1);
-    const reporting_pct = ((total_votes / total_registered) * 100).toFixed(1);
+    let voteFade = false;
+    let fullGeoJSON = null;
 
-    document.getElementById('bush-votes').textContent = ev_bush;
-    document.getElementById('gore-votes').textContent = ev_gore;
-    document.getElementById('bush-bar').style.width = `${(ev_bush / 538) * 100}%`;
-    document.getElementById('gore-bar').style.width = `${(ev_gore / 538) * 100}%`;
-    document.getElementById('bush-label').textContent = ev_bush;
-    document.getElementById('gore-label').textContent = ev_gore;
-    document.getElementById('bush-pv').textContent = `Bush: ${total_gop_votes.toLocaleString()} (${perc_gop}%)`;
-    document.getElementById('gore-pv').textContent = `Gore: ${total_dem_votes.toLocaleString()} (${perc_dem}%)`;
-    document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
+    function toggleFade() {
+      voteFade = !voteFade;
+      updateFillColor();
+    }
 
-    map.addSource('states', { type: 'geojson', data: states });
+    function updateFillColor() {
+      const expression = voteFade
+        ? [
+            'interpolate', ['linear'], ['abs', ['-', ['get', 'votes_gop'], ['get', 'votes_dem']]],
+            0, '#cccccc',
+            2000000, [
+              'match', ['get', 'status'],
+              'GOP Win', '#d12c0f',
+              'DEM Win', '#0e47e6',
+              '#cccccc'
+            ]
+          ]
+        : [
+            'match', ['get', 'status'],
+            'GOP Win', '#d12c0f',
+            'DEM Win', '#0e47e6',
+            'Lean GOP', '#f4a6a6',
+            'Lean DEM', '#a6c8f4',
+            'Uncalled', '#cccccc',
+            '#ffffff'
+          ];
 
-    map.addLayer({
-      id: 'states-fill',
-      type: 'fill',
-      source: 'states',
-      paint: {
-        'fill-color': [
-          'match',
-          ['get', 'status'],
-          'GOP Win', '#d12c0f',
-          'DEM Win', '#0e47e6',
-          'Lean GOP', '#f4a6a6',
-          'Lean DEM', '#a6c8f4',
-          'Uncalled', '#cccccc',
-          '#ffffff'
-        ],
-        'fill-opacity': 1.0
-      }
+      map.setPaintProperty('states-fill', 'fill-color', expression);
+    }
+
+    function filterByStatus() {
+      const value = document.getElementById('status-select').value;
+      const filter =
+        value === 'called' ? ['!=', ['get', 'winner'], 'UNKNOWN'] :
+        value === 'uncalled' ? ['==', ['get', 'winner'], 'UNKNOWN'] :
+        true;
+      map.setFilter('states-fill', filter);
+    }
+
+    map.on('load', async () => {
+      const [states, stats] = await Promise.all([
+        fetch('data/us-states.geojson').then(r => r.json()),
+        fetch('data/election2000-full.json').then(r => r.json())
+      ]);
+
+      let ev_bush = 0, ev_gore = 0;
+
+      states.features.forEach(f => {
+        const name = f.properties.name;
+        const s = stats[name];
+        if (s) {
+          Object.assign(f.properties, s);
+          if (s.reporting === 100) {
+            if (s.winner === 'Bush') ev_bush += s.electoral_votes;
+            if (s.winner === 'Gore') ev_gore += s.electoral_votes;
+          }
+        } else {
+          f.properties.winner = 'UNKNOWN';
+        }
+      });
+
+      fullGeoJSON = states;
+
+      map.addSource('states', { type: 'geojson', data: states });
+      map.addLayer({
+        id: 'states-fill',
+        type: 'fill',
+        source: 'states',
+        paint: { 'fill-color': '#ccc', 'fill-opacity': 0.85 }
+      });
+
+      map.addLayer({
+        id: 'states-outline',
+        type: 'line',
+        source: 'states',
+        paint: { 'line-color': '#000', 'line-width': 1.5 }
+      });
+
+      updateFillColor();
+
+      document.getElementById('bar-gop').style.width = `${(ev_bush / 538) * 100}%`;
+      document.getElementById('bar-dem').style.width = `${(ev_gore / 538) * 100}%`;
     });
-
-    map.addLayer({
-      id: 'states-outline',
-      type: 'line',
-      source: 'states',
-      paint: {
-        'line-color': '#000000',
-        'line-width': 2
-      }
-    });
-
-    map.on('click', 'states-fill', (e) => {
-      const p = e.features[0].properties;
-      const gop = +p.votes_gop || 0;
-      const dem = +p.votes_dem || 0;
-      const total = gop + dem;
-      const gopPerc = total > 0 ? ((gop / total) * 100).toFixed(1) : 0;
-      const demPerc = total > 0 ? ((dem / total) * 100).toFixed(1) : 0;
-      const winner = p.winner || 'Uncalled';
-      const gopName = p.gop_candidate || 'Bush';
-      const demName = p.dem_candidate || 'Gore';
-      const gopCheck = winner === gopName ? '✓ ' : '';
-      const demCheck = winner === demName ? '✓ ' : '';
-      new mapboxgl.Popup()
-        .setLngLat(e.lngLat)
-        .setHTML(`
-          <strong>${p.name}</strong><br/>
-          <b>Electoral Votes:</b> ${p.electoral_votes}<br/>
-          <b>Reporting:</b> ${p.reporting}%<br/>
-          <b style="color:#d12c0f;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
-          <b style="color:#0e47e6;">${demCheck}${demName}:</b> ${dem.toLocaleString()} (${demPerc}%)<br/>
-          <b>Winner:</b> ${winner}
-        `)
-        .addTo(map);
-    });
-
-    map.on('mouseenter', 'states-fill', () => {
-      map.getCanvas().style.cursor = 'pointer';
-    });
-    map.on('mouseleave', 'states-fill', () => {
-      map.getCanvas().style.cursor = '';
-    });
-
-  } catch (error) {
-    console.error('Map load error:', error);
-    document.getElementById('map').innerHTML = '<p style="color: red; text-align: center;">Failed to load map. Please check your data file and internet connection.</p>';
-  }
-});
-</script>
+  </script>
 </body>
 </html>
