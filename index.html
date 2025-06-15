@@ -97,16 +97,17 @@
       width: 420px; max-width: 97vw; margin: 0 auto; position: relative;
     }
     .arc-label {
-      font-size: 1.12rem;
-      fill: #fff;
+      font-size: 15px;
       font-weight: bold;
+      fill: #fff;
       text-shadow: 0 2px 6px #222, 0 0 6px #000;
       letter-spacing: 0.6px;
       font-family: 'Inter', sans-serif;
       pointer-events: none;
+      dominant-baseline: middle;
     }
     .arc-label-center {
-      font-size: 1.18rem;
+      font-size: 16px;
       font-weight: 900;
       fill: #fff;
     }
@@ -188,18 +189,41 @@
       <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
       <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
       <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
-      <!-- Arc Labels -->
-      <text class="arc-label" x="42" y="120">Very likely Bush</text>
-      <text class="arc-label" x="94" y="48">Likely Bush</text>
-      <text class="arc-label" x="150" y="22">Lean Bush</text>
-      <text class="arc-label arc-label-center" x="192" y="14">Tossup</text>
-      <text class="arc-label" x="245" y="22">Lean Gore</text>
-      <text class="arc-label" x="300" y="48">Likely Gore</text>
-      <text class="arc-label" x="353" y="120">Very likely Gore</text>
+      <!-- Label Arcs (invisible, for textPath) -->
+      <defs>
+        <path id="label-vl-bush" d="M75,170 A120,120 0 0,1 125,40"/>
+        <path id="label-l-bush" d="M115,24 A130,130 0 0,1 165,10"/>
+        <path id="label-le-bush" d="M170,14 A112,112 0 0,1 190,8"/>
+        <path id="label-tossup" d="M195,12 A117,117 0 0,1 225,16"/>
+        <path id="label-le-gore" d="M218,13 A112,112 0 0,1 260,28"/>
+        <path id="label-l-gore" d="M255,34 A130,130 0 0,1 315,60"/>
+        <path id="label-vl-gore" d="M270,68 A120,120 0 0,1 315,170"/>
+      </defs>
+      <!-- Arc Labels with textPath -->
+      <text class="arc-label">
+        <textPath href="#label-vl-bush" startOffset="0%">Very likely Bush</textPath>
+      </text>
+      <text class="arc-label">
+        <textPath href="#label-l-bush" startOffset="7%">Likely Bush</textPath>
+      </text>
+      <text class="arc-label">
+        <textPath href="#label-le-bush" startOffset="10%">Lean Bush</textPath>
+      </text>
+      <text class="arc-label arc-label-center">
+        <textPath href="#label-tossup" startOffset="18%">Tossup</textPath>
+      </text>
+      <text class="arc-label">
+        <textPath href="#label-le-gore" startOffset="23%">Lean Gore</textPath>
+      </text>
+      <text class="arc-label">
+        <textPath href="#label-l-gore" startOffset="34%">Likely Gore</textPath>
+      </text>
+      <text class="arc-label">
+        <textPath href="#label-vl-gore" startOffset="37%">Very likely Gore</textPath>
+      </text>
       <!-- Needle -->
       <g id="needle-group">
-        <polygon id="nyt-needle" class="needle-arrow"
-          points="195,42 190,115 200,115"/>
+        <polygon id="nyt-needle" class="needle-arrow" points="195,42 190,115 200,115"/>
         <circle id="needle-dot" class="needle-dot" cx="195" cy="110" r="13"/>
       </g>
     </svg>
