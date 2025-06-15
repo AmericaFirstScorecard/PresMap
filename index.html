@@ -102,8 +102,8 @@
     try {
       // Fetch both files
       const [states, stats] = await Promise.all([
-        fetch('us-states.geojson').then(r => r.json()),
-        fetch('election2000-stats.json').then(r => r.json())
+        fetch('data/us-states.geojson').then(r => r.json()),
+        fetch('data/election2000-stats.json').then(r => r.json())
       ]);
       // Merge stats into geojson by abbr
       let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
