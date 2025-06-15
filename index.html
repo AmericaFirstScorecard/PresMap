@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8">
   <title>2000 Live Election Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
   <style>
@@ -100,8 +100,8 @@
 
   map.on('load', async () => {
     try {
-      // Fetch from local JSON file in your GitHub repo
-      const res = await fetch('data/election2000.json');
+      // Replace with your own 2000 election GeoJSON endpoint if you have one
+      const res = await fetch('https://script.google.com/macros/s/AKfycbxKShovJqthSFzDLA8xbRbITSjmKaRx83ao5CHf1xlKgdZP6vfq-JqU18cJkgtAX6IN/exec');
       const data = await res.json();
 
       let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
@@ -125,7 +125,7 @@
         }
       });
 
-      const total_registered = 105405100; // 2000 election, approx total votes cast. Adjust if needed!
+      const total_registered = 105405100; // 2000 total votes cast (approximate, update as needed)
       const perc_gop = ((total_gop_votes / total_registered) * 100).toFixed(1);
       const perc_dem = ((total_dem_votes / total_registered) * 100).toFixed(1);
       const reporting_pct = ((total_votes / total_registered) * 100).toFixed(1);
@@ -209,7 +209,7 @@
 
     } catch (error) {
       console.error('Map load error:', error);
-      document.getElementById('map').innerHTML = '<p style="color: red; text-align: center;">Failed to load map. Please check your data file and internet connection.</p>';
+      document.getElementById('map').innerHTML = '<p style="color: red; text-align: center;">Failed to load map. Please check data source or internet connection.</p>';
     }
   });
 </script>
