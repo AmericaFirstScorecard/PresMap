@@ -8,127 +8,34 @@
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
   <style>
     html, body { height: 100%; margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background: #11161b;}
-    #header {
-      background: #222; color: white; padding: 15px 20px;
-      z-index: 1000; display: flex; flex-direction: column; align-items: center;
-      position: relative;
-    }
+    #header { background: #222; color: white; padding: 15px 20px; z-index: 1000; display: flex; flex-direction: column; align-items: center; position: relative;}
     .progress-container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 10px; }
-    .progress-bar-wrapper {
-      display: flex; align-items: center; position: relative;
-      width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden;
-    }
+    .progress-bar-wrapper { display: flex; align-items: center; position: relative; width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden;}
     .progress-bar { height: 100%; transition: width 0.5s ease-in-out; }
     .progress-bar.bush { background: #e74c3c; }
     .progress-bar.gore { background: #3498db; position: absolute; right: 0; }
-    .vote-label {
-      position: absolute; color: white; font-size: 12px;
-      font-weight: bold; text-shadow: 0 0 2px rgba(0,0,0,0.7);
-    }
-    .threshold-marker {
-      position: absolute; left: calc(270 / 538 * 100%);
-      width: 2px; height: 100%; background: #fff; z-index: 10;
-    }
-    .threshold-label {
-      position: relative; left: calc(270 / 538 * 100% - 20px);
-      color: white; font-size: 12px; font-weight: bold;
-      margin-bottom: 5px; text-align: left;
-    }
-    .candidate-labels {
-      display: flex; justify-content: space-between;
-      font-size: 14px; font-weight: bold; margin-bottom: 5px;
-    }
+    .vote-label { position: absolute; color: white; font-size: 12px; font-weight: bold; text-shadow: 0 0 2px rgba(0,0,0,0.7);}
+    .threshold-marker { position: absolute; left: calc(270 / 538 * 100%); width: 2px; height: 100%; background: #fff; z-index: 10;}
+    .threshold-label { position: relative; left: calc(270 / 538 * 100% - 20px); color: white; font-size: 12px; font-weight: bold; margin-bottom: 5px; text-align: left;}
+    .candidate-labels { display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; margin-bottom: 5px;}
     .stat-box { margin-top: 5px; font-size: 12px; }
-    .candidate-image {
-      width: 70px; height: 70px; border-radius: 50%; object-fit: cover;
-    }
-    .progress-bar-container {
-      display: flex; align-items: center; width: 100%; gap: 15px;
-    }
-    .candidate-stats {
-      display: flex; justify-content: space-between;
-      width: 100%; max-width: 800px; font-size: 12px;
-    }
-    .candidate-stat-left, .candidate-stat-right {
-      text-align: center; width: 150px;
-    }
-    .title {
-      font-size: 30px; font-weight: bold; margin-bottom: 10px;
-    }
-    #map {
-      position: relative;
-      width: 100vw;
-      height: 70vh;
-      min-height: 400px;
-      max-height: 80vh;
-      z-index: 1;
-      background: #ccc;
-    }
-    @media (max-width:700px) {
-      #map { min-height: 300px; }
-    }
-    #projection-ticker-wrap {
-      width: 100%;
-      background: #191d22;
-      padding: 60px 0 60px 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      z-index: 2;
-      min-height: 420px;
-      border-top: 2px solid #303540;
-      margin-top: 0;
-    }
-    .nyt-projection-title {
-      color: #fff;
-      font-size: 2.4rem;
-      font-weight: 900;
-      letter-spacing: 0.5px;
-      margin-bottom: 22px;
-      text-align: center;
-      text-shadow: 0 2px 16px #000, 0 0 10px #111;
-    }
-    .needle-svg-wrap {
-      width: 500px; max-width: 99vw; margin: 0 auto; position: relative;
-    }
-    .needle-img-candidate {
-      position: absolute;
-      width: 68px; height: 68px;
-      border-radius: 50%; object-fit: cover;
-      box-shadow: 0 3px 24px #000b, 0 1px 8px #222a;
-      background: #fff;
-      z-index: 2;
-    }
+    .candidate-image { width: 70px; height: 70px; border-radius: 50%; object-fit: cover;}
+    .progress-bar-container { display: flex; align-items: center; width: 100%; gap: 15px; }
+    .candidate-stats { display: flex; justify-content: space-between; width: 100%; max-width: 800px; font-size: 12px;}
+    .candidate-stat-left, .candidate-stat-right { text-align: center; width: 150px; }
+    .title { font-size: 30px; font-weight: bold; margin-bottom: 10px; }
+    #map { position: relative; width: 100vw; height: 70vh; min-height: 400px; max-height: 80vh; z-index: 1; background: #ccc;}
+    @media (max-width:700px) { #map { min-height: 300px; } }
+    #projection-ticker-wrap { width: 100%; background: #191d22; padding: 60px 0 60px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 2; min-height: 420px; border-top: 2px solid #303540; margin-top: 0;}
+    .nyt-projection-title { color: #fff; font-size: 2.4rem; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 22px; text-align: center; text-shadow: 0 2px 16px #000, 0 0 10px #111;}
+    .needle-svg-wrap { width: 500px; max-width: 99vw; margin: 0 auto; position: relative;}
+    .needle-img-candidate { position: absolute; width: 68px; height: 68px; border-radius: 50%; object-fit: cover; box-shadow: 0 3px 24px #000b, 0 1px 8px #222a; background: #fff; z-index: 2;}
     .needle-img-bush { left: 10px; top: 162px; }
     .needle-img-gore { right: 10px; top: 162px; }
-    .needle-checkmark {
-      position: absolute;
-      width: 32px; height: 32px;
-      top: 210px;
-      left: 36px;
-      background: none;
-      display: none;
-      z-index: 3;
-      pointer-events: none;
-    }
+    .needle-checkmark { position: absolute; width: 32px; height: 32px; top: 210px; left: 36px; background: none; display: none; z-index: 3; pointer-events: none;}
     .needle-checkmark.gore { left: auto; right: 36px; }
-    .arc-label {
-      font-size: 15px;
-      font-weight: 700;
-      fill: #fff;
-      text-shadow: 0 2px 8px #111a, 0 0 3px #111;
-      font-family: 'Inter', sans-serif;
-      pointer-events: none;
-      dominant-baseline: middle;
-      text-anchor: middle;
-    }
-    .arc-label-center {
-      font-size: 17px;
-      font-weight: 900;
-      fill: #fff;
-    }
+    .arc-label { font-size: 15px; font-weight: 700; fill: #fff; text-shadow: 0 2px 8px #111a, 0 0 3px #111; font-family: 'Inter', sans-serif; pointer-events: none; dominant-baseline: middle; text-anchor: middle;}
+    .arc-label-center { font-size: 17px; font-weight: 900; fill: #fff;}
     .needle-arrow { fill: #fff; stroke: #222; stroke-width: 2.2; filter: drop-shadow(0 2px 6px #0008);}
     .needle-dot { fill: #191d22; stroke: #fff; stroke-width: 3.5; filter: drop-shadow(0 1px 8px #000a);}
     .arc-very-likely-bush { stroke: #e74c3c; }
@@ -138,22 +45,10 @@
     .arc-lean-gore { stroke: #b8d8f8; }
     .arc-likely-gore { stroke: #74b0e7; }
     .arc-very-likely-gore { stroke: #3498db; }
-    .needle-candidate-labels {
-      width: 100%; display: flex; justify-content: space-between;
-      margin-top: 16px;
-      font-size: 2.0rem;
-      font-weight: 800;
-      text-shadow: 0 2px 10px #000d;
-    }
+    .needle-candidate-labels { width: 100%; display: flex; justify-content: space-between; margin-top: 16px; font-size: 2.0rem; font-weight: 800; text-shadow: 0 2px 10px #000d; }
     .needle-bush-label { color: #e74c3c; margin-left: 16px;}
     .needle-gore-label { color: #3498db; margin-right: 16px;}
-    .nyt-prob-row {
-      margin-top: 24px; text-align: center;
-      font-size: 1.65rem; font-weight: 900; letter-spacing: 0.3px;
-      text-shadow: 0 1px 4px #000b;
-      display: flex; justify-content: center; align-items: center;
-      gap: 16px;
-    }
+    .nyt-prob-row { margin-top: 24px; text-align: center; font-size: 1.65rem; font-weight: 900; letter-spacing: 0.3px; text-shadow: 0 1px 4px #000b;}
     .proj-big-num { font-size: 2.1rem; font-weight: 900; margin: 0 8px;}
     .proj-big-num.bush { color: #e74c3c;}
     .proj-big-num.gore { color: #3498db;}
@@ -166,42 +61,12 @@
       .arc-label { font-size: 11px;}
       .arc-label-center { font-size: 13px;}
     }
-    /* Modal for county map */
-    #county-modal {
-      display: none;
-      position: fixed;
-      z-index: 9999;
-      left: 0; top: 0; width: 100vw; height: 100vh;
-      background: rgba(22,23,29,0.96);
-      align-items: center; justify-content: center;
-      flex-direction: column;
-    }
-    #county-modal .county-map-wrap {
-      background: #23272f;
-      border-radius: 15px;
-      padding: 24px;
-      box-shadow: 0 6px 32px #000a;
-      min-width: 60vw; min-height: 40vh; max-width: 90vw;
-      position: relative;
-    }
-    #close-county-btn {
-      position: absolute;
-      top: 12px; right: 18px;
-      font-size: 2.2rem;
-      color: #fff;
-      background: none;
-      border: none;
-      cursor: pointer;
-      z-index: 10;
-      opacity: 0.9;
-    }
-    #county-map {
-      width: 700px; height: 460px; max-width: 80vw; min-height: 300px;
-    }
-    @media (max-width:800px){
-      #county-map { width: 98vw; min-width: 98vw; }
-      #county-modal .county-map-wrap { min-width: 96vw; padding: 6px; }
-    }
+    /* Modal for counties */
+    #county-modal { position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(24,29,32,0.94); z-index:10010; display:none; align-items:center; justify-content:center; }
+    #county-modal-content { background:#23272e; border-radius:16px; box-shadow:0 8px 32px #000d; width:92vw; max-width:900px; min-height:400px; padding: 0 0 24px 0; display:flex; flex-direction:column; align-items:center;}
+    #county-modal-title { color:#fff; font-size:1.7rem; font-weight:800; margin:24px 0 16px 0;}
+    #close-county-btn { position:absolute; right:28px; top:24px; background: #c43434; color:#fff; border:none; border-radius:50%; font-size:1.7rem; width:42px; height:42px; font-weight:900; cursor:pointer;}
+    #county-map { width:93vw; height:55vh; min-height:320px; max-width:850px; margin:0 auto; border-radius: 13px; overflow: hidden;}
   </style>
 </head>
 <body>
@@ -255,49 +120,44 @@
       <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
       <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
       <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
-      <!-- Arc Labels: inner, centered at angle for each wedge -->
       <g id="arc-labels-group"></g>
-      <!-- Needle -->
       <g id="needle-group">
         <polygon id="nyt-needle" class="needle-arrow" points="250,64 243,162 257,162"/>
         <circle id="needle-dot" class="needle-dot" cx="250" cy="154" r="16"/>
       </g>
     </svg>
     <div class="needle-candidate-labels">
-      <span class="needle-bush-label">Bush</span>
-      <span class="proj-big-num bush" id="nyt-proj-bush-big">--%</span>
-      <span class="proj-divider">|</span>
-      <span class="proj-big-num gore" id="nyt-proj-gore-big">--%</span>
-      <span class="needle-gore-label">Gore</span>
+      <span class="needle-bush-label" style="flex:1;text-align:center;">Bush</span>
+      <span class="proj-big-num bush" id="nyt-proj-bush-big" style="flex:1;text-align:center;">--%</span>
+      <span class="proj-divider" style="flex:0.3;text-align:center;">|</span>
+      <span class="proj-big-num gore" id="nyt-proj-gore-big" style="flex:1;text-align:center;">--%</span>
+      <span class="needle-gore-label" style="flex:1;text-align:center;">Gore</span>
     </div>
   </div>
 </div>
 
-<!-- COUNTY MAP MODAL (hidden until state is clicked) -->
+<!-- COUNTY MODAL -->
 <div id="county-modal">
-  <div class="county-map-wrap">
-    <button id="close-county-btn" title="Back">&times;</button>
+  <div id="county-modal-content">
+    <button id="close-county-btn">&times;</button>
+    <div id="county-modal-title"></div>
     <div id="county-map"></div>
-    <!-- We’ll render the county map here dynamically -->
   </div>
 </div>
 
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
 
-// County data will be loaded for click events
-let countiesGeoJSON, countyResults;
+// --- Load County Geo and Election Data (Make these global for access) ---
+let countiesGeoJSON = null;
+let countyElectionStats = null;
 
-// Load all county shapes and results
+// Fetch counties and stats on page load
 Promise.all([
-  fetch('data/cb_2017_us_county_20m.geojson').then(r => r.json()),
-  fetch('data/county_results_2000.json').then(r => r.json())
-]).then(([geojson, results]) => {
-  countiesGeoJSON = geojson;
-  countyResults = results;
-});
+  fetch('data/county-geo.json').then(r => r.json()).then(data => { countiesGeoJSON = data; }),
+  fetch('data/election-stats-county.json').then(r => r.json()).then(data => { countyElectionStats = data; })
+]);
 
-// NYT Needle arc math for new layout
 const arcSegs = [
   { label: "Very likely Bush", start: -90, end: -60 },
   { label: "Likely Bush", start: -60, end: -30 },
@@ -308,7 +168,6 @@ const arcSegs = [
   { label: "Very likely Gore", start: 60, end: 90 }
 ];
 const svgCx = 250, svgCy = 154, arcR = 110, labelR = 82;
-
 function arcPath(cx, cy, r, startAngle, endAngle) {
   const start = polar(cx, cy, r, startAngle);
   const end = polar(cx, cy, r, endAngle);
@@ -322,8 +181,6 @@ function polar(cx, cy, r, angleDeg) {
   const angle = (angleDeg-90)*Math.PI/180;
   return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
 }
-
-// Draw arc paths
 function setArcSegs() {
   document.getElementById('arc-vl-bush').setAttribute('d', arcPath(svgCx,svgCy,arcR, -90, -60));
   document.getElementById('arc-l-bush').setAttribute('d', arcPath(svgCx,svgCy,arcR, -60, -30));
@@ -333,21 +190,15 @@ function setArcSegs() {
   document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 30, 60));
   document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 60, 90));
 }
-// Draw inside arc labels at segment center
+setArcSegs();
+
 function setArcLabels() {
   const labelsGroup = document.getElementById('arc-labels-group');
   labelsGroup.innerHTML = '';
-  arcSegs.forEach(seg => {
-    if (seg.label === "Tossup") return; // skip for clarity
-    const angle = (seg.start + seg.end) / 2;
-    const pt = polar(svgCx, svgCy, labelR, angle);
-    labelsGroup.innerHTML +=
-      `<text x="${pt.x}" y="${pt.y}" class="arc-label">${seg.label.replace('Bush','').replace('Gore','')}</text>`;
-  });
 }
-setArcSegs(); setArcLabels();
+setArcLabels(); // Hide arc labels per your last request
 
-// Main election map and projection logic
+// ---- Main election map and projection logic ----
 const map = new mapboxgl.Map({
   container: 'map',
   style: 'mapbox://styles/mapbox/light-v10',
@@ -355,9 +206,8 @@ const map = new mapboxgl.Map({
   zoom: 3
 });
 
-let popup;
+let statePopup = null;
 
-// ------ MAIN ELECTION MAP ------
 map.on('load', async () => {
   try {
     const [states, stats] = await Promise.all([
@@ -369,10 +219,7 @@ map.on('load', async () => {
     states.features.forEach(f => {
       const stateName = f.properties.name;
       const s = stats[stateName];
-      if (!s) {
-        console.warn(`⚠️ No stats for: ${stateName}`);
-        return;
-      }
+      if (!s) return;
       Object.assign(f.properties, s);
       const gop = +s.votes_gop || 0;
       const dem = +s.votes_dem || 0;
@@ -401,30 +248,28 @@ map.on('load', async () => {
     document.getElementById('gore-pv').textContent = `Gore: ${total_dem_votes.toLocaleString()} (${perc_dem}%)`;
     document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
 
-    // NYT-STYLE PROJECTION NEEDLE LOGIC
+    // ------ NYT-STYLE PROJECTION NEEDLE LOGIC ------
     const bushProj = Math.min(ev_bush / 270, 1);
     const goreProj = Math.min(ev_gore / 270, 1);
     let projBush, projGore;
-    if (ev_bush >= 270 && ev_bush > ev_gore) {
-      projBush = 1; projGore = 0;
-    } else if (ev_gore >= 270 && ev_gore > ev_bush) {
-      projBush = 0; projGore = 1;
-    } else if (bushProj + goreProj > 0) {
+    if (ev_bush >= 270 && ev_bush > ev_gore) { projBush = 1; projGore = 0; }
+    else if (ev_gore >= 270 && ev_gore > ev_bush) { projBush = 0; projGore = 1; }
+    else if (bushProj + goreProj > 0) {
       projBush = bushProj / (bushProj + goreProj);
       projGore = goreProj / (bushProj + goreProj);
-    } else {
-      projBush = projGore = 0.5;
-    }
+    } else { projBush = projGore = 0.5; }
     let angle;
     if (projBush === 1) angle = -90;
     else if (projGore === 1) angle = 90;
     else angle = -90 + 180 * projGore;
+
     document.getElementById('needle-group').setAttribute('transform', `rotate(${angle},250,154)`);
     document.getElementById('nyt-proj-bush-big').textContent = Math.round(projBush*100) + "%";
     document.getElementById('nyt-proj-gore-big').textContent = Math.round(projGore*100) + "%";
     document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
     document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
 
+    // ----------- MAP LAYERS ----------
     map.addSource('states', { type: 'geojson', data: states });
     map.addLayer({
       id: 'states-fill',
@@ -448,48 +293,41 @@ map.on('load', async () => {
       id: 'states-outline',
       type: 'line',
       source: 'states',
-      paint: {
-        'line-color': '#000000',
-        'line-width': 2
-      }
+      paint: { 'line-color': '#000000', 'line-width': 2 }
     });
 
-    // Hover: one popup only, closes previous on new hover
+    // Popup hover
     map.on('mousemove', 'states-fill', (e) => {
-      if (e.features.length) {
-        const p = e.features[0].properties;
-        const gop = +p.votes_gop || 0;
-        const dem = +p.votes_dem || 0;
-        const total = gop + dem;
-        const gopPerc = total > 0 ? ((gop / total) * 100).toFixed(1) : 0;
-        const demPerc = total > 0 ? ((dem / total) * 100).toFixed(1) : 0;
-        const winner = p.winner || 'Uncalled';
-        const gopName = p.gop_candidate || 'Bush';
-        const demName = p.dem_candidate || 'Gore';
-        const gopCheck = winner === gopName ? '✓ ' : '';
-        const demCheck = winner === demName ? '✓ ' : '';
-        if (popup) popup.remove();
-        popup = new mapboxgl.Popup({closeButton: false, closeOnClick: false})
-          .setLngLat(e.lngLat)
-          .setHTML(`
-            <strong>${p.name}</strong><br/>
-            <b>Electoral Votes:</b> ${p.electoral_votes}<br/>
-            <b>Reporting:</b> ${p.reporting}%<br/>
-            <b style="color:#d12c0f;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
-            <b style="color:#0e47e6;">${demCheck}${demName}:</b> ${dem.toLocaleString()} (${demPerc}%)<br/>
-            <b>Winner:</b> ${winner}
-          `)
-          .addTo(map);
-      }
-    });
-    map.on('mouseleave', 'states-fill', () => { if (popup) popup.remove(); });
+      const p = e.features[0].properties;
+      const gop = +p.votes_gop || 0, dem = +p.votes_dem || 0, total = gop + dem;
+      const gopPerc = total > 0 ? ((gop / total) * 100).toFixed(1) : 0;
+      const demPerc = total > 0 ? ((dem / total) * 100).toFixed(1) : 0;
+      const winner = p.winner || 'Uncalled';
+      const gopName = p.gop_candidate || 'Bush';
+      const demName = p.dem_candidate || 'Gore';
+      const gopCheck = winner === gopName ? '✓ ' : '';
+      const demCheck = winner === demName ? '✓ ' : '';
 
-    // On click: show county modal for that state
+      if (statePopup) statePopup.remove();
+      statePopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<strong>${p.name}</strong><br/>
+          <b>Electoral Votes:</b> ${p.electoral_votes}<br/>
+          <b>Reporting:</b> ${p.reporting}%<br/>
+          <b style="color:#d12c0f;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
+          <b style="color:#0e47e6;">${demCheck}${demName}:</b> ${dem.toLocaleString()} (${demPerc}%)<br/>
+          <b>Winner:</b> ${winner}`
+        )
+        .addTo(map);
+    });
+
+    map.on('mouseleave', 'states-fill', () => { if (statePopup) statePopup.remove(); });
+
+    // Click state = show county modal
     map.on('click', 'states-fill', (e) => {
-      if (!countiesGeoJSON) return;
-      const stateFP = e.features[0].properties.STATEFP || e.features[0].properties.statefp;
-      const stateName = e.features[0].properties.name;
-      showCountyModal(stateFP, stateName);
+      const p = e.features[0].properties;
+      showCountyModal(p.name, p.state_abbr || p.state_abbreviation || p.name);
     });
 
   } catch (error) {
@@ -498,50 +336,86 @@ map.on('load', async () => {
   }
 });
 
-// County modal logic
-function showCountyModal(stateFP, stateName) {
-  const modal = document.getElementById('county-modal');
-  modal.style.display = 'flex';
+// ------ COUNTY MODAL LOGIC ------
+const countyModal = document.getElementById('county-modal');
+const countyMapDiv = document.getElementById('county-map');
+const countyModalTitle = document.getElementById('county-modal-title');
+const closeBtn = document.getElementById('close-county-btn');
 
-  // Filter counties for selected state
+function showCountyModal(stateName, stateAbbr) {
+  if (!countiesGeoJSON || !countyElectionStats) return;
+
+  countyModal.style.display = 'flex';
+  countyModalTitle.textContent = `County Results - ${stateName}`;
+
+  // Clear previous
+  countyMapDiv.innerHTML = "";
+
+  // Prepare counties for this state
   const stateCounties = {
-    "type": "FeatureCollection",
-    "features": countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
+    ...countiesGeoJSON,
+    features: countiesGeoJSON.features.filter(
+      f => {
+        // Try match state FP or state name/abbr; if your data uses "STATEFP" you may need to map from abbr/name
+        const stats = countyElectionStats[f.properties.GEOID] || {};
+        return (stats.state === stateName || stats.state === stateAbbr);
+      }
+    )
   };
-  // Remove previous county map if present
-  const prevMapDiv = document.getElementById('county-map').firstChild;
-  if (prevMapDiv) document.getElementById('county-map').removeChild(prevMapDiv);
 
-  // Display with mapbox-gl
+  // Prepare a Mapbox GL JS map for the counties
   const countyMap = new mapboxgl.Map({
-    container: 'county-map',
+    container: countyMapDiv,
     style: 'mapbox://styles/mapbox/light-v10',
-    center: [-98.5, 39.8],
-    zoom: 6
+    interactive: false,
+    attributionControl: false,
+    center: [-99.5, 31.0], // default TX center, override below
+    zoom: 5.5
   });
+
+  // Find the state centroid if possible for center
+  if (stateCounties.features.length > 0) {
+    const firstCoords = stateCounties.features[0].geometry.coordinates[0][0];
+    countyMap.setCenter(firstCoords);
+  }
+
   countyMap.on('load', () => {
     countyMap.addSource('counties', { type: 'geojson', data: stateCounties });
     countyMap.addLayer({
       id: 'counties-fill',
       type: 'fill',
       source: 'counties',
-      paint: { 'fill-color': '#999', 'fill-opacity': 0.4 }
+      paint: {
+        'fill-color': [
+          'case',
+          ['has', ['get', 'GEOID'], ['literal', countyElectionStats]],
+          [
+            'match',
+            ['get', 'winner'],
+            'Bush', '#e74c3c',
+            'Gore', '#3498db',
+            '#b5b5b5'
+          ],
+          '#b5b5b5'
+        ],
+        'fill-opacity': 0.8
+      }
     });
     countyMap.addLayer({
       id: 'counties-outline',
       type: 'line',
       source: 'counties',
-      paint: { 'line-color': '#444', 'line-width': 1.8 }
+      paint: { 'line-color': '#23272e', 'line-width': 1 }
     });
-    // TODO: Connect county results, popup on click/hover
+    // Tooltip on hover inside modal (disabled interaction for now)
   });
-  // Optional: Add state name somewhere
-}
 
-document.getElementById('close-county-btn').onclick = () => {
-  document.getElementById('county-modal').style.display = 'none';
-  document.getElementById('county-map').innerHTML = '';
-};
+  // Cleanup
+  closeBtn.onclick = () => {
+    countyModal.style.display = 'none';
+    countyMap.remove();
+  };
+}
 </script>
 </body>
 </html>
