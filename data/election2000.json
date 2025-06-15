@@ -1,6 +1,13 @@
 {
-  "type": "FeatureCollection",
-  "features": [
-    {"type":"Feature","properties":{"NAME":"Alabama","abbr":"AL","votes_gop":941173,"votes_dem":692611,"electoral_votes":9,"status":"GOP Win","winner":"Bush","reporting":100,"gop_candidate":"Bush","dem_candidate":"Gore"},"geometry":{"type":"Polygon","coordinates":[[[-88,35],[-85,35],[-85,32],[-88,32],[-88,35]]]}},
-  ]
+  "CA": {
+    "votes_gop": 4567429,
+    "votes_dem": 5861203,
+    "electoral_votes": 54,
+    "status": "DEM Win",
+    "winner": "Gore",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  // ...etc for all states (and DC if you want)
 }
