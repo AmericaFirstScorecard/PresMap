@@ -1,8 +1,8 @@
 {
   "Alabama": {
-    "votes_gop": 1233912,
-    "votes_dem": 509805,
-    "electoral_votes": 50,
+    "votes_gop": 941173,
+    "votes_dem": 692611,
+    "electoral_votes": 9,
     "status": "GOP Win",
     "winner": "Bush",
     "reporting": 100,
@@ -10,9 +10,9 @@
     "dem_candidate": "Gore"
   },
   "Alaska": {
-    "votes_gop": 2607113,
-    "votes_dem": 2354301,
-    "electoral_votes": 17,
+    "votes_gop": 167398,
+    "votes_dem": 79004,
+    "electoral_votes": 3,
     "status": "GOP Win",
     "winner": "Bush",
     "reporting": 100,
@@ -20,9 +20,9 @@
     "dem_candidate": "Gore"
   },
   "Arizona": {
-    "votes_gop": 1470528,
-    "votes_dem": 1159791,
-    "electoral_votes": 46,
+    "votes_gop": 781652,
+    "votes_dem": 685341,
+    "electoral_votes": 8,
     "status": "GOP Win",
     "winner": "Bush",
     "reporting": 100,
@@ -30,9 +30,9 @@
     "dem_candidate": "Gore"
   },
   "Arkansas": {
-    "votes_gop": 4874866,
-    "votes_dem": 1029295,
-    "electoral_votes": 40,
+    "votes_gop": 528573,
+    "votes_dem": 409761,
+    "electoral_votes": 6,
     "status": "GOP Win",
     "winner": "Bush",
     "reporting": 100,
@@ -40,19 +40,19 @@
     "dem_candidate": "Gore"
   },
   "California": {
-    "votes_gop": 3839336,
-    "votes_dem": 566612,
-    "electoral_votes": 4,
-    "status": "GOP Win",
-    "winner": "Bush",
+    "votes_gop": 3867668,
+    "votes_dem": 5865447,
+    "electoral_votes": 54,
+    "status": "DEM Win",
+    "winner": "Gore",
     "reporting": 100,
     "gop_candidate": "Bush",
     "dem_candidate": "Gore"
   },
   "Colorado": {
     "votes_gop": 1085972,
-    "votes_dem": 2134068,
-    "electoral_votes": 17,
+    "votes_dem": 1159791,
+    "electoral_votes": 9,
     "status": "DEM Win",
     "winner": "Gore",
     "reporting": 100,
@@ -60,19 +60,29 @@
     "dem_candidate": "Gore"
   },
   "Connecticut": {
-    "votes_gop": 4539227,
-    "votes_dem": 522599,
-    "electoral_votes": 38,
-    "status": "GOP Win",
-    "winner": "Bush",
+    "votes_gop": 878502,
+    "votes_dem": 1616487,
+    "electoral_votes": 8,
+    "status": "DEM Win",
+    "winner": "Gore",
     "reporting": 100,
     "gop_candidate": "Bush",
     "dem_candidate": "Gore"
   },
   "Delaware": {
-    "votes_gop": 1967971,
-    "votes_dem": 4871300,
-    "electoral_votes": 29,
+    "votes_gop": 137288,
+    "votes_dem": 180068,
+    "electoral_votes": 3,
+    "status": "DEM Win",
+    "winner": "Gore",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "District of Columbia": {
+    "votes_gop": 18073,
+    "votes_dem": 171923,
+    "electoral_votes": 3,
     "status": "DEM Win",
     "winner": "Gore",
     "reporting": 100,
@@ -80,58 +90,8 @@
     "dem_candidate": "Gore"
   },
   "Florida": {
-    "votes_gop": 2149189,
-    "votes_dem": 4068238,
-    "electoral_votes": 40,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Georgia": {
-    "votes_gop": 2633632,
-    "votes_dem": 354515,
-    "electoral_votes": 51,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Hawaii": {
-    "votes_gop": 1639319,
-    "votes_dem": 3845146,
-    "electoral_votes": 24,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Idaho": {
-    "votes_gop": 2630953,
-    "votes_dem": 1604256,
-    "electoral_votes": 16,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Illinois": {
-    "votes_gop": 3123559,
-    "votes_dem": 1157401,
-    "electoral_votes": 8,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Indiana": {
-    "votes_gop": 3487061,
-    "votes_dem": 1111315,
+    "votes_gop": 2912790,
+    "votes_dem": 2912253,
     "electoral_votes": 25,
     "status": "GOP Win",
     "winner": "Bush",
@@ -139,40 +99,90 @@
     "gop_candidate": "Bush",
     "dem_candidate": "Gore"
   },
-  "Iowa": {
-    "votes_gop": 3185309,
-    "votes_dem": 2518961,
-    "electoral_votes": 54,
+  "Georgia": {
+    "votes_gop": 1419720,
+    "votes_dem": 1116230,
+    "electoral_votes": 13,
     "status": "GOP Win",
     "winner": "Bush",
     "reporting": 100,
     "gop_candidate": "Bush",
     "dem_candidate": "Gore"
   },
-  "Kansas": {
-    "votes_gop": 664488,
-    "votes_dem": 4153935,
-    "electoral_votes": 37,
+  "Hawaii": {
+    "votes_gop": 163931,
+    "votes_dem": 384514,
+    "electoral_votes": 4,
     "status": "DEM Win",
     "winner": "Gore",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "Idaho": {
+    "votes_gop": 340541,
+    "votes_dem": 199866,
+    "electoral_votes": 4,
+    "status": "GOP Win",
+    "winner": "Bush",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "Illinois": {
+    "votes_gop": 2102222,
+    "votes_dem": 2346074,
+    "electoral_votes": 22,
+    "status": "DEM Win",
+    "winner": "Gore",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "Indiana": {
+    "votes_gop": 1245836,
+    "votes_dem": 901980,
+    "electoral_votes": 12,
+    "status": "GOP Win",
+    "winner": "Bush",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "Iowa": {
+    "votes_gop": 634373,
+    "votes_dem": 638517,
+    "electoral_votes": 7,
+    "status": "DEM Win",
+    "winner": "Gore",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "Kansas": {
+    "votes_gop": 622332,
+    "votes_dem": 399276,
+    "electoral_votes": 6,
+    "status": "GOP Win",
+    "winner": "Bush",
     "reporting": 100,
     "gop_candidate": "Bush",
     "dem_candidate": "Gore"
   },
   "Kentucky": {
-    "votes_gop": 1347117,
-    "votes_dem": 3475376,
+    "votes_gop": 872492,
+    "votes_dem": 638898,
     "electoral_votes": 8,
-    "status": "DEM Win",
-    "winner": "Gore",
+    "status": "GOP Win",
+    "winner": "Bush",
     "reporting": 100,
     "gop_candidate": "Bush",
     "dem_candidate": "Gore"
   },
   "Louisiana": {
-    "votes_gop": 4930852,
-    "votes_dem": 2759357,
-    "electoral_votes": 43,
+    "votes_gop": 927871,
+    "votes_dem": 792344,
+    "electoral_votes": 9,
     "status": "GOP Win",
     "winner": "Bush",
     "reporting": 100,
@@ -180,298 +190,18 @@
     "dem_candidate": "Gore"
   },
   "Maine": {
-    "votes_gop": 3333614,
-    "votes_dem": 1913033,
-    "electoral_votes": 48,
-    "status": "GOP Win",
-    "winner": "Bush",
+    "votes_gop": 286616,
+    "votes_dem": 319951,
+    "electoral_votes": 4,
+    "status": "DEM Win",
+    "winner": "Gore",
     "reporting": 100,
     "gop_candidate": "Bush",
     "dem_candidate": "Gore"
   },
   "Maryland": {
-    "votes_gop": 883470,
-    "votes_dem": 684402,
-    "electoral_votes": 45,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Massachusetts": {
-    "votes_gop": 2211749,
-    "votes_dem": 2727562,
-    "electoral_votes": 8,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Michigan": {
-    "votes_gop": 2252791,
-    "votes_dem": 1147261,
-    "electoral_votes": 27,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Minnesota": {
-    "votes_gop": 2631811,
-    "votes_dem": 4103481,
-    "electoral_votes": 43,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Mississippi": {
-    "votes_gop": 3360434,
-    "votes_dem": 1664441,
-    "electoral_votes": 26,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Missouri": {
-    "votes_gop": 3280226,
-    "votes_dem": 2057472,
-    "electoral_votes": 45,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Montana": {
-    "votes_gop": 2539572,
-    "votes_dem": 898967,
-    "electoral_votes": 41,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Nebraska": {
-    "votes_gop": 1735615,
-    "votes_dem": 4780690,
-    "electoral_votes": 49,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Nevada": {
-    "votes_gop": 2353622,
-    "votes_dem": 1670719,
-    "electoral_votes": 32,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "New Hampshire": {
-    "votes_gop": 3483102,
-    "votes_dem": 2564486,
-    "electoral_votes": 43,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "New Jersey": {
-    "votes_gop": 4972033,
-    "votes_dem": 2142265,
-    "electoral_votes": 46,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "New Mexico": {
-    "votes_gop": 3020280,
-    "votes_dem": 769241,
-    "electoral_votes": 17,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "New York": {
-    "votes_gop": 569276,
-    "votes_dem": 2946211,
-    "electoral_votes": 28,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "North Carolina": {
-    "votes_gop": 2545973,
-    "votes_dem": 855230,
-    "electoral_votes": 16,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "North Dakota": {
-    "votes_gop": 2939709,
-    "votes_dem": 2083640,
-    "electoral_votes": 44,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Ohio": {
-    "votes_gop": 4487855,
-    "votes_dem": 3618800,
-    "electoral_votes": 44,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Oklahoma": {
-    "votes_gop": 4149128,
-    "votes_dem": 1498493,
-    "electoral_votes": 19,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Oregon": {
-    "votes_gop": 1471304,
-    "votes_dem": 2368861,
-    "electoral_votes": 50,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Pennsylvania": {
-    "votes_gop": 4821269,
-    "votes_dem": 2504036,
-    "electoral_votes": 50,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Rhode Island": {
-    "votes_gop": 3893963,
-    "votes_dem": 3650414,
-    "electoral_votes": 26,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "South Carolina": {
-    "votes_gop": 2139795,
-    "votes_dem": 1460410,
-    "electoral_votes": 35,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "South Dakota": {
-    "votes_gop": 4439910,
-    "votes_dem": 1062603,
-    "electoral_votes": 51,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Tennessee": {
-    "votes_gop": 695240,
-    "votes_dem": 1219803,
-    "electoral_votes": 12,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Texas": {
-    "votes_gop": 1642026,
-    "votes_dem": 3841334,
-    "electoral_votes": 41,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Utah": {
-    "votes_gop": 832909,
-    "votes_dem": 3527662,
-    "electoral_votes": 27,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Vermont": {
-    "votes_gop": 4226287,
-    "votes_dem": 4738532,
-    "electoral_votes": 19,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Virginia": {
-    "votes_gop": 4940795,
-    "votes_dem": 396309,
-    "electoral_votes": 46,
-    "status": "GOP Win",
-    "winner": "Bush",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "Washington": {
-    "votes_gop": 1260929,
-    "votes_dem": 4804433,
-    "electoral_votes": 51,
-    "status": "DEM Win",
-    "winner": "Gore",
-    "reporting": 100,
-    "gop_candidate": "Bush",
-    "dem_candidate": "Gore"
-  },
-  "West Virginia": {
-    "votes_gop": 2538291,
-    "votes_dem": 3153598,
+    "votes_gop": 813797,
+    "votes_dem": 1455782,
     "electoral_votes": 10,
     "status": "DEM Win",
     "winner": "Gore",
@@ -479,24 +209,149 @@
     "gop_candidate": "Bush",
     "dem_candidate": "Gore"
   },
-  "Wisconsin": {
-    "votes_gop": 2762057,
-    "votes_dem": 3947075,
-    "electoral_votes": 13,
+  "Massachusetts": {
+    "votes_gop": 878502,
+    "votes_dem": 1616487,
+    "electoral_votes": 12,
     "status": "DEM Win",
     "winner": "Gore",
     "reporting": 100,
     "gop_candidate": "Bush",
     "dem_candidate": "Gore"
   },
-  "Wyoming": {
-    "votes_gop": 4106110,
-    "votes_dem": 327223,
-    "electoral_votes": 49,
+  "Michigan": {
+    "votes_gop": 1953139,
+    "votes_dem": 2170418,
+    "electoral_votes": 18,
+    "status": "DEM Win",
+    "winner": "Gore",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "Minnesota": {
+    "votes_gop": 1109659,
+    "votes_dem": 1168266,
+    "electoral_votes": 10,
+    "status": "DEM Win",
+    "winner": "Gore",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "Mississippi": {
+    "votes_gop": 572844,
+    "votes_dem": 404614,
+    "electoral_votes": 7,
     "status": "GOP Win",
     "winner": "Bush",
     "reporting": 100,
     "gop_candidate": "Bush",
     "dem_candidate": "Gore"
-  }
+  },
+  "Missouri": {
+    "votes_gop": 1189924,
+    "votes_dem": 1111138,
+    "electoral_votes": 11,
+    "status": "GOP Win",
+    "winner": "Bush",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "Montana": {
+    "votes_gop": 240178,
+    "votes_dem": 137126,
+    "electoral_votes": 3,
+    "status": "GOP Win",
+    "winner": "Bush",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "Nebraska": {
+    "votes_gop": 433862,
+    "votes_dem": 231780,
+    "electoral_votes": 5,
+    "status": "GOP Win",
+    "winner": "Bush",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "Nevada": {
+    "votes_gop": 432541,
+    "votes_dem": 384557,
+    "electoral_votes": 4,
+    "status": "GOP Win",
+    "winner": "Bush",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "New Hampshire": {
+    "votes_gop": 273559,
+    "votes_dem": 266348,
+    "electoral_votes": 4,
+    "status": "GOP Win",
+    "winner": "Bush",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "New Jersey": {
+    "votes_gop": 1556156,
+    "votes_dem": 1835743,
+    "electoral_votes": 15,
+    "status": "DEM Win",
+    "winner": "Gore",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "New Mexico": {
+    "votes_gop": 286417,
+    "votes_dem": 286783,
+    "electoral_votes": 5,
+    "status": "DEM Win",
+    "winner": "Gore",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "New York": {
+    "votes_gop": 2403374,
+    "votes_dem": 4107697,
+    "electoral_votes": 33,
+    "status": "DEM Win",
+    "winner": "Gore",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "North Carolina": {
+    "votes_gop": 1631163,
+    "votes_dem": 1257692,
+    "electoral_votes": 14,
+    "status": "GOP Win",
+    "winner": "Bush",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "North Dakota": {
+    "votes_gop": 174852,
+    "votes_dem": 95284,
+    "electoral_votes": 3,
+    "status": "GOP Win",
+    "winner": "Bush",
+    "reporting": 100,
+    "gop_candidate": "Bush",
+    "dem_candidate": "Gore"
+  },
+  "Ohio": {
+    "votes_gop": 2351209,
+    "votes_dem": 2186190,
+    "electoral_votes": 21,
+    "{truncated for brevity}": "…"
 }
