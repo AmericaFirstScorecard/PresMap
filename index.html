@@ -101,7 +101,7 @@
   map.on('load', async () => {
     try {
       // Replace with your own 2000 election GeoJSON endpoint if you have one
-      const res = await fetch('https://script.google.com/macros/s/AKfycbyfn4xufme0q2-x959PwyCHW8MAtQk7UZOUDrZCQrFZce0GE-NAMUV-myU9JrTHIXyW/exec');
+      const res = await fetch('https://script.google.com/macros/s/AKfycbxKShovJqthSFzDLA8xbRbITSjmKaRx83ao5CHf1xlKgdZP6vfq-JqU18cJkgtAX6IN/exec');
       const data = await res.json();
 
       let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
