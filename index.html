@@ -109,35 +109,27 @@ map.on('load', async () => {
     let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
 
     states.features.forEach(f => {
-      // Try abbr first, fallback to STUSPS if needed
-      const abbr = f.properties.abbr || f.properties.STUSPS;
-      if (!abbr) {
-        console.warn("Missing abbreviation in feature:", f.properties);
-        return;
-      }
-
-      const s = stats[abbr];
+      const stateName = f.properties.name;
+      const s = stats[stateName];
       if (!s) {
-        console.warn(`No stats for ${abbr}`);
+        console.warn(`⚠️ No stats for: ${stateName}`);
         return;
       }
 
       Object.assign(f.properties, s);
 
-      if (abbr !== 'PR' && abbr !== 'DC') {
-        const gop = +s.votes_gop || 0;
-        const dem = +s.votes_dem || 0;
-        const reporting = +s.reporting || 0;
-        const total = gop + dem;
+      const gop = +s.votes_gop || 0;
+      const dem = +s.votes_dem || 0;
+      const reporting = +s.reporting || 0;
+      const total = gop + dem;
 
-        total_gop_votes += gop;
-        total_dem_votes += dem;
-        total_votes += total;
+      total_gop_votes += gop;
+      total_dem_votes += dem;
+      total_votes += total;
 
-        if (reporting === 100) {
-          if (gop > dem) ev_bush += +s.electoral_votes;
-          else if (dem > gop) ev_gore += +s.electoral_votes;
-        }
+      if (reporting === 100) {
+        if (gop > dem) ev_bush += +s.electoral_votes;
+        else if (dem > gop) ev_gore += +s.electoral_votes;
       }
     });
 
@@ -202,7 +194,7 @@ map.on('load', async () => {
       new mapboxgl.Popup()
         .setLngLat(e.lngLat)
         .setHTML(`
-          <strong>${p.name || p.NAME}</strong><br/>
+          <strong>${p.name}</strong><br/>
           <b>Electoral Votes:</b> ${p.electoral_votes}<br/>
           <b>Reporting:</b> ${p.reporting}%<br/>
           <b style="color:#d12c0f;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
