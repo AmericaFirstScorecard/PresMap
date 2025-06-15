@@ -88,128 +88,142 @@
   </div>
 </div>
 <div id="map"></div>
+
 <script>
-  mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
+mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
 
-  const map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/light-v10',
-    center: [-98.5795, 39.8283],
-    zoom: 3
-  });
+const map = new mapboxgl.Map({
+  container: 'map',
+  style: 'mapbox://styles/mapbox/light-v10',
+  center: [-98.5795, 39.8283],
+  zoom: 3
+});
 
-  map.on('load', async () => {
-    try {
-      // Fetch both files
-      const [states, stats] = await Promise.all([
-        fetch('data/us-states.geojson').then(r => r.json()),
-        fetch('data/election2000-stats.json').then(r => r.json())
-      ]);
-      // Merge stats into geojson by abbr
-      let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
-      states.features.forEach(f => {
-        const abbr = f.properties.abbr;
-        const s = stats[abbr];
-        if (s) {
-          Object.assign(f.properties, s);
-          if (abbr !== 'PR' && abbr !== 'DC') { // Exclude Puerto Rico and DC for some stats if needed
-            const gop = +s.votes_gop || 0;
-            const dem = +s.votes_dem || 0;
-            const reporting = +s.reporting || 0;
-            const total = gop + dem;
-            total_gop_votes += gop;
-            total_dem_votes += dem;
-            total_votes += total;
-            if (reporting === 100) {
-              if (gop > dem) ev_bush += +s.electoral_votes;
-              else if (dem > gop) ev_gore += +s.electoral_votes;
-            }
-          }
-        }
-      });
-      const total_registered = 105405100; // 2000 total votes cast (approximate)
-      const perc_gop = ((total_gop_votes / total_registered) * 100).toFixed(1);
-      const perc_dem = ((total_dem_votes / total_registered) * 100).toFixed(1);
-      const reporting_pct = ((total_votes / total_registered) * 100).toFixed(1);
+map.on('load', async () => {
+  try {
+    const [states, stats] = await Promise.all([
+      fetch('data/us-states.geojson').then(r => r.json()),
+      fetch('data/election2000-stats.json').then(r => r.json())
+    ]);
 
-      document.getElementById('bush-votes').textContent = ev_bush;
-      document.getElementById('gore-votes').textContent = ev_gore;
-      document.getElementById('bush-bar').style.width = `${(ev_bush / 538) * 100}%`;
-      document.getElementById('gore-bar').style.width = `${(ev_gore / 538) * 100}%`;
-      document.getElementById('bush-label').textContent = ev_bush;
-      document.getElementById('gore-label').textContent = ev_gore;
-      document.getElementById('bush-pv').textContent = `Bush: ${total_gop_votes.toLocaleString()} (${perc_gop}%)`;
-      document.getElementById('gore-pv').textContent = `Gore: ${total_dem_votes.toLocaleString()} (${perc_dem}%)`;
-      document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
+    let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
 
-      map.addSource('states', { type: 'geojson', data: states });
+    states.features.forEach(f => {
+      // Try abbr first, fallback to STUSPS if needed
+      const abbr = f.properties.abbr || f.properties.STUSPS;
+      if (!abbr) {
+        console.warn("Missing abbreviation in feature:", f.properties);
+        return;
+      }
 
-      map.addLayer({
-        id: 'states-fill',
-        type: 'fill',
-        source: 'states',
-        paint: {
-          'fill-color': [
-            'match',
-            ['get', 'status'],
-            'GOP Win', '#d12c0f',
-            'DEM Win', '#0e47e6',
-            'Lean GOP', '#f4a6a6',
-            'Lean DEM', '#a6c8f4',
-            'Uncalled', '#cccccc',
-            '#ffffff'
-          ],
-          'fill-opacity': 1.0
-        }
-      });
+      const s = stats[abbr];
+      if (!s) {
+        console.warn(`No stats for ${abbr}`);
+        return;
+      }
 
-      map.addLayer({
-        id: 'states-outline',
-        type: 'line',
-        source: 'states',
-        paint: {
-          'line-color': '#000000',
-          'line-width': 2
-        }
-      });
+      Object.assign(f.properties, s);
 
-      map.on('click', 'states-fill', (e) => {
-        const p = e.features[0].properties;
-        const gop = +p.votes_gop || 0;
-        const dem = +p.votes_dem || 0;
+      if (abbr !== 'PR' && abbr !== 'DC') {
+        const gop = +s.votes_gop || 0;
+        const dem = +s.votes_dem || 0;
+        const reporting = +s.reporting || 0;
         const total = gop + dem;
-        const gopPerc = total > 0 ? ((gop / total) * 100).toFixed(1) : 0;
-        const demPerc = total > 0 ? ((dem / total) * 100).toFixed(1) : 0;
-        const winner = p.winner === 'UNKNOWN' ? 'Uncalled' : p.winner;
-        const gopName = p.gop_candidate || 'Bush';
-        const demName = p.dem_candidate || 'Gore';
-        const gopCheck = winner === gopName ? '✓ ' : '';
-        const demCheck = winner === demName ? '✓ ' : '';
-        new mapboxgl.Popup()
-          .setLngLat(e.lngLat)
-          .setHTML(`
-            <strong>${p.NAME}</strong><br/>
-            <b>Electoral Votes:</b> ${p.electoral_votes}<br/>
-            <b>Reporting:</b> ${p.reporting}%<br/>
-            <b style="color:#d12c0f;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
-            <b style="color:#0e47e6;">${demCheck}${demName}:</b> ${dem.toLocaleString()} (${demPerc}%)<br/>
-            <b>Winner:</b> ${winner}
-          `)
-          .addTo(map);
-      });
 
-      map.on('mouseenter', 'states-fill', () => {
-        map.getCanvas().style.cursor = 'pointer';
-      });
-      map.on('mouseleave', 'states-fill', () => {
-        map.getCanvas().style.cursor = '';
-      });
+        total_gop_votes += gop;
+        total_dem_votes += dem;
+        total_votes += total;
 
-    } catch (error) {
-      console.error('Map load error:', error);
-      document.getElementById('map').innerHTML = '<p style="color: red; text-align: center;">Failed to load map. Please check your data file and internet connection.</p>';
-    }
-  });
+        if (reporting === 100) {
+          if (gop > dem) ev_bush += +s.electoral_votes;
+          else if (dem > gop) ev_gore += +s.electoral_votes;
+        }
+      }
+    });
+
+    const total_registered = 105405100;
+    const perc_gop = ((total_gop_votes / total_registered) * 100).toFixed(1);
+    const perc_dem = ((total_dem_votes / total_registered) * 100).toFixed(1);
+    const reporting_pct = ((total_votes / total_registered) * 100).toFixed(1);
+
+    document.getElementById('bush-votes').textContent = ev_bush;
+    document.getElementById('gore-votes').textContent = ev_gore;
+    document.getElementById('bush-bar').style.width = `${(ev_bush / 538) * 100}%`;
+    document.getElementById('gore-bar').style.width = `${(ev_gore / 538) * 100}%`;
+    document.getElementById('bush-label').textContent = ev_bush;
+    document.getElementById('gore-label').textContent = ev_gore;
+    document.getElementById('bush-pv').textContent = `Bush: ${total_gop_votes.toLocaleString()} (${perc_gop}%)`;
+    document.getElementById('gore-pv').textContent = `Gore: ${total_dem_votes.toLocaleString()} (${perc_dem}%)`;
+    document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
+
+    map.addSource('states', { type: 'geojson', data: states });
+
+    map.addLayer({
+      id: 'states-fill',
+      type: 'fill',
+      source: 'states',
+      paint: {
+        'fill-color': [
+          'match',
+          ['get', 'status'],
+          'GOP Win', '#d12c0f',
+          'DEM Win', '#0e47e6',
+          'Lean GOP', '#f4a6a6',
+          'Lean DEM', '#a6c8f4',
+          'Uncalled', '#cccccc',
+          '#ffffff'
+        ],
+        'fill-opacity': 1.0
+      }
+    });
+
+    map.addLayer({
+      id: 'states-outline',
+      type: 'line',
+      source: 'states',
+      paint: {
+        'line-color': '#000000',
+        'line-width': 2
+      }
+    });
+
+    map.on('click', 'states-fill', (e) => {
+      const p = e.features[0].properties;
+      const gop = +p.votes_gop || 0;
+      const dem = +p.votes_dem || 0;
+      const total = gop + dem;
+      const gopPerc = total > 0 ? ((gop / total) * 100).toFixed(1) : 0;
+      const demPerc = total > 0 ? ((dem / total) * 100).toFixed(1) : 0;
+      const winner = p.winner || 'Uncalled';
+      const gopName = p.gop_candidate || 'Bush';
+      const demName = p.dem_candidate || 'Gore';
+      const gopCheck = winner === gopName ? '✓ ' : '';
+      const demCheck = winner === demName ? '✓ ' : '';
+      new mapboxgl.Popup()
+        .setLngLat(e.lngLat)
+        .setHTML(`
+          <strong>${p.name || p.NAME}</strong><br/>
+          <b>Electoral Votes:</b> ${p.electoral_votes}<br/>
+          <b>Reporting:</b> ${p.reporting}%<br/>
+          <b style="color:#d12c0f;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
+          <b style="color:#0e47e6;">${demCheck}${demName}:</b> ${dem.toLocaleString()} (${demPerc}%)<br/>
+          <b>Winner:</b> ${winner}
+        `)
+        .addTo(map);
+    });
+
+    map.on('mouseenter', 'states-fill', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'states-fill', () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+  } catch (error) {
+    console.error('Map load error:', error);
+    document.getElementById('map').innerHTML = '<p style="color: red; text-align: center;">Failed to load map. Please check your data file and internet connection.</p>';
+  }
+});
 </script>
 </body>
 </html>
