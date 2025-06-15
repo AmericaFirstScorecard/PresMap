@@ -116,33 +116,53 @@
     .needle-checkmark.gore { left: auto; right: 36px; }
     .arc-label { display: none; }
     .arc-label-center { display: none; }
+    .ticker-center-block {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+      margin-bottom: 0;
+    }
     .needle-candidate-labels {
-      width: 100%; display: flex; justify-content: center; align-items: center;
-      gap: 32px;
-      margin-top: 18px;
-      font-size: 2.1rem;
+      width: 380px;
+      max-width: 90vw;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 2.2rem;
       font-weight: 800;
       text-shadow: 0 2px 10px #000d;
+      margin: 0 auto 0 auto;
+      letter-spacing: 1.5px;
     }
-    .needle-bush-label { color: #e74c3c;}
-    .needle-gore-label { color: #3498db;}
-    .nyt-prob-row {
-      margin-top: 12px; text-align: center; display: flex; justify-content: center; align-items: center;
-      font-size: 2.2rem; font-weight: 900; letter-spacing: 0.3px;
+    .ticker-odds-row {
+      width: 380px;
+      max-width: 90vw;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 2.3rem;
+      font-weight: 900;
+      letter-spacing: 1px;
       text-shadow: 0 1px 4px #000b;
+      margin: 0 auto;
+      margin-top: 6px;
     }
-    .proj-big-num { font-size: 2.4rem; font-weight: 900; margin: 0 8px;}
+    .proj-big-num { font-size: 2.4rem; font-weight: 900;}
     .proj-big-num.bush { color: #e74c3c;}
     .proj-big-num.gore { color: #3498db;}
-    .proj-divider { font-size: 2.3rem; font-weight: 800; color: #fff; margin: 0 18px;}
+    .proj-divider { color: #fff; font-size: 2.2rem; font-weight: 800;}
+    .needle-bush-label { color: #e74c3c;}
+    .needle-gore-label { color: #3498db;}
     @media (max-width:700px){
       .needle-svg-wrap { width: 99vw;}
       .needle-img-candidate { width: 44px; height: 44px; top: 125px;}
       .needle-checkmark { width: 22px; height: 22px; top: 148px; left: 19px;}
       .needle-checkmark.gore { right: 19px;}
-      .needle-candidate-labels { font-size: 1.3rem;}
-      .proj-big-num { font-size: 1.4rem;}
-      .proj-divider { font-size: 1.2rem; margin: 0 8px;}
+      .needle-candidate-labels, .ticker-odds-row { font-size: 1.3rem; width: 90vw; }
+      .proj-big-num { font-size: 1.3rem;}
+      .proj-divider { font-size: 1.2rem;}
     }
   </style>
 </head>
@@ -197,20 +217,22 @@
       <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
       <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
       <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
-      <!-- Arc Labels: removed per your instructions -->
       <g id="arc-labels-group"></g>
-      <!-- Needle -->
       <g id="needle-group">
         <polygon id="nyt-needle" class="needle-arrow" points="250,64 243,162 257,162"/>
         <circle id="needle-dot" class="needle-dot" cx="250" cy="154" r="16"/>
       </g>
     </svg>
-    <div class="needle-candidate-labels" style="justify-content: center; gap:48px;">
-      <span class="needle-bush-label">Bush</span>
-      <span id="nyt-proj-bush-big" class="proj-big-num bush">--%</span>
-      <span class="proj-divider">|</span>
-      <span id="nyt-proj-gore-big" class="proj-big-num gore">--%</span>
-      <span class="needle-gore-label">Gore</span>
+    <div class="ticker-center-block">
+      <div class="needle-candidate-labels">
+        <span class="needle-bush-label">Bush</span>
+        <span class="needle-gore-label">Gore</span>
+      </div>
+      <div class="ticker-odds-row">
+        <span id="nyt-proj-bush-big" class="proj-big-num bush">--%</span>
+        <span class="proj-divider">|</span>
+        <span id="nyt-proj-gore-big" class="proj-big-num gore">--%</span>
+      </div>
     </div>
   </div>
 </div>
@@ -234,7 +256,7 @@ const arcSegs = [
   { label: "Likely Gore", start: 30, end: 60 },
   { label: "Very likely Gore", start: 60, end: 90 }
 ];
-const svgCx = 250, svgCy = 154, arcR = 110, labelR = 82;
+const svgCx = 250, svgCy = 154, arcR = 110;
 
 function arcPath(cx, cy, r, startAngle, endAngle) {
   const start = polar(cx, cy, r, startAngle);
@@ -369,7 +391,7 @@ map.on('load', async () => {
     // --- Hover logic: only one popup at a time ---
     map.on('mousemove', 'states-fill', (e) => {
       map.getCanvas().style.cursor = 'pointer';
-      if (hoverPopup) hoverPopup.remove();
+      if (window.hoverPopup) window.hoverPopup.remove();
 
       const p = e.features[0].properties;
       const gop = +p.votes_gop || 0;
@@ -383,7 +405,7 @@ map.on('load', async () => {
       const gopCheck = winner === gopName ? '✓ ' : '';
       const demCheck = winner === demName ? '✓ ' : '';
 
-      hoverPopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
+      window.hoverPopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
         .setLngLat(e.lngLat)
         .setHTML(`
           <strong>${p.name}</strong><br/>
@@ -398,8 +420,8 @@ map.on('load', async () => {
 
     map.on('mouseleave', 'states-fill', () => {
       map.getCanvas().style.cursor = '';
-      if (hoverPopup) hoverPopup.remove();
-      hoverPopup = null;
+      if (window.hoverPopup) window.hoverPopup.remove();
+      window.hoverPopup = null;
     });
 
     // --- On click: county-level map (to be implemented by you) ---
