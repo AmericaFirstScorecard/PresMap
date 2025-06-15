@@ -100,32 +100,34 @@
 
   map.on('load', async () => {
     try {
-      // Fetch from local JSON file in your GitHub repo
-      const res = await fetch('data/election2000.json');
-      const data = await res.json();
-
+      // Fetch both files
+      const [states, stats] = await Promise.all([
+        fetch('us-states.geojson').then(r => r.json()),
+        fetch('election2000-stats.json').then(r => r.json())
+      ]);
+      // Merge stats into geojson by abbr
       let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
-
-      data.features.forEach(f => {
-        const props = f.properties;
-        if (props.abbr === 'PR') return;
-
-        const gop = +props.votes_gop || 0;
-        const dem = +props.votes_dem || 0;
-        const reporting = +props.reporting || 0;
-        const total = gop + dem;
-
-        total_gop_votes += gop;
-        total_dem_votes += dem;
-        total_votes += total;
-
-        if (reporting === 100) {
-          if (gop > dem) ev_bush += +props.electoral_votes;
-          else if (dem > gop) ev_gore += +props.electoral_votes;
+      states.features.forEach(f => {
+        const abbr = f.properties.abbr;
+        const s = stats[abbr];
+        if (s) {
+          Object.assign(f.properties, s);
+          if (abbr !== 'PR' && abbr !== 'DC') { // Exclude Puerto Rico and DC for some stats if needed
+            const gop = +s.votes_gop || 0;
+            const dem = +s.votes_dem || 0;
+            const reporting = +s.reporting || 0;
+            const total = gop + dem;
+            total_gop_votes += gop;
+            total_dem_votes += dem;
+            total_votes += total;
+            if (reporting === 100) {
+              if (gop > dem) ev_bush += +s.electoral_votes;
+              else if (dem > gop) ev_gore += +s.electoral_votes;
+            }
+          }
         }
       });
-
-      const total_registered = 105405100; // 2000 election, approx total votes cast. Adjust if needed!
+      const total_registered = 105405100; // 2000 total votes cast (approximate)
       const perc_gop = ((total_gop_votes / total_registered) * 100).toFixed(1);
       const perc_dem = ((total_dem_votes / total_registered) * 100).toFixed(1);
       const reporting_pct = ((total_votes / total_registered) * 100).toFixed(1);
@@ -140,7 +142,7 @@
       document.getElementById('gore-pv').textContent = `Gore: ${total_dem_votes.toLocaleString()} (${perc_dem}%)`;
       document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
 
-      map.addSource('states', { type: 'geojson', data: data });
+      map.addSource('states', { type: 'geojson', data: states });
 
       map.addLayer({
         id: 'states-fill',
@@ -173,20 +175,16 @@
 
       map.on('click', 'states-fill', (e) => {
         const p = e.features[0].properties;
-
         const gop = +p.votes_gop || 0;
         const dem = +p.votes_dem || 0;
         const total = gop + dem;
-
         const gopPerc = total > 0 ? ((gop / total) * 100).toFixed(1) : 0;
         const demPerc = total > 0 ? ((dem / total) * 100).toFixed(1) : 0;
         const winner = p.winner === 'UNKNOWN' ? 'Uncalled' : p.winner;
-
         const gopName = p.gop_candidate || 'Bush';
         const demName = p.dem_candidate || 'Gore';
         const gopCheck = winner === gopName ? '✓ ' : '';
         const demCheck = winner === demName ? '✓ ' : '';
-
         new mapboxgl.Popup()
           .setLngLat(e.lngLat)
           .setHTML(`
