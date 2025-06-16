@@ -175,6 +175,27 @@
     #county-modal-title { color:#fff; font-size:1.7rem; font-weight:800; margin:24px 0 16px 0;}
     #close-county-btn { position:absolute; right:28px; top:24px; background: #c43434; color:#fff; border:none; border-radius:50%; font-size:1.7rem; width:42px; height:42px; font-weight:900; cursor:pointer;}
     #county-map { width:93vw; height:55vh; min-height:320px; max-width:850px; margin:0 auto; border-radius: 13px; overflow: hidden;}
+    /* --- ADDED: Style for Box Out button --- */
+    #box-out-btn {
+      display: none;
+      position: absolute;
+      top: 20px;
+      right: 32px;
+      z-index: 1100;
+      background: #23272e;
+      color: #fff;
+      padding: 10px 22px;
+      border: none;
+      border-radius: 10px;
+      font-size: 17px;
+      font-weight: 800;
+      box-shadow: 0 3px 18px #0008;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #box-out-btn:hover {
+      background: #303540;
+    }
   </style>
 </head>
 <body>
@@ -207,6 +228,9 @@
   </div>
 </div>
 <div id="map"></div>
+
+<!-- --- ADDED: Box Out Button for zooming out --- -->
+<button id="box-out-btn">Box Out</button>
 
 <!-- NYT-style ticker BELOW the map, scroll to see -->
 <div id="projection-ticker-wrap">
@@ -311,6 +335,79 @@ setArcSegs(); setArcLabels();
 
 let mainMap = null;
 let statePopup = null;
+
+// --- ADDED: Variables for County Layer/Box Out ---
+let countiesLayerAdded = false;
+let showingStateFP = null;
+
+// --- ADDED: Functions for adding/removing main counties layer and zoom ---
+function addCountiesLayer(stateFP) {
+  // Filter counties for the selected state
+  const filtered = {
+    ...countiesGeoJSON,
+    features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
+  };
+  // Update election result color property
+  filtered.features.forEach(f => {
+    const stats = countyElectionStats[f.properties.GEOID];
+    f.properties.winner = stats ? stats.winner : null;
+  });
+
+  if (mainMap.getSource('main-counties')) {
+    mainMap.getSource('main-counties').setData(filtered);
+  } else {
+    mainMap.addSource('main-counties', { type: 'geojson', data: filtered });
+    mainMap.addLayer({
+      id: 'main-counties-fill',
+      type: 'fill',
+      source: 'main-counties',
+      paint: {
+        'fill-color': [
+          'match',
+          ['get', 'winner'],
+          'Bush', '#e74c3c',
+          'Gore', '#3498db',
+          '#b5b5b5'
+        ],
+        'fill-opacity': 0.85
+      }
+    });
+    mainMap.addLayer({
+      id: 'main-counties-outline',
+      type: 'line',
+      source: 'main-counties',
+      paint: { 'line-color': '#23272e', 'line-width': 1.2 }
+    });
+  }
+  countiesLayerAdded = true;
+  showingStateFP = stateFP;
+}
+
+function removeCountiesLayer() {
+  if (mainMap.getLayer('main-counties-fill')) mainMap.removeLayer('main-counties-fill');
+  if (mainMap.getLayer('main-counties-outline')) mainMap.removeLayer('main-counties-outline');
+  if (mainMap.getSource('main-counties')) mainMap.removeSource('main-counties');
+  countiesLayerAdded = false;
+  showingStateFP = null;
+}
+
+function getStateBounds(stateFP) {
+  for (const f of statesGeoJSON.features) {
+    if (f.properties.STATEFP == stateFP) {
+      const coords = f.geometry.coordinates.flat(2);
+      let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
+      coords.forEach(coord => {
+        minLng = Math.min(minLng, coord[0]);
+        maxLng = Math.max(maxLng, coord[0]);
+        minLat = Math.min(minLat, coord[1]);
+        maxLat = Math.max(maxLat, coord[1]);
+      });
+      return [[minLng, minLat], [maxLng, maxLat]];
+    }
+  }
+  return null;
+}
+// --- END ADDED ---
 
 function initializeMainMap() {
   mainMap = new mapboxgl.Map({
@@ -436,11 +533,29 @@ function initializeMainMap() {
     });
     mainMap.on('mouseleave', 'states-fill', () => { if (statePopup) statePopup.remove(); });
 
-    // Click state = show county modal
+    // --- REPLACED/EXTENDED: State click to zoom and show counties ---
     mainMap.on('click', 'states-fill', (e) => {
       const p = e.features[0].properties;
-      showCountyModal(p.name, p.state_abbr || p.state_abbreviation || p.name);
+      const stateFP = p.STATEFP || p.statefp || p.STATEFP10;
+
+      // --- ADDED: Overlay counties layer and zoom in ---
+      addCountiesLayer(stateFP);
+
+      // Zoom to state bounds
+      const bounds = getStateBounds(stateFP);
+      if (bounds) {
+        mainMap.fitBounds(bounds, { padding: 40, duration: 1100 });
+      } else {
+        mainMap.flyTo({ center: e.lngLat, zoom: 6 });
+      }
+
+      // Show "Box Out" button
+      document.getElementById('box-out-btn').style.display = 'block';
+
+      // --- Existing modal remains: ---
+      // showCountyModal(p.name, p.state_abbr || p.state_abbreviation || p.name);
     });
+    // --- END EXTENDED ---
   });
 }
 
@@ -555,6 +670,13 @@ function showCountyModal(stateName, stateAbbr) {
     countyMapInstance = null;
   };
 }
+
+// --- ADDED: Box Out Button logic ---
+document.getElementById('box-out-btn').onclick = () => {
+  removeCountiesLayer();
+  mainMap.flyTo({ center: [-98.5795, 39.8283], zoom: 3 });
+  document.getElementById('box-out-btn').style.display = 'none';
+};
 </script>
 </body>
 </html>
