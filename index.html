@@ -549,7 +549,12 @@ function initializeMainMap() {
           'case',
           ['==', ['get', 'status'], 'GOP Win'], '#d12c0f',
           ['==', ['get', 'status'], 'DEM Win'], '#0e47e6',
-          ['==', ['get', 'status'], 'Uncalled'], '#cccccc',
+          ['all', ['==', ['get', 'status'], 'Uncalled'], ['>', ['get', 'votes_gop'], ['get', 'votes_dem']]],
+          '#f4a6a6',
+          ['all', ['==', ['get', 'status'], 'Uncalled'], ['>', ['get', 'votes_dem'], ['get', 'votes_gop']]],
+          '#a6c8f4',
+          ['all', ['==', ['get', 'status'], 'Uncalled'], ['==', ['get', 'votes_gop'], ['get', 'votes_dem']]],
+          '#cccccc',
           '#ffffff'
         ],
         'fill-opacity': 1.0
