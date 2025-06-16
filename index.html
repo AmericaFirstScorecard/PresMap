@@ -331,18 +331,21 @@ const STATE_CSV_URL = 'https://docs.google.com/spreadsheets/d/10zbHap425MtnS4jgs
 
 function populateStateStatsFromCSV(rows) {
   for (const row of rows) {
-    let stateName = (row['State'] || row['state'] || '').trim();
+    let stateName = (row['State'] || '').trim();
     if (!stateName) continue;
-    stateStats[stateName] = {
+    stateStats[stateName.toLowerCase()] = {
       state: stateName,
-      electoral_votes: parseInt(row['Electoral Votes'] || row['EV'] || row['electoralvotes'] || row['Bush_EV'] || row['Gore_EV'] || 0),
-      votes_gop: parseInt(row['Bush Votes'] || row['Bush_Votes'] || row['bushvotes'] || 0),
-      votes_dem: parseInt(row['Gore Votes'] || row['Gore_Votes'] || row['gorevotes'] || 0),
+      electoral_votes: parseInt(row['Electoral Votes'] || 0),
+      votes_gop: parseInt(row['Republican Votes'] || 0),
+      votes_dem: parseInt(row['Democrat Votes'] || 0),
+      votes_other: parseInt(row['Other Votes'] || 0),
+      total_votes: parseInt(row['Total Votes'] || 0),
       winner: (row['Winner'] || '').trim(),
-      reporting: 100,
-      status: (row['Winner'] || '').trim() === 'Bush' ? 'GOP Win' : ((row['Winner'] || '').trim() === 'Gore' ? 'DEM Win' : 'Uncalled'),
-      gop_candidate: "Bush",
-      dem_candidate: "Gore",
+      status: (row['Election status'] || 'Uncalled').trim(),
+      gop_candidate: (row['Republican Candidate'] || 'Bush').trim(),
+      dem_candidate: (row['Democrat Candidate'] || 'Gore').trim(),
+      other_candidate: (row['Other Candidate'] || '').trim(),
+      reporting: parseFloat(row['Reporting %'] || 0)
     };
   }
 }
@@ -370,15 +373,27 @@ Promise.all([
     skipEmptyLines: true,
     complete: function(results) {
       populateStateStatsFromCSV(results.data);
-      // INJECT CSV DATA INTO GEOJSON PROPERTIES
       statesGeoJSON.features.forEach(f => {
         const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
         const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
-        let matchedRow = null;
-        Object.keys(stateStats).forEach(csvKey => {
-          if (csvKey.trim().toLowerCase() === geoName) matchedRow = stateStats[csvKey];
-        });
-        if (matchedRow) Object.assign(f.properties, matchedRow);
+        const matchedRow = stateStats[geoName];
+        if (matchedRow) {
+          f.properties = {
+            ...f.properties,
+            state: matchedRow.state,
+            electoral_votes: matchedRow.electoral_votes,
+            votes_gop: matchedRow.votes_gop,
+            votes_dem: matchedRow.votes_dem,
+            votes_other: matchedRow.votes_other,
+            total_votes: matchedRow.total_votes,
+            winner: matchedRow.winner,
+            status: matchedRow.status === 'Called' ? (matchedRow.winner === 'Bush' ? 'GOP Win' : matchedRow.winner === 'Gore' ? 'DEM Win' : 'Uncalled') : 'Uncalled',
+            gop_candidate: matchedRow.gop_candidate,
+            dem_candidate: matchedRow.dem_candidate,
+            other_candidate: matchedRow.other_candidate,
+            reporting: matchedRow.reporting
+          };
+        }
       });
       Papa.parse('data/countypres20.csv', {
         download: true,
@@ -460,7 +475,7 @@ function enableStateHover() {
   stateHoverHandlers.mousemove = function(e) {
     const p = e.features[0].properties;
     const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
-    const gop = +p.votes_gop || 0, dem = +p.votes_dem || 0, total = gop + dem;
+    const gop = +p.votes_gop || 0, dem = +p.votes_dem || 0, total = gop + dem + (+p.votes_other || 0);
     const gopPerc = total > 0 ? ((gop / total) * 100).toFixed(1) : 0;
     const demPerc = total > 0 ? ((dem / total) * 100).toFixed(1) : 0;
     const winner = p.winner || 'Uncalled';
@@ -524,13 +539,6 @@ function initializeMainMap() {
       statesGeoJSON = { type: "FeatureCollection", features: Object.values(stateFeatures) };
     }
 
-    statesGeoJSON.features.forEach(f => {
-      const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
-      const stateName = f.properties[nameKey];
-      const s = stateStats[stateName];
-      if (s) Object.assign(f.properties, s);
-    });
-
     mainMap.addSource('states', { type: 'geojson', data: statesGeoJSON });
     mainMap.addLayer({
       id: 'states-fill',
@@ -541,8 +549,6 @@ function initializeMainMap() {
           'case',
           ['==', ['get', 'status'], 'GOP Win'], '#d12c0f',
           ['==', ['get', 'status'], 'DEM Win'], '#0e47e6',
-          ['==', ['get', 'status'], 'Lean GOP'], '#f4a6a6',
-          ['==', ['get', 'status'], 'Lean DEM'], '#a6c8f4',
           ['==', ['get', 'status'], 'Uncalled'], '#cccccc',
           '#ffffff'
         ],
@@ -562,6 +568,9 @@ function initializeMainMap() {
       const winner = f.properties.winner || "";
       if (winner === 'Bush') ev_bush += ev;
       else if (winner === 'Gore') ev_gore += ev;
+      total_gop_votes += f.properties.votes_gop || 0;
+      total_dem_votes += f.properties.votes_dem || 0;
+      total_votes += f.properties.total_votes || 0;
     });
 
     document.getElementById('bush-votes').textContent = ev_bush;
@@ -596,19 +605,8 @@ function initializeMainMap() {
     document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
     document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
 
-    countiesGeoJSON.features.forEach(f => {
-      const stateFP = f.properties.STATEFP;
-      const countyFIPS = f.properties.GEOID;
-      const stats = countyElectionStats[countyFIPS];
-      if (stats) {
-        total_gop_votes += stats.bush_votes || 0;
-        total_dem_votes += stats.gore_votes || 0;
-        total_votes += (stats.bush_votes || 0) + (stats.gore_votes || 0);
-      }
-    });
-    const total_registered = 105405100;
-    const reporting_pct = ((total_votes / total_registered) * 100).toFixed(1);
-    document.getElementById('reporting').textContent = "Reporting: " + reporting_pct + "%";
+    const reporting_pct = Object.values(stateStats).reduce((acc, s) => acc + (s.reporting || 0), 0) / Object.keys(stateStats).length;
+    document.getElementById('reporting').textContent = "Reporting: " + reporting_pct.toFixed(1) + "%";
 
     enableStateHover();
     mainMap.on('click', 'states-fill', (e) => {
