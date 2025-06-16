@@ -64,8 +64,20 @@
       z-index: 1;
       background: #ccc;
     }
+    #state-sidebar {
+      display: none; position: fixed; top: 0; right: 0; width: 300px; height: 100%;
+      background: #222; color: white; padding: 20px; z-index: 1000; overflow-y: auto;
+    }
+    #state-sidebar h2 { margin: 0 0 10px; font-size: 1.5rem; }
+    #state-sidebar p { margin: 5px 0; }
+    #candidate-stats div { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
+    #see-county-results-btn {
+      background: #303540; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;
+    }
+    #see-county-results-btn:hover { background: #404550; }
     @media (max-width:700px) {
       #map { min-height: 300px; }
+      #state-sidebar { width: 100%; }
     }
     #projection-ticker-wrap {
       width: 100%;
@@ -169,13 +181,11 @@
       .arc-label { font-size: 11px;}
       .arc-label-center { font-size: 13px;}
     }
-    /* Modal for counties */
     #county-modal { position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(24,29,32,0.94); z-index:10010; display:none; align-items:center; justify-content:center; }
     #county-modal-content { background:#23272e; border-radius:16px; box-shadow:0 8px 32px #000d; width:92vw; max-width:900px; min-height:400px; padding: 0 0 24px 0; display:flex; flex-direction:column; align-items:center;}
     #county-modal-title { color:#fff; font-size:1.7rem; font-weight:800; margin:24px 0 16px 0;}
     #close-county-btn { position:absolute; right:28px; top:24px; background: #c43434; color:#fff; border:none; border-radius:50%; font-size:1.7rem; width:42px; height:42px; font-weight:900; cursor:pointer;}
     #county-map { width:93vw; height:55vh; min-height:320px; max-width:850px; margin:0 auto; border-radius: 13px; overflow: hidden;}
-    /* --- ADDED: Style for Box Out button --- */
     #box-out-btn {
       display: none;
       position: absolute;
@@ -214,8 +224,8 @@
           <div class="threshold-marker"></div>
           <div class="progress-bar bush" id="bush-bar" style="width: 0%"></div>
           <div class="progress-bar gore" id="gore-bar" style="width: 0%"></div>
-          <div class="vote-label" id="bush-label" style="left: 5px">0</div>
-          <div class="vote-label" id="gore-label" style="right: 5px">0</div>
+          <div class="vote-label" id="bush-label" style="left: 5px">0%</div>
+          <div class="vote-label" id="gore-label" style="right: 5px">0%</div>
         </div>
       </div>
       <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image">
@@ -228,23 +238,23 @@
   </div>
 </div>
 <div id="map"></div>
-
-<!-- --- ADDED: Box Out Button for zooming out --- -->
 <button id="box-out-btn">Box Out</button>
-
-<!-- NYT-style ticker BELOW the map, scroll to see -->
+<div id="state-sidebar">
+  <h2 id="state-sidebar-title"></h2>
+  <p id="state-electoral-votes"></p>
+  <div id="candidate-stats"></div>
+  <p id="reporting-status"></p>
+  <button id="see-county-results-btn">See county results</button>
+  <p id="last-updated"></p>
+</div>
 <div id="projection-ticker-wrap">
   <div class="nyt-projection-title">Chance of Winning <span style="font-weight:400;">(Projection)</span></div>
   <div class="needle-svg-wrap" style="position: relative;">
-    <!-- Bush Image -->
     <img src="images/George-W-Bush.jpg" class="needle-img-candidate needle-img-bush" id="needle-img-bush" alt="Bush"/>
-    <!-- Gore Image -->
     <img src="images/Al_Gore.jpg" class="needle-img-candidate needle-img-gore" id="needle-img-gore" alt="Gore"/>
-    <!-- Checkmarks -->
     <svg class="needle-checkmark" id="needle-check-bush" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#e74c3c"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg class="needle-checkmark gore" id="needle-check-gore" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#3498db"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg id="nyt-needle-svg" width="500" height="270" viewBox="0 0 500 270">
-      <!-- Arc Segments -->
       <path id="arc-vl-bush" class="arc-very-likely-bush" fill="none" stroke-width="20"/>
       <path id="arc-l-bush" class="arc-likely-bush" fill="none" stroke-width="20"/>
       <path id="arc-le-bush" class="arc-lean-bush" fill="none" stroke-width="20"/>
@@ -252,9 +262,7 @@
       <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
       <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
       <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
-      <!-- Arc Labels: inner, centered at angle for each wedge -->
       <g id="arc-labels-group"></g>
-      <!-- Needle -->
       <g id="needle-group">
         <polygon id="nyt-needle" class="needle-arrow" points="250,64 243,162 257,162"/>
         <circle id="needle-dot" class="needle-dot" cx="250" cy="154" r="16"/>
@@ -269,11 +277,9 @@
     </div>
   </div>
 </div>
-
-<!-- COUNTY MODAL -->
 <div id="county-modal">
   <div id="county-modal-content">
-    <button id="close-county-btn">&times;</button>
+    <button id="close-county-btn">×</button>
     <div id="county-modal-title"></div>
     <div id="county-map"></div>
   </div>
@@ -335,22 +341,38 @@ setArcSegs(); setArcLabels();
 
 let mainMap = null;
 let statePopup = null;
-
-// --- ADDED: Variables for County Layer/Box Out ---
 let countiesLayerAdded = false;
 let showingStateFP = null;
 
-// --- ADDED: Functions for adding/removing main counties layer and zoom ---
+function getMajorCities(stateFP) {
+  if (stateFP === "48") { // Texas
+    return [
+      { name: "Austin", coordinates: [-97.7431, 30.2672] },
+      { name: "Houston", coordinates: [-95.3698, 29.7604] },
+      { name: "Dallas", coordinates: [-96.7969, 32.7767] },
+      { name: "San Antonio", coordinates: [-98.4936, 29.4241] },
+      { name: "El Paso", coordinates: [-106.4850, 31.7619] }
+    ];
+  }
+  return [];
+}
+
 function addCountiesLayer(stateFP) {
-  // Filter counties for the selected state
   const filtered = {
     ...countiesGeoJSON,
     features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
   };
-  // Update election result color property
   filtered.features.forEach(f => {
     const stats = countyElectionStats[f.properties.GEOID];
-    f.properties.winner = stats ? stats.winner : null;
+    if (stats) {
+      const total = stats.bush_votes + stats.gore_votes;
+      const margin = Math.abs(stats.bush_votes - stats.gore_votes) / total * 100;
+      f.properties.winner = stats.winner;
+      f.properties.margin = margin;
+    } else {
+      f.properties.winner = null;
+      f.properties.margin = 0;
+    }
   });
 
   if (mainMap.getSource('main-counties')) {
@@ -363,10 +385,19 @@ function addCountiesLayer(stateFP) {
       source: 'main-counties',
       paint: {
         'fill-color': [
-          'match',
-          ['get', 'winner'],
-          'Bush', '#e74c3c',
-          'Gore', '#3498db',
+          'case',
+          ['==', ['get', 'winner'], 'Bush'],
+          ['interpolate', ['linear'], ['get', 'margin'],
+            0, '#f4a6a6',
+            10, '#e74c3c',
+            20, '#d12c0f'
+          ],
+          ['==', ['get', 'winner'], 'Gore'],
+          ['interpolate', ['linear'], ['get', 'margin'],
+            0, '#a6c8f4',
+            10, '#3498db',
+            20, '#0e47e6'
+          ],
           '#b5b5b5'
         ],
         'fill-opacity': 0.85
@@ -376,9 +407,82 @@ function addCountiesLayer(stateFP) {
       id: 'main-counties-outline',
       type: 'line',
       source: 'main-counties',
-      paint: { 'line-color': '#23272e', 'line-width': 1.2 }
+      paint: { 'line-color': '#ffffff', 'line-width': 0.5 }
     });
   }
+
+  const majorCities = getMajorCities(stateFP);
+  const cityFeatures = majorCities.map(city => ({
+    type: 'Feature',
+    properties: { name: city.name },
+    geometry: { type: 'Point', coordinates: city.coordinates }
+  }));
+  const cityGeoJSON = { type: 'FeatureCollection', features: cityFeatures };
+
+  if (mainMap.getSource('main-cities')) {
+    mainMap.getSource('main-cities').setData(cityGeoJSON);
+  } else {
+    mainMap.addSource('main-cities', { type: 'geojson', data: cityGeoJSON });
+    mainMap.addLayer({
+      id: 'main-cities-labels',
+      type: 'symbol',
+      source: 'main-cities',
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-font': ['Inter Semi Bold', 'Arial Unicode MS Bold'],
+        'text-size': 12,
+        'text-anchor': 'top'
+      },
+      paint: {
+        'text-color': '#ffffff',
+        'text-halo-color': '#000000',
+        'text-halo-width': 1
+      }
+    });
+    mainMap.addLayer({
+      id: 'main-cities-points',
+      type: 'circle',
+      source: 'main-cities',
+      paint: {
+        'circle-radius': 4,
+        'circle-color': '#ffffff',
+        'circle-stroke-width': 1,
+        'circle-stroke-color': '#000000'
+      }
+    });
+  }
+
+  const stateFeature = statesGeoJSON.features.find(f => f.properties.STATEFP === stateFP);
+  const stateName = stateFeature.properties.name;
+  const electoralVotes = stateFeature.properties.electoral_votes;
+  const stats = stateStats[stateName];
+
+  document.getElementById('state-sidebar-title').textContent = `President: ${stateName}`;
+  document.getElementById('state-electoral-votes').textContent = `${electoralVotes} electoral votes`;
+  const candidateStatsDiv = document.getElementById('candidate-stats');
+  candidateStatsDiv.innerHTML = '';
+
+  if (stats) {
+    const candidates = [
+      { name: 'Bush', votes: stats.votes_gop, color: '#e74c3c' },
+      { name: 'Gore', votes: stats.votes_dem, color: '#3498db' }
+    ];
+    candidates.forEach(candidate => {
+      const percentage = ((candidate.votes / (stats.votes_gop + stats.votes_dem)) * 100).toFixed(1);
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <img src="images/${candidate.name}.jpg" alt="${candidate.name}" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid ${candidate.color};">
+        <span style="color: ${candidate.color};">${candidate.name}: ${percentage}% (${candidate.votes.toLocaleString()})</span>
+      `;
+      candidateStatsDiv.appendChild(div);
+    });
+    document.getElementById('reporting-status').textContent = `Reporting: ${stats.reporting}%`;
+  } else {
+    candidateStatsDiv.textContent = 'No data available';
+  }
+  document.getElementById('last-updated').textContent = 'Updated: 10:02 p.m. ET, Jan 14';
+  document.getElementById('state-sidebar').style.display = 'block';
+
   countiesLayerAdded = true;
   showingStateFP = stateFP;
 }
@@ -386,9 +490,13 @@ function addCountiesLayer(stateFP) {
 function removeCountiesLayer() {
   if (mainMap.getLayer('main-counties-fill')) mainMap.removeLayer('main-counties-fill');
   if (mainMap.getLayer('main-counties-outline')) mainMap.removeLayer('main-counties-outline');
+  if (mainMap.getLayer('main-cities-labels')) mainMap.removeLayer('main-cities-labels');
+  if (mainMap.getLayer('main-cities-points')) mainMap.removeLayer('main-cities-points');
   if (mainMap.getSource('main-counties')) mainMap.removeSource('main-counties');
+  if (mainMap.getSource('main-cities')) mainMap.removeSource('main-cities');
   countiesLayerAdded = false;
   showingStateFP = null;
+  document.getElementById('state-sidebar').style.display = 'none';
 }
 
 function getStateBounds(stateFP) {
@@ -407,7 +515,6 @@ function getStateBounds(stateFP) {
   }
   return null;
 }
-// --- END ADDED ---
 
 function initializeMainMap() {
   mainMap = new mapboxgl.Map({
@@ -418,7 +525,6 @@ function initializeMainMap() {
   });
 
   mainMap.on('load', () => {
-    // Color by winner/status
     statesGeoJSON.features.forEach(f => {
       const stateName = f.properties.name;
       const s = stateStats[stateName];
@@ -451,7 +557,6 @@ function initializeMainMap() {
       paint: { 'line-color': '#000000', 'line-width': 2 }
     });
 
-    // ---- ELECTION BAR + TICKER LOGIC ----
     let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
     statesGeoJSON.features.forEach(f => {
       const s = f.properties;
@@ -467,6 +572,9 @@ function initializeMainMap() {
         else if (dem > gop) ev_gore += +s.electoral_votes;
       }
     });
+    const totalVotes = total_gop_votes + total_dem_votes;
+    const bushPercentage = totalVotes > 0 ? (total_gop_votes / totalVotes * 100).toFixed(1) : 0;
+    const gorePercentage = totalVotes > 0 ? (total_dem_votes / totalVotes * 100).toFixed(1) : 0;
     const total_registered = 105405100;
     const perc_gop = ((total_gop_votes / total_registered) * 100).toFixed(1);
     const perc_dem = ((total_dem_votes / total_registered) * 100).toFixed(1);
@@ -474,15 +582,14 @@ function initializeMainMap() {
 
     document.getElementById('bush-votes').textContent = ev_bush;
     document.getElementById('gore-votes').textContent = ev_gore;
-    document.getElementById('bush-bar').style.width = `${(ev_bush / 538) * 100}%`;
-    document.getElementById('gore-bar').style.width = `${(ev_gore / 538) * 100}%`;
-    document.getElementById('bush-label').textContent = ev_bush;
-    document.getElementById('gore-label').textContent = ev_gore;
+    document.getElementById('bush-bar').style.width = `${bushPercentage}%`;
+    document.getElementById('gore-bar').style.width = `${gorePercentage}%`;
+    document.getElementById('bush-label').textContent = `${bushPercentage}%`;
+    document.getElementById('gore-label').textContent = `${gorePercentage}%`;
     document.getElementById('bush-pv').textContent = `Bush: ${total_gop_votes.toLocaleString()} (${perc_gop}%)`;
     document.getElementById('gore-pv').textContent = `Gore: ${total_dem_votes.toLocaleString()} (${perc_dem}%)`;
     document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
 
-    // ------ NYT-STYLE PROJECTION NEEDLE LOGIC ------
     const bushProj = Math.min(ev_bush / 270, 1);
     const goreProj = Math.min(ev_gore / 270, 1);
     let projBush, projGore;
@@ -506,7 +613,6 @@ function initializeMainMap() {
     document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
     document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
 
-    // Hover popup for state
     mainMap.on('mousemove', 'states-fill', (e) => {
       const p = e.features[0].properties;
       const gop = +p.votes_gop || 0, dem = +p.votes_dem || 0, total = gop + dem;
@@ -533,15 +639,12 @@ function initializeMainMap() {
     });
     mainMap.on('mouseleave', 'states-fill', () => { if (statePopup) statePopup.remove(); });
 
-    // --- REPLACED/EXTENDED: State click to zoom and show counties ---
     mainMap.on('click', 'states-fill', (e) => {
       const p = e.features[0].properties;
       const stateFP = p.STATEFP || p.statefp || p.STATEFP10;
 
-      // --- ADDED: Overlay counties layer and zoom in ---
       addCountiesLayer(stateFP);
 
-      // Zoom to state bounds
       const bounds = getStateBounds(stateFP);
       if (bounds) {
         mainMap.fitBounds(bounds, { padding: 40, duration: 1100 });
@@ -549,17 +652,11 @@ function initializeMainMap() {
         mainMap.flyTo({ center: e.lngLat, zoom: 6 });
       }
 
-      // Show "Box Out" button
       document.getElementById('box-out-btn').style.display = 'block';
-
-      // --- Existing modal remains: ---
-      // showCountyModal(p.name, p.state_abbr || p.state_abbreviation || p.name);
     });
-    // --- END EXTENDED ---
   });
 }
 
-// COUNTY MODAL LOGIC
 const countyModal = document.getElementById('county-modal');
 const countyMapDiv = document.getElementById('county-map');
 const countyModalTitle = document.getElementById('county-modal-title');
@@ -584,9 +681,7 @@ function showCountyModal(stateName, stateAbbr) {
 
   const stateCounties = {
     ...countiesGeoJSON,
-    features: countiesGeoJSON.features.filter(f => {
-      return (f.properties.STATEFP === stateFP);
-    })
+    features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
   };
 
   let center = [-99.5, 31.0], zoom = 5.5;
@@ -637,7 +732,6 @@ function showCountyModal(stateName, stateAbbr) {
       paint: { 'line-color': '#23272e', 'line-width': 1 }
     });
 
-    // Popup on hover for county details
     let countyPopup = null;
     countyMapInstance.on('mousemove', 'counties-fill', (e) => {
       countyMapInstance.getCanvas().style.cursor = 'pointer';
@@ -671,11 +765,16 @@ function showCountyModal(stateName, stateAbbr) {
   };
 }
 
-// --- ADDED: Box Out Button logic ---
 document.getElementById('box-out-btn').onclick = () => {
   removeCountiesLayer();
   mainMap.flyTo({ center: [-98.5795, 39.8283], zoom: 3 });
   document.getElementById('box-out-btn').style.display = 'none';
+};
+
+document.getElementById('see-county-results-btn').onclick = () => {
+  const stateName = document.getElementById('state-sidebar-title').textContent.replace('President: ', '');
+  const stateFeature = statesGeoJSON.features.find(f => f.properties.name === stateName);
+  showCountyModal(stateName, stateFeature.properties.state_abbr);
 };
 </script>
 </body>
