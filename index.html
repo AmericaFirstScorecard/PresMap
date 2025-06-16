@@ -323,6 +323,7 @@ Promise.all([
         else if (c.gore_votes > c.bush_votes) c.winner = "Gore";
         else c.winner = "Tied";
       }
+      setArcSegs();
       initializeMainMap();
     }
   });
@@ -361,17 +362,14 @@ function setArcSegs() {
   document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 30, 60));
   document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 60, 90));
 }
-setArcSegs();
 
 let mainMap = null;
 let statePopup = null;
-let countiesLayerAdded = false;
 
 function getStateBounds(stateFP) {
   for (const f of statesGeoJSON.features) {
     if (f.properties.STATEFP == stateFP) {
       let coords = [];
-      // Defensive for Polygon/MultiPolygon
       if (f.geometry.type === "Polygon") {
         coords = f.geometry.coordinates.flat();
       } else if (f.geometry.type === "MultiPolygon") {
@@ -405,7 +403,7 @@ function addCountiesLayer(stateFP) {
     const fips = f.properties.GEOID;
     const stats = countyElectionStats[fips];
     if (stats) {
-      const total = stats.bush_votes + stats.gore_votes;
+      const total = stats.bush_votes + stats.gore_votes + stats.other_votes;
       const margin = total > 0 ? Math.abs(stats.bush_votes - stats.gore_votes) / total * 100 : 0;
       f.properties.winner = stats.winner;
       f.properties.margin = margin;
@@ -415,41 +413,70 @@ function addCountiesLayer(stateFP) {
     }
   });
 
-  if (mainMap.getSource('main-counties')) {
-    mainMap.getSource('main-counties').setData(filtered);
-  } else {
-    mainMap.addSource('main-counties', { type: 'geojson', data: filtered });
-    mainMap.addLayer({
-      id: 'main-counties-fill',
-      type: 'fill',
-      source: 'main-counties',
-      paint: {
-        'fill-color': [
-          'case',
-          ['==', ['get', 'winner'], 'Bush'],
-          ['interpolate', ['linear'], ['get', 'margin'],
-            0, '#f4a6a6',
-            10, '#e74c3c',
-            20, '#d12c0f'
-          ],
-          ['==', ['get', 'winner'], 'Gore'],
-          ['interpolate', ['linear'], ['get', 'margin'],
-            0, '#a6c8f4',
-            10, '#3498db',
-            20, '#0e47e6'
-          ],
-          '#b5b5b5'
+  // Remove previous if present
+  if (mainMap.getLayer('main-counties-fill')) mainMap.removeLayer('main-counties-fill');
+  if (mainMap.getLayer('main-counties-outline')) mainMap.removeLayer('main-counties-outline');
+  if (mainMap.getSource('main-counties')) mainMap.removeSource('main-counties');
+
+  mainMap.addSource('main-counties', { type: 'geojson', data: filtered });
+  mainMap.addLayer({
+    id: 'main-counties-fill',
+    type: 'fill',
+    source: 'main-counties',
+    paint: {
+      'fill-color': [
+        'case',
+        ['==', ['get', 'winner'], 'Bush'],
+        ['interpolate', ['linear'], ['get', 'margin'],
+          0, '#f4a6a6',
+          10, '#e74c3c',
+          20, '#d12c0f'
         ],
-        'fill-opacity': 0.85
-      }
-    });
-    mainMap.addLayer({
-      id: 'main-counties-outline',
-      type: 'line',
-      source: 'main-counties',
-      paint: { 'line-color': '#ffffff', 'line-width': 0.5 }
-    });
-  }
+        ['==', ['get', 'winner'], 'Gore'],
+        ['interpolate', ['linear'], ['get', 'margin'],
+          0, '#a6c8f4',
+          10, '#3498db',
+          20, '#0e47e6'
+        ],
+        '#b5b5b5'
+      ],
+      'fill-opacity': 0.85
+    }
+  });
+  mainMap.addLayer({
+    id: 'main-counties-outline',
+    type: 'line',
+    source: 'main-counties',
+    paint: { 'line-color': '#ffffff', 'line-width': 0.5 }
+  });
+
+  // County popup on hover!
+  let countyPopup = null;
+  mainMap.on('mousemove', 'main-counties-fill', (e) => {
+    mainMap.getCanvas().style.cursor = 'pointer';
+    const f = e.features[0];
+    const geoid = f.properties.GEOID;
+    const stats = countyElectionStats[geoid];
+    let html = `<strong>${f.properties.NAME} County</strong>`;
+    if (stats) {
+      html += `<br>Bush: ${stats.bush_votes.toLocaleString()}`;
+      html += `<br>Gore: ${stats.gore_votes.toLocaleString()}`;
+      if(stats.other_votes > 0) html += `<br>Other: ${stats.other_votes.toLocaleString()}`;
+      html += `<br>Winner: ${stats.winner}`;
+    } else {
+      html += `<br>No data.`;
+    }
+    if (countyPopup) countyPopup.remove();
+    countyPopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
+      .setLngLat(e.lngLat)
+      .setHTML(html)
+      .addTo(mainMap);
+  });
+  mainMap.on('mouseleave', 'main-counties-fill', () => {
+    mainMap.getCanvas().style.cursor = '';
+    if (countyPopup) countyPopup.remove();
+    countyPopup = null;
+  });
 
   // Sidebar details:
   const stateFeature = statesGeoJSON.features.find(f => f.properties.STATEFP === stateFP);
@@ -459,23 +486,21 @@ function addCountiesLayer(stateFP) {
   candidateStatsDiv.innerHTML = '';
 
   let stateGopVotes = 0, stateDemVotes = 0, stateOtherVotes = 0, stateTotalVotes = 0;
-  countiesGeoJSON.features.forEach(c => {
-    if (c.properties.STATEFP === stateFP) {
-      const countyFIPS = c.properties.GEOID;
-      const stats = countyElectionStats[countyFIPS];
-      if (stats) {
-        stateGopVotes += stats.bush_votes || 0;
-        stateDemVotes += stats.gore_votes || 0;
-        stateOtherVotes += stats.other_votes || 0;
-        stateTotalVotes += stats.totalvotes || 0;
-      }
+  filtered.features.forEach(c => {
+    const countyFIPS = c.properties.GEOID;
+    const stats = countyElectionStats[countyFIPS];
+    if (stats) {
+      stateGopVotes += stats.bush_votes || 0;
+      stateDemVotes += stats.gore_votes || 0;
+      stateOtherVotes += stats.other_votes || 0;
+      stateTotalVotes += stats.bush_votes + stats.gore_votes + stats.other_votes;
     }
   });
 
   document.getElementById('state-sidebar-title').textContent = `President: ${stateName}`;
   document.getElementById('state-electoral-votes').textContent = `${electoralVotes} electoral votes`;
 
-  if (stateGopVotes + stateDemVotes + stateOtherVotes > 0) {
+  if (stateTotalVotes > 0) {
     const candidates = [
       { name: 'Bush', votes: stateGopVotes, color: '#e74c3c', image: 'images/George-W-Bush.jpg' },
       { name: 'Gore', votes: stateDemVotes, color: '#3498db', image: 'images/Al_Gore.jpg' }
@@ -500,17 +525,14 @@ function addCountiesLayer(stateFP) {
     candidateStatsDiv.textContent = 'No data available';
     document.getElementById('reporting-status').textContent = '';
   }
-  document.getElementById('last-updated').textContent = 'Updated: 07:53 PM CDT, Jun 15, 2025';
+  document.getElementById('last-updated').textContent = 'Updated: ' + (new Date()).toLocaleString();
   document.getElementById('state-sidebar').style.display = 'block';
-
-  countiesLayerAdded = true;
 }
 
 function removeCountiesLayer() {
   if (mainMap.getLayer('main-counties-fill')) mainMap.removeLayer('main-counties-fill');
   if (mainMap.getLayer('main-counties-outline')) mainMap.removeLayer('main-counties-outline');
   if (mainMap.getSource('main-counties')) mainMap.removeSource('main-counties');
-  countiesLayerAdded = false;
   document.getElementById('state-sidebar').style.display = 'none';
   document.getElementById('header').style.display = 'flex';
 }
@@ -556,7 +578,7 @@ function initializeMainMap() {
       paint: { 'line-color': '#000000', 'line-width': 2 }
     });
 
-    // Aggregate totals
+    // Aggregate totals for bars
     let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
     statesGeoJSON.features.forEach(f => {
       const stateFIPS = f.properties.STATEFP;
