@@ -367,11 +367,15 @@ function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
 }
 
 function updateGeoJSONAndMap() {
+  const statusCounts = { 'GOP Win': 0, 'DEM Win': 0, 'Uncalled': 0 };
   statesGeoJSON.features.forEach(f => {
     const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
     const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
     const matchedRow = stateStats[geoName];
     if (matchedRow) {
+      const status = matchedRow.status === 'Called' ? 
+        (matchedRow.winner === 'Bush' ? 'GOP Win' : matchedRow.winner === 'Gore' ? 'DEM Win' : 'Uncalled') : 
+        'Uncalled';
       f.properties = {
         ...f.properties,
         state: matchedRow.state,
@@ -381,20 +385,22 @@ function updateGeoJSONAndMap() {
         votes_other: matchedRow.votes_other,
         total_votes: matchedRow.total_votes,
         winner: matchedRow.winner,
-        status: matchedRow.status === 'Called' ? (matchedRow.winner === 'Bush' ? 'GOP Win' : matchedRow.winner === 'Gore' ? 'DEM Win' : 'Uncalled') : 'Uncalled',
+        status: status,
         gop_candidate: matchedRow.gop_candidate,
         dem_candidate: matchedRow.dem_candidate,
         other_candidate: matchedRow.other_candidate,
         reporting: matchedRow.reporting
       };
+      statusCounts[status]++;
     }
   });
+  console.log('State status counts after update:', statusCounts);
   if (mainMap && mainMap.getSource('states')) {
     mainMap.getSource('states').setData(statesGeoJSON);
   }
   updateUIElements();
   if (currentState) {
-    addCountiesLayer(currentState); // Refresh sidebar if a state is selected
+    addCountiesLayer(currentState);
   }
 }
 
@@ -624,10 +630,10 @@ function initializeMainMap() {
       source: 'states',
       paint: {
         'fill-color': [
-          'case',
-          ['==', ['get', 'status'], 'GOP Win'], '#d12c0f', // Solid red for called Bush
-          ['==', ['get', 'status'], 'DEM Win'], '#0e47e6', // Solid blue for called Gore
-          ['==', ['get', 'status'], 'Uncalled'], [
+          'match', ['get', 'status'],
+          'GOP Win', '#d12c0f', // Solid red for called Bush
+          'DEM Win', '#0e47e6', // Solid blue for called Gore
+          'Uncalled', [
             'case',
             ['>', ['get', 'votes_gop'], ['get', 'votes_dem']], '#f4a6a6', // Light red for Bush lead
             ['>', ['get', 'votes_dem'], ['get', 'votes_gop']], '#a6c8f4', // Light blue for Gore lead
@@ -766,7 +772,7 @@ function addCountiesLayer(stateName) {
     mainMap.addLayer({
       id: 'main-counties-outline',
       type: 'line',
-      source: 'main-counties',
+      source: 'states',
       paint: { 'line-color': '#ffffff', 'line-width': 0.5 }
     });
 
