@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -75,10 +74,10 @@
     #state-sidebar h2 { margin: 0 0 10px; font-size: 1.5rem; }
     #state-sidebar p { margin: 5px 0; }
     #candidate-stats div { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
+    /* REMOVED CLOSE BUTTON */
     #close-sidebar-btn {
-      background: #c43434; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-bottom: 10px;
+      display: none !important;
     }
-    #close-sidebar-btn:hover { background: #e74c3c; }
     .separator { border-bottom: 1px solid #444; margin: 10px 0; }
     @media (max-width:700px) {
       #map { min-height: 300px; }
@@ -213,8 +212,8 @@
   <div class="title">2000 Live Election Map</div>
   <div class="progress-container">
     <div class="candidate-labels">
-      <span>Bush: <span id="bush-votes">0</span></span>
-      <span>Gore: <span id="gore-votes">0</span></span>
+      <span>Bush: <span id="bush-votes">0</span> EV</span>
+      <span>Gore: <span id="gore-votes">0</span> EV</span>
     </div>
     <div class="progress-bar-container">
       <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image">
@@ -232,15 +231,15 @@
     </div>
   </div>
   <div class="candidate-stats">
-    <div class="candidate-stat-left" id="bush-pv">Bush: 0 (0%)</div>
+    <div class="candidate-stat-left" id="bush-pv">Bush: <span id="bush-ev">0</span> EV</div>
     <div class="stat-box" id="reporting">Reporting: 0%</div>
-    <div class="candidate-stat-right" id="gore-pv">Gore: 0 (0%)</div>
+    <div class="candidate-stat-right" id="gore-pv">Gore: <span id="gore-ev">0</span> EV</div>
   </div>
 </div>
 <div id="map"></div>
 <button id="box-out-btn">Box Out</button>
 <div id="state-sidebar">
-  <button id="close-sidebar-btn">×</button>
+  <!-- close button removed! -->
   <h2 id="state-sidebar-title"></h2>
   <p id="state-electoral-votes"></p>
   <div class="separator"></div>
@@ -442,7 +441,12 @@ function initializeMainMap() {
     container: 'map',
     style: 'mapbox://styles/mapbox/light-v10',
     center: [-98.5795, 39.8283],
-    zoom: 3
+    zoom: 3,
+    minZoom: 2.6,  // restrict zoom out so US fills most of view
+    maxBounds: [ // restrict pan/zoom outside of the USA
+      [-130, 21], // Southwest coordinates (Hawaii offscreen)
+      [-65, 50]   // Northeast coordinates (Maine top, Alaska mostly offscreen)
+    ]
   });
   mainMap.on('load', () => {
     if (!statesGeoJSON || !statesGeoJSON.features) {
@@ -539,24 +543,22 @@ function initializeMainMap() {
       }
     });
 
-    const totalVotes = total_gop_votes + total_dem_votes;
-    const bushPercentage = totalVotes > 0 ? (total_gop_votes / totalVotes * 100).toFixed(1) : 0;
-    const gorePercentage = totalVotes > 0 ? (total_dem_votes / totalVotes * 100).toFixed(1) : 0;
-    const total_registered = 105405100;
-    const perc_gop = ((total_gop_votes / total_registered) * 100).toFixed(1);
-    const perc_dem = ((total_dem_votes / total_registered) * 100).toFixed(1);
-    const reporting_pct = ((total_votes / total_registered) * 100).toFixed(1);
-
+    const totalEV = ev_bush + ev_gore;
+    // Set EV numbers at the top bar
     document.getElementById('bush-votes').textContent = ev_bush;
     document.getElementById('gore-votes').textContent = ev_gore;
-    document.getElementById('bush-bar').style.width = `${bushPercentage}%`;
-    document.getElementById('gore-bar').style.width = `${gorePercentage}%`;
-    document.getElementById('bush-label').textContent = `${bushPercentage}%`;
-    document.getElementById('gore-label').textContent = `${gorePercentage}%`;
-    document.getElementById('bush-pv').textContent = `Bush: ${total_gop_votes.toLocaleString()} (${perc_gop}%)`;
-    document.getElementById('gore-pv').textContent = `Gore: ${total_dem_votes.toLocaleString()} (${perc_dem}%)`;
-    document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
+    document.getElementById('bush-ev').textContent = ev_bush;
+    document.getElementById('gore-ev').textContent = ev_gore;
 
+    // Gauge/progress bars now based on EV not pop vote
+    const bushEVPerc = totalEV > 0 ? (ev_bush / totalEV * 100).toFixed(1) : 0;
+    const goreEVPerc = totalEV > 0 ? (ev_gore / totalEV * 100).toFixed(1) : 0;
+    document.getElementById('bush-bar').style.width = `${bushEVPerc}%`;
+    document.getElementById('gore-bar').style.width = `${goreEVPerc}%`;
+    document.getElementById('bush-label').textContent = `${bushEVPerc}%`;
+    document.getElementById('gore-label').textContent = `${goreEVPerc}%`;
+
+    // Gauge/projection needle based on EV
     const bushProj = Math.min(ev_bush / 270, 1);
     const goreProj = Math.min(ev_gore / 270, 1);
     let projBush, projGore;
@@ -576,6 +578,12 @@ function initializeMainMap() {
     document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
     document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
 
+    // Keep pop vote reporting % at top
+    const total_registered = 105405100;
+    const totalVotes = total_gop_votes + total_dem_votes;
+    const reporting_pct = ((totalVotes / total_registered) * 100).toFixed(1);
+    document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
+
     enableStateHover();
     mainMap.on('click', 'states-fill', (e) => {
       const p = e.features[0].properties;
@@ -589,8 +597,10 @@ function initializeMainMap() {
       } else {
         mainMap.flyTo({ center: e.lngLat, zoom: 6 });
       }
+      // HIDE TOP BAR AND GAUGE
       document.getElementById('header').style.display = 'none';
       document.getElementById('box-out-btn').style.display = 'block';
+      document.getElementById('projection-ticker-wrap').style.display = 'none';
       disableStateHover();
     });
   });
@@ -801,6 +811,7 @@ function removeCountiesLayer() {
   if (mainMap.getSource('main-counties')) mainMap.removeSource('main-counties');
   document.getElementById('state-sidebar').style.display = 'none';
   document.getElementById('header').style.display = 'flex';
+  document.getElementById('projection-ticker-wrap').style.display = 'flex';
   enableStateHover();
 }
 
@@ -809,13 +820,9 @@ document.getElementById('box-out-btn').onclick = () => {
   mainMap.flyTo({ center: [-98.5795, 39.8283], zoom: 3 });
   document.getElementById('box-out-btn').style.display = 'none';
   document.getElementById('header').style.display = 'flex';
+  document.getElementById('projection-ticker-wrap').style.display = 'flex';
 };
-document.getElementById('close-sidebar-btn').onclick = () => {
-  removeCountiesLayer();
-  mainMap.flyTo({ center: [-98.5795, 39.8283], zoom: 3 });
-  document.getElementById('box-out-btn').style.display = 'none';
-  document.getElementById('header').style.display = 'flex';
-};
+
 </script>
 </body>
 </html>
