@@ -312,6 +312,7 @@ let stateStats = {};
 let mainMap = null;
 let statePopup = null;
 let stateHoverHandlers = {mousemove:null, mouseleave:null};
+let currentState = null; // Track currently selected state for sidebar
 
 const stateNameToFips = {
   "alabama": "01", "alaska": "02", "arizona": "04", "arkansas": "05", "california": "06",
@@ -330,10 +331,11 @@ const stateFipsMap = {...stateNameToFips};
 const STATE_CSV_URL = 'https://docs.google.com/spreadsheets/d/10zbHap425MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
 
 function populateStateStatsFromCSV(rows) {
+  const newStateStats = {};
   for (const row of rows) {
     let stateName = (row['State'] || '').trim();
     if (!stateName) continue;
-    stateStats[stateName.toLowerCase()] = {
+    newStateStats[stateName.toLowerCase()] = {
       state: stateName,
       electoral_votes: parseInt(row['Electoral Votes'] || 0),
       votes_gop: parseInt(row['Republican Votes'] || 0),
@@ -348,6 +350,7 @@ function populateStateStatsFromCSV(rows) {
       reporting: parseFloat(row['Reporting %'] || 0)
     };
   }
+  stateStats = newStateStats;
 }
 
 function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
@@ -363,6 +366,101 @@ function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
   }
 }
 
+function updateGeoJSONAndMap() {
+  statesGeoJSON.features.forEach(f => {
+    const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
+    const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
+    const matchedRow = stateStats[geoName];
+    if (matchedRow) {
+      f.properties = {
+        ...f.properties,
+        state: matchedRow.state,
+        electoral_votes: matchedRow.electoral_votes,
+        votes_gop: matchedRow.votes_gop,
+        votes_dem: matchedRow.votes_dem,
+        votes_other: matchedRow.votes_other,
+        total_votes: matchedRow.total_votes,
+        winner: matchedRow.winner,
+        status: matchedRow.status === 'Called' ? (matchedRow.winner === 'Bush' ? 'GOP Win' : matchedRow.winner === 'Gore' ? 'DEM Win' : 'Uncalled') : 'Uncalled',
+        gop_candidate: matchedRow.gop_candidate,
+        dem_candidate: matchedRow.dem_candidate,
+        other_candidate: matchedRow.other_candidate,
+        reporting: matchedRow.reporting
+      };
+    }
+  });
+  if (mainMap && mainMap.getSource('states')) {
+    mainMap.getSource('states').setData(statesGeoJSON);
+  }
+  updateUIElements();
+  if (currentState) {
+    addCountiesLayer(currentState); // Refresh sidebar if a state is selected
+  }
+}
+
+function updateUIElements() {
+  let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
+  statesGeoJSON.features.forEach(f => {
+    const ev = f.properties.electoral_votes || 0;
+    const winner = f.properties.winner || "";
+    if (winner === 'Bush') ev_bush += ev;
+    else if (winner === 'Gore') ev_gore += ev;
+    total_gop_votes += f.properties.votes_gop || 0;
+    total_dem_votes += f.properties.votes_dem || 0;
+    total_votes += f.properties.total_votes || 0;
+  });
+
+  document.getElementById('bush-votes').textContent = ev_bush;
+  document.getElementById('gore-votes').textContent = ev_gore;
+  document.getElementById('bush-ev').textContent = ev_bush;
+  document.getElementById('gore-ev').textContent = ev_gore;
+
+  const totalEV = ev_bush + ev_gore;
+  const bushEVPerc = totalEV > 0 ? (ev_bush / totalEV * 100).toFixed(1) : 0;
+  const goreEVPerc = totalEV > 0 ? (ev_gore / totalEV * 100).toFixed(1) : 0;
+  document.getElementById('bush-bar').style.width = bushEVPerc + "%";
+  document.getElementById('gore-bar').style.width = goreEVPerc + "%";
+  document.getElementById('bush-label').textContent = bushEVPerc + "%";
+  document.getElementById('gore-label').textContent = goreEVPerc + "%";
+
+  const bushProj = Math.min(ev_bush / 270, 1);
+  const goreProj = Math.min(ev_gore / 270, 1);
+  let projBush, projGore;
+  if (ev_bush >= 270 && ev_bush > ev_gore) { projBush = 1; projGore = 0; }
+  else if (ev_gore >= 270 && ev_gore > ev_bush) { projBush = 0; projGore = 1; }
+  else if (bushProj + goreProj > 0) {
+    projBush = bushProj / (bushProj + goreProj);
+    projGore = goreProj / (bushProj + goreProj);
+  } else { projBush = projGore = 0.5; }
+  let angle;
+  if (projBush === 1) angle = -90;
+  else if (projGore === 1) angle = 90;
+  else angle = -90 + 180 * projGore;
+  document.getElementById('needle-group').setAttribute('transform', `rotate(${angle},250,154)`);
+  document.getElementById('nyt-proj-bush-big').textContent = Math.round(projBush*100) + "%";
+  document.getElementById('nyt-proj-gore-big').textContent = Math.round(projGore*100) + "%";
+  document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
+  document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
+
+  const reporting_pct = Object.values(stateStats).reduce((acc, s) => acc + (s.reporting || 0), 0) / Object.keys(stateStats).length;
+  document.getElementById('reporting').textContent = "Reporting: " + reporting_pct.toFixed(1) + "%";
+}
+
+function refreshElectionData() {
+  Papa.parse(STATE_CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      populateStateStatsFromCSV(results.data);
+      updateGeoJSONAndMap();
+    },
+    error: function(err) {
+      console.error('Error fetching CSV:', err);
+    }
+  });
+}
+
 Promise.all([
   fetch('data/county-geo.json').then(r => r.json()).then(data => { countiesGeoJSON = data; }),
   fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; populateStateFipsMapFromGeoJSON(statesGeoJSON); }),
@@ -373,28 +471,7 @@ Promise.all([
     skipEmptyLines: true,
     complete: function(results) {
       populateStateStatsFromCSV(results.data);
-      statesGeoJSON.features.forEach(f => {
-        const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
-        const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
-        const matchedRow = stateStats[geoName];
-        if (matchedRow) {
-          f.properties = {
-            ...f.properties,
-            state: matchedRow.state,
-            electoral_votes: matchedRow.electoral_votes,
-            votes_gop: matchedRow.votes_gop,
-            votes_dem: matchedRow.votes_dem,
-            votes_other: matchedRow.votes_other,
-            total_votes: matchedRow.total_votes,
-            winner: matchedRow.winner,
-            status: matchedRow.status === 'Called' ? (matchedRow.winner === 'Bush' ? 'GOP Win' : matchedRow.winner === 'Gore' ? 'DEM Win' : 'Uncalled') : 'Uncalled',
-            gop_candidate: matchedRow.gop_candidate,
-            dem_candidate: matchedRow.dem_candidate,
-            other_candidate: matchedRow.other_candidate,
-            reporting: matchedRow.reporting
-          };
-        }
-      });
+      updateGeoJSONAndMap();
       Papa.parse('data/countypres20.csv', {
         download: true,
         header: true,
@@ -423,6 +500,7 @@ Promise.all([
           }
           setArcSegs();
           initializeMainMap();
+          setInterval(refreshElectionData, 60000); // Refresh every 60 seconds
         }
       });
     }
@@ -567,58 +645,13 @@ function initializeMainMap() {
       paint: { 'line-color': '#000000', 'line-width': 2 }
     });
 
-    let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
-    statesGeoJSON.features.forEach(f => {
-      const ev = f.properties.electoral_votes || 0;
-      const winner = f.properties.winner || "";
-      if (winner === 'Bush') ev_bush += ev;
-      else if (winner === 'Gore') ev_gore += ev;
-      total_gop_votes += f.properties.votes_gop || 0;
-      total_dem_votes += f.properties.votes_dem || 0;
-      total_votes += f.properties.total_votes || 0;
-    });
-
-    document.getElementById('bush-votes').textContent = ev_bush;
-    document.getElementById('gore-votes').textContent = ev_gore;
-    document.getElementById('bush-ev').textContent = ev_bush;
-    document.getElementById('gore-ev').textContent = ev_gore;
-
-    const totalEV = ev_bush + ev_gore;
-    const bushEVPerc = totalEV > 0 ? (ev_bush / totalEV * 100).toFixed(1) : 0;
-    const goreEVPerc = totalEV > 0 ? (ev_gore / totalEV * 100).toFixed(1) : 0;
-    document.getElementById('bush-bar').style.width = bushEVPerc + "%";
-    document.getElementById('gore-bar').style.width = goreEVPerc + "%";
-    document.getElementById('bush-label').textContent = bushEVPerc + "%";
-    document.getElementById('gore-label').textContent = goreEVPerc + "%";
-
-    const bushProj = Math.min(ev_bush / 270, 1);
-    const goreProj = Math.min(ev_gore / 270, 1);
-    let projBush, projGore;
-    if (ev_bush >= 270 && ev_bush > ev_gore) { projBush = 1; projGore = 0; }
-    else if (ev_gore >= 270 && ev_gore > ev_bush) { projBush = 0; projGore = 1; }
-    else if (bushProj + goreProj > 0) {
-      projBush = bushProj / (bushProj + goreProj);
-      projGore = goreProj / (bushProj + goreProj);
-    } else { projBush = projGore = 0.5; }
-    let angle;
-    if (projBush === 1) angle = -90;
-    else if (projGore === 1) angle = 90;
-    else angle = -90 + 180 * projGore;
-    document.getElementById('needle-group').setAttribute('transform', `rotate(${angle},250,154)`);
-    document.getElementById('nyt-proj-bush-big').textContent = Math.round(projBush*100) + "%";
-    document.getElementById('nyt-proj-gore-big').textContent = Math.round(projGore*100) + "%";
-    document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
-    document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
-
-    const reporting_pct = Object.values(stateStats).reduce((acc, s) => acc + (s.reporting || 0), 0) / Object.keys(stateStats).length;
-    document.getElementById('reporting').textContent = "Reporting: " + reporting_pct.toFixed(1) + "%";
-
     enableStateHover();
     mainMap.on('click', 'states-fill', (e) => {
       const p = e.features[0].properties;
       const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
       const stateName = p[nameKey];
       if (!stateName) return;
+      currentState = stateName; // Store the selected state
       addCountiesLayer(stateName);
       const bounds = getStateBounds(stateName);
       if (bounds) {
@@ -847,6 +880,7 @@ function removeCountiesLayer() {
   document.getElementById('header').style.display = 'flex';
   document.getElementById('projection-ticker-wrap').style.display = 'flex';
   enableStateHover();
+  currentState = null; // Clear selected state
 }
 
 document.getElementById('box-out-btn').onclick = () => {
