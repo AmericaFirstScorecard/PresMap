@@ -74,7 +74,6 @@
     }
     #state-sidebar h2 { margin: 0 0 10px; font-size: 1.5rem; }
     #state-sidebar p { margin: 5px 0; }
-    #candidate-stats div { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
     #close-sidebar-btn { display: none; position: absolute; top: 10px; right: 10px; background: #444; border: none; color: white; padding: 5px 10px; cursor: pointer; }
     .separator { border-bottom: 1px solid #444; margin: 10px 0; }
     .candidate-row {
@@ -359,8 +358,13 @@ function populateStateStatsFromCSV(rows) {
   stateStats = newStateStats;
 }
 
-function populateCountyStatsFromCSV(rows) {
-  console.log('County CSV rows (first 5):', rows.slice(0, 5)); // Log first few rows for debugging
+function populateCountyStatsFromCSV(rows, headers) {
+  console.log('County CSV headers:', headers); // Log all headers
+  console.log('County CSV rows (first 5):', rows.slice(0, 5)); // Log first few rows
+  if (!rows.length) {
+    console.warn('No rows found in county CSV.');
+    return;
+  }
   const newCountyStats = {};
   for (const row of rows) {
     if (String(row.year) !== "2000" || !row.county_fips) continue;
@@ -384,8 +388,8 @@ function populateCountyStatsFromCSV(rows) {
     else c.winner = "Tied";
   }
   countyElectionStats = newCountyStats;
-  console.log('County Election Stats size:', Object.keys(countyElectionStats).length); // Log number of counties processed
-  console.log('Sample County Stats:', Object.entries(countyElectionStats).slice(0, 5)); // Log sample entries
+  console.log('County Election Stats size:', Object.keys(countyElectionStats).length);
+  console.log('Sample County Stats:', Object.entries(countyElectionStats).slice(0, 5));
 }
 
 function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
@@ -517,29 +521,46 @@ function refreshElectionData() {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
+          console.log('State CSV fetched successfully. Rows:', results.data.length);
           populateStateStatsFromCSV(results.data);
           resolve();
         },
         error: function(err) {
-          console.error('Error fetching state CSV:', err);
+          console.error('Error parsing state CSV:', err);
           reject(err);
         }
       });
     }),
     new Promise((resolve, reject) => {
-      Papa.parse(COUNTY_CSV_URL, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          populateCountyStatsFromCSV(results.data);
-          resolve();
-        },
-        error: function(err) {
+      fetch(COUNTY_CSV_URL)
+        .then(response => {
+          if (!response.ok) {
+            console.error('County CSV fetch failed. Status:', response.status);
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.text();
+        })
+        .then(text => {
+          console.log('County CSV raw text (first 200 chars):', text.slice(0, 200));
+          Papa.parse(text, {
+            download: false,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+              console.log('County CSV parsed. Rows:', results.data.length, 'Errors:', results.errors);
+              populateCountyStatsFromCSV(results.data, results.meta.fields);
+              resolve();
+            },
+            error: function(err) {
+              console.error('Error parsing county CSV:', err);
+              reject(err);
+            }
+          });
+        })
+        .catch(err => {
           console.error('Error fetching county CSV:', err);
           reject(err);
-        }
-      });
+        });
     })
   ]).then(() => {
     updateGeoJSONAndMap();
@@ -555,7 +576,7 @@ Promise.all([
   refreshElectionData();
   setArcSegs();
   initializeMainMap();
-  setInterval(refreshElectionData, 60000); // Update every minute
+  setInterval(refreshElectionData, 60000);
 });
 
 const arcSegs = [
@@ -770,6 +791,9 @@ function addCountiesLayer(stateName) {
     ...countiesGeoJSON,
     features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
   };
+  if (Object.keys(countyElectionStats).length === 0) {
+    console.warn(`No county election stats available for ${stateName}.`);
+  }
   filtered.features.forEach(f => {
     const fips = f.properties.GEOID;
     const stats = countyElectionStats[fips];
@@ -779,7 +803,7 @@ function addCountiesLayer(stateName) {
       f.properties.winner = stats.winner;
       f.properties.margin = margin;
     } else {
-      console.warn(`No stats found for county FIPS: ${fips}, County Name: ${f.properties.NAME}`); // Log missing stats
+      console.warn(`No stats found for county FIPS: ${fips}, County Name: ${f.properties.NAME}`);
       f.properties.winner = "Tied";
       f.properties.margin = 0;
     }
@@ -835,7 +859,7 @@ function addCountiesLayer(stateName) {
         if (stats.other_votes > 0) html += `<br>Other: ${stats.other_votes.toLocaleString()}`;
         html += `<br>Winner: <b style="color:${stats.winner==='Bush'?'#e74c3c':'#3498db'}">${stats.winner}${(stats.winner==='Bush'||stats.winner==='Gore')?checkmarkSvg(stats.winner==='Bush'?'#e74c3c':'#3498db',18):''}</b>`;
       } else {
-        html += `<br>No data.`;
+        html += `<br>No data available.`;
       }
       if (countyPopup) countyPopup.remove();
       countyPopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
@@ -916,7 +940,7 @@ function addCountiesLayer(stateName) {
     document.getElementById('reporting-fill').style.width = '100%';
     document.getElementById('reporting-status').textContent = "Reporting: 100%";
   } else {
-    candidateStatsDiv.textContent = 'No data available';
+    candidateStatsDiv.textContent = 'No county data available';
     document.getElementById('reporting-status').textContent = '';
     document.getElementById('reporting-fill').style.width = '0%';
   }
