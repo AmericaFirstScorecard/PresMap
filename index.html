@@ -761,18 +761,18 @@ function addCountiesLayer(stateName) {
           <div class="bar-fill bush" style="width: ${bushPct}%"></div>
         </div>
         <div class="candidate-details">
-          <span style="color: #e74c3c;">Donald Trump</span><br>
+          <span style="color: #e74c3c;">George Bush</span><br>
           <span>${bushPct}%</span> <span>${stateGopVotes.toLocaleString()} votes</span>
           ${stateGopVotes > stateDemVotes ? `<span>✓ ${lead.toLocaleString()} ahead</span>` : ''}
         </div>
       </div>
       <div class="candidate-row">
-        <img src="images/Kamala_Harris.jpg" alt="Kamala Harris" class="candidate-image-small">
+        <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image-small">
         <div class="bar-graph">
           <div class="bar-fill gore" style="width: ${gorePct}%"></div>
         </div>
         <div class="candidate-details">
-          <span style="color: #3498db;">Kamala Harris</span><br>
+          <span style="color: #3498db;">Al Gore</span><br>
           <span>${gorePct}%</span> <span>${stateDemVotes.toLocaleString()} votes</span>
           ${stateDemVotes > stateGopVotes ? `<span>✓ ${lead.toLocaleString()} ahead</span>` : ''}
         </div>
