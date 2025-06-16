@@ -10,6 +10,7 @@
   <!-- PapaParse for CSV parsing -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
+    /* [Your existing styles remain unchanged] */
     html, body { height: 100%; margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background: #11161b;}
     #header {
       background: #222; color: white; padding: 15px 20px;
@@ -369,7 +370,7 @@ let mainMap = null;
 let statePopup = null;
 
 function getStateBounds(stateFP) {
-  const stateFeature = statesGeoJSON.features.find(f => f.properties.STATEFP === stateFP);
+  const stateFeature = statesGeoJSON.features.find(f => f.properties.STATEFP === stateFP || f.properties.statefp === stateFP);
   if (!stateFeature) {
     console.log(`No state found for STATEFP: ${stateFP}`);
     return null;
@@ -496,7 +497,7 @@ function addCountiesLayer(stateFP) {
   }
 
   // Sidebar details
-  const stateFeature = statesGeoJSON.features.find(f => f.properties.STATEFP === stateFP);
+  const stateFeature = statesGeoJSON.features.find(f => f.properties.STATEFP === stateFP || f.properties.statefp === stateFP);
   if (!stateFeature) {
     console.log(`State feature not found for STATEFP: ${stateFP}`);
     return;
@@ -602,7 +603,7 @@ function initializeMainMap() {
     // Aggregate totals for bars
     let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
     statesGeoJSON.features.forEach(f => {
-      const stateFIPS = f.properties.STATEFP;
+      const stateFIPS = f.properties.STATEFP || f.properties.statefp;
       let stateGopVotes = 0, stateDemVotes = 0;
       countiesGeoJSON.features.forEach(c => {
         if (c.properties.STATEFP === stateFIPS) {
@@ -708,11 +709,12 @@ function initializeMainMap() {
 
     mainMap.on('click', 'states-fill', (e) => {
       const p = e.features[0].properties;
-      const stateFP = p.STATEFP;
+      const stateFP = p.STATEFP || p.statefp || p.STATEFP10; // Try multiple possible keys
       if (!stateFP) {
         console.log('No STATEFP found in clicked feature:', p);
         return;
       }
+      console.log(`Clicked stateFP: ${stateFP}`);
       addCountiesLayer(stateFP);
       const bounds = getStateBounds(stateFP);
       if (bounds) {
