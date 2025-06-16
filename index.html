@@ -87,7 +87,7 @@
       width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; position: relative;
     }
     .bar-fill {
-      height: 100%; transition: width 0.5s ease-in-out;
+      height: 100%; transition: width: 0.5s ease-in-out;
     }
     .bar-fill.bush { background: #e74c3c; }
     .bar-fill.gore { background: #3498db; }
@@ -99,7 +99,7 @@
       width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; margin: 10px 0;
     }
     .reporting-fill {
-      height: 100%; background: #4CAF50; transition: width 0.5s ease-in-out;
+      height: 100%; background: #4CAF50; transition: width: 0.5s ease-in-out;
     }
     @media (max-width:700px) {
       #map { min-height: 300px; }
@@ -335,6 +335,9 @@ function populateStateStatsFromCSV(rows) {
   for (const row of rows) {
     let stateName = (row['State'] || '').trim();
     if (!stateName) continue;
+    // Normalize status to title case
+    let status = (row['Election status'] || 'Uncalled').trim();
+    status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
     newStateStats[stateName.toLowerCase()] = {
       state: stateName,
       electoral_votes: parseInt(row['Electoral Votes'] || 0),
@@ -343,7 +346,7 @@ function populateStateStatsFromCSV(rows) {
       votes_other: parseInt(row['Other Votes'] || 0),
       total_votes: parseInt(row['Total Votes'] || 0),
       winner: (row['Winner'] || '').trim(),
-      status: (row['Election status'] || 'Uncalled').trim(),
+      status: status,
       gop_candidate: (row['Republican Candidate'] || 'Bush').trim(),
       dem_candidate: (row['Democrat Candidate'] || 'Gore').trim(),
       other_candidate: (row['Other Candidate'] || '').trim(),
@@ -373,9 +376,15 @@ function updateGeoJSONAndMap() {
     const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
     const matchedRow = stateStats[geoName];
     if (matchedRow) {
-      const status = matchedRow.status === 'Called' ? 
-        (matchedRow.winner === 'Bush' ? 'GOP Win' : matchedRow.winner === 'Gore' ? 'DEM Win' : 'Uncalled') : 
-        'Uncalled';
+      // Explicitly check status and winner
+      let status;
+      if (matchedRow.status === 'Called' && matchedRow.winner === 'Bush') {
+        status = 'GOP Win';
+      } else if (matchedRow.status === 'Called' && matchedRow.winner === 'Gore') {
+        status = 'DEM Win';
+      } else {
+        status = 'Uncalled';
+      }
       f.properties = {
         ...f.properties,
         state: matchedRow.state,
@@ -392,6 +401,8 @@ function updateGeoJSONAndMap() {
         reporting: matchedRow.reporting
       };
       statusCounts[status]++;
+      // Debug log for each state
+      console.log(`State: ${matchedRow.state}, Status: ${status}, Winner: ${matchedRow.winner || 'None'}, GOP Votes: ${matchedRow.votes_gop}, DEM Votes: ${matchedRow.votes_dem}`);
     }
   });
   console.log('State status counts after update:', statusCounts);
@@ -772,7 +783,7 @@ function addCountiesLayer(stateName) {
     mainMap.addLayer({
       id: 'main-counties-outline',
       type: 'line',
-      source: 'states',
+      source: 'main-counties',
       paint: { 'line-color': '#ffffff', 'line-width': 0.5 }
     });
 
