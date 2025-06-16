@@ -21,7 +21,7 @@
       display: flex; align-items: center; position: relative;
       width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden;
     }
-    .progress-bar { height: 100%; transition: width 0.5s ease-in-out; }
+    .progress-bar { height: 100%; transition: width: 0.5s ease-in-out; }
     .progress-bar.bush { background: #e74c3c; }
     .progress-bar.gore { background: #3498db; position: absolute; right: 0; }
     .vote-label {
@@ -385,14 +385,18 @@ function updateGeoJSONAndMap() {
       } else {
         status = 'Uncalled';
       }
+      // Warn if Winner is set for Uncalled states
+      if (status === 'Uncalled' && matchedRow.winner && matchedRow.winner !== '') {
+        console.warn(`Warning: State ${matchedRow.state} is Uncalled but has Winner: ${matchedRow.winner}`);
+      }
       f.properties = {
         ...f.properties,
         state: matchedRow.state,
         electoral_votes: matchedRow.electoral_votes,
-        votes_gop: matchedRow.votes_gop,
-        votes_dem: matchedRow.votes_dem,
-        votes_other: matchedRow.votes_other,
-        total_votes: matchedRow.total_votes,
+        votes_gop: Number(matchedRow.votes_gop) || 0,
+        votes_dem: Number(matchedRow.votes_dem) || 0,
+        votes_other: Number(matchedRow.votes_other) || 0,
+        total_votes: Number(matchedRow.total_votes) || 0,
         winner: matchedRow.winner,
         status: status,
         gop_candidate: matchedRow.gop_candidate,
@@ -408,6 +412,14 @@ function updateGeoJSONAndMap() {
   console.log('State status counts after update:', statusCounts);
   if (mainMap && mainMap.getSource('states')) {
     mainMap.getSource('states').setData(statesGeoJSON);
+    // Debug rendered features for Alabama
+    if (mainMap.isStyleLoaded()) {
+      const alabamaFeatures = mainMap.queryRenderedFeatures(undefined, { layers: ['states-fill'], filter: ['==', ['get', 'state'], 'Alabama'] });
+      if (alabamaFeatures.length > 0) {
+        const props = alabamaFeatures[0].properties;
+        console.log(`Rendered Alabama: Status: ${props.status}, GOP Votes: ${props.votes_gop}, DEM Votes: ${props.votes_dem}`);
+      }
+    }
   }
   updateUIElements();
   if (currentState) {
@@ -419,12 +431,17 @@ function updateUIElements() {
   let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
   statesGeoJSON.features.forEach(f => {
     const ev = f.properties.electoral_votes || 0;
-    const winner = f.properties.winner || "";
-    if (winner === 'Bush') ev_bush += ev;
-    else if (winner === 'Gore') ev_gore += ev;
-    total_gop_votes += f.properties.votes_gop || 0;
-    total_dem_votes += f.properties.votes_dem || 0;
-    total_votes += f.properties.total_votes || 0;
+    const status = f.properties.status || 'Uncalled';
+    const winner = f.properties.winner || '';
+    // Only count electoral votes for called states
+    if (status === 'GOP Win' && winner === 'Bush') {
+      ev_bush += ev;
+    } else if (status === 'DEM Win' && winner === 'Gore') {
+      ev_gore += ev;
+    }
+    total_gop_votes += Number(f.properties.votes_gop) || 0;
+    total_dem_votes += Number(f.properties.votes_dem) || 0;
+    total_votes += Number(f.properties.total_votes) || 0;
   });
 
   document.getElementById('bush-votes').textContent = ev_bush;
@@ -576,8 +593,8 @@ function enableStateHover() {
     const winner = p.winner || 'Uncalled';
     const gopName = p.gop_candidate || 'Bush';
     const demName = p.dem_candidate || 'Gore';
-    const gopCheck = winner === gopName ? '✓ ' : '';
-    const demCheck = winner === demName ? '✓ ' : '';
+    const gopCheck = winner === gopName && p.status !== 'Uncalled' ? '✓ ' : '';
+    const demCheck = winner === demName && p.status !== 'Uncalled' ? '✓ ' : '';
     if (statePopup) statePopup.remove();
     statePopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
       .setLngLat(e.lngLat)
@@ -587,7 +604,7 @@ function enableStateHover() {
         <b>Reporting:</b> ${p.reporting || 0}%<br/>
         <b style="color:#d12c0f;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
         <b style="color:#0e47e6;">${demCheck}${demName}:</b> ${dem.toLocaleString()} (${demPerc}%)<br/>
-        <b>Winner:</b> ${winner}`
+        <b>Winner:</b> ${p.status === 'Uncalled' ? 'Uncalled' : winner}`
       )
       .addTo(mainMap);
   };
@@ -646,8 +663,8 @@ function initializeMainMap() {
           'DEM Win', '#0e47e6', // Solid blue for called Gore
           'Uncalled', [
             'case',
-            ['>', ['get', 'votes_gop'], ['get', 'votes_dem']], '#f4a6a6', // Light red for Bush lead
-            ['>', ['get', 'votes_dem'], ['get', 'votes_gop']], '#a6c8f4', // Light blue for Gore lead
+            ['>', ['to-number', ['get', 'votes_gop'], 0], ['to-number', ['get', 'votes_dem'], 0]], '#f4a6a6', // Light red for Bush lead
+            ['>', ['to-number', ['get', 'votes_dem'], 0], ['to-number', ['get', 'votes_gop'], 0]], '#a6c8f4', // Light blue for Gore lead
             '#cccccc' // Gray for tied or no votes
           ],
           '#ffffff' // Default for missing data
