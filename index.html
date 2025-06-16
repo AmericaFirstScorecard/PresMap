@@ -4,8 +4,11 @@
   <meta charset="utf-8">
   <title>2000 Live Election Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Mapbox GL JS -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
+  <!-- PapaParse for CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     html, body { height: 100%; margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background: #11161b;}
     #header {
@@ -286,32 +289,43 @@ let stateStats = {};
 
 Promise.all([
   fetch('data/county-geo.json').then(r => r.json()).then(data => { countiesGeoJSON = data; }),
-  fetch('https://raw.githubusercontent.com/tonmcg/US_County_Level_Election_Results_08-20/master/2000-2020_county_returns.csv')
-    .then(r => r.text())
-    .then(text => {
-      const rows = text.trim().split('\n').slice(1); // Skip header
-      rows.forEach(row => {
-        const [year, state, state_po, county_name, county_fips, office, candidate, party, candidatevotes, totalvotes, mode, version] = row.split(',');
-        if (year === '2000') {
-          const fips = county_fips.padStart(5, '0'); // Ensure 5-digit FIPS
-          if (!countyElectionStats[fips]) {
-            countyElectionStats[fips] = { bush_votes: 0, gore_votes: 0, winner: null };
-          }
-          if (candidate === 'George W. Bush' && party === 'REPUBLICAN') {
-            countyElectionStats[fips].bush_votes = +candidatevotes || 0;
-          } else if (candidate === 'Al Gore' && party === 'DEMOCRAT') {
-            countyElectionStats[fips].gore_votes = +candidatevotes || 0;
-          }
-          const total = countyElectionStats[fips].bush_votes + countyElectionStats[fips].gore_votes;
-          if (total > 0) {
-            countyElectionStats[fips].winner = countyElectionStats[fips].bush_votes > countyElectionStats[fips].gore_votes ? 'Bush' : 'Gore';
-          }
-        }
-      });
-    }),
   fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; }),
-  fetch('data/election2000-stats.json').then(r => r.json()).then(data => { stateStats = data; })
-]).then(() => initializeMainMap());
+  fetch('data/election2000-stats.json').then(r => r.json()).then(data => { stateStats = data; }),
+]).then(() => {
+  Papa.parse('data/countypres_2000-2020 (1).csv', {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      for (const row of results.data) {
+        if (row.year !== "2000" || !row.county_fips) continue;
+        const fips = row.county_fips.padStart(5, "0");
+        if (!countyElectionStats[fips]) {
+          countyElectionStats[fips] = {
+            bush_votes: 0,
+            gore_votes: 0,
+            other_votes: 0,
+            totalvotes: +row.totalvotes || 0
+          };
+        }
+        if (row.candidate === "George W. Bush" && row.party === "REPUBLICAN") {
+          countyElectionStats[fips].bush_votes += +row.candidatevotes;
+        } else if (row.candidate === "Al Gore" && row.party === "DEMOCRAT") {
+          countyElectionStats[fips].gore_votes += +row.candidatevotes;
+        } else {
+          countyElectionStats[fips].other_votes += +row.candidatevotes;
+        }
+      }
+      for (const fips in countyElectionStats) {
+        const c = countyElectionStats[fips];
+        if (c.bush_votes > c.gore_votes) c.winner = "Bush";
+        else if (c.gore_votes > c.bush_votes) c.winner = "Gore";
+        else c.winner = "Tied";
+      }
+      initializeMainMap();
+    }
+  });
+});
 
 const arcSegs = [
   { label: "Very likely Bush", start: -90, end: -60 },
@@ -386,7 +400,7 @@ function addCountiesLayer(stateFP) {
     const stats = countyElectionStats[fips];
     if (stats) {
       const total = stats.bush_votes + stats.gore_votes;
-      const margin = Math.abs(stats.bush_votes - stats.gore_votes) / total * 100;
+      const margin = total > 0 ? Math.abs(stats.bush_votes - stats.gore_votes) / total * 100 : 0;
       f.properties.winner = stats.winner;
       f.properties.margin = margin;
     } else {
@@ -482,13 +496,28 @@ function addCountiesLayer(stateFP) {
   const candidateStatsDiv = document.getElementById('candidate-stats');
   candidateStatsDiv.innerHTML = '';
 
-  if (stats) {
+  // Calculate from the MIT CSV!
+  let stateGopVotes = 0, stateDemVotes = 0, stateOtherVotes = 0, stateTotalVotes = 0;
+  countiesGeoJSON.features.forEach(c => {
+    if (c.properties.STATEFP === stateFP) {
+      const countyFIPS = c.properties.GEOID;
+      const stats = countyElectionStats[countyFIPS];
+      if (stats) {
+        stateGopVotes += stats.bush_votes || 0;
+        stateDemVotes += stats.gore_votes || 0;
+        stateOtherVotes += stats.other_votes || 0;
+        stateTotalVotes += stats.totalvotes || 0;
+      }
+    }
+  });
+
+  if (stateGopVotes + stateDemVotes + stateOtherVotes > 0) {
     const candidates = [
-      { name: 'Bush', votes: stats.votes_gop, color: '#e74c3c', image: 'images/George-W-Bush.jpg' },
-      { name: 'Gore', votes: stats.votes_dem, color: '#3498db', image: 'images/Al_Gore.jpg' }
+      { name: 'Bush', votes: stateGopVotes, color: '#e74c3c', image: 'images/George-W-Bush.jpg' },
+      { name: 'Gore', votes: stateDemVotes, color: '#3498db', image: 'images/Al_Gore.jpg' }
     ];
     candidates.forEach(candidate => {
-      const percentage = ((candidate.votes / (stats.votes_gop + stats.votes_dem)) * 100).toFixed(1);
+      const percentage = ((candidate.votes / stateTotalVotes) * 100).toFixed(1);
       const div = document.createElement('div');
       div.innerHTML = `
         <img src="${candidate.image}" alt="${candidate.name}" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid ${candidate.color};">
@@ -496,11 +525,18 @@ function addCountiesLayer(stateFP) {
       `;
       candidateStatsDiv.appendChild(div);
     });
-    document.getElementById('reporting-status').textContent = `Reporting: ${stats.reporting}%`;
+    if (stateOtherVotes > 0) {
+      const div = document.createElement('div');
+      const pct = ((stateOtherVotes / stateTotalVotes) * 100).toFixed(1);
+      div.innerHTML = `<span style="color:#bbb;">Other: ${pct}% (${stateOtherVotes.toLocaleString()})</span>`;
+      candidateStatsDiv.appendChild(div);
+    }
+    document.getElementById('reporting-status').textContent = `Reporting: 100%`;
   } else {
     candidateStatsDiv.textContent = 'No data available';
+    document.getElementById('reporting-status').textContent = '';
   }
-  document.getElementById('last-updated').textContent = 'Updated: 07:53 PM CDT, Jun 15, 2025'; // Updated timestamp
+  document.getElementById('last-updated').textContent = 'Updated: 07:53 PM CDT, Jun 15, 2025';
   document.getElementById('state-sidebar').style.display = 'block';
 
   countiesLayerAdded = true;
@@ -716,3 +752,5 @@ document.getElementById('close-sidebar-btn').onclick = () => {
   document.getElementById('header').style.display = 'flex';
 };
 </script>
+</body>
+</html>
