@@ -478,7 +478,7 @@ Promise.all([
         skipEmptyLines: true,
         complete: function(results2) {
           for (const row of results2.data) {
-            if (String(row.year) !== "2000" || !row.county_fips) continue;
+            if (String(row.year) !== "2008" || !row.county_fips) continue;
             const fips = String(row.county_fips).padStart(5, "0");
             const candidate = (row.candidate || "").toLowerCase();
             if (!countyElectionStats[fips]) {
