@@ -74,10 +74,7 @@
     #state-sidebar h2 { margin: 0 0 10px; font-size: 1.5rem; }
     #state-sidebar p { margin: 5px 0; }
     #candidate-stats div { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
-    /* REMOVED CLOSE BUTTON */
-    #close-sidebar-btn {
-      display: none !important;
-    }
+    #close-sidebar-btn { display: none !important; }
     .separator { border-bottom: 1px solid #444; margin: 10px 0; }
     @media (max-width:700px) {
       #map { min-height: 300px; }
@@ -239,7 +236,6 @@
 <div id="map"></div>
 <button id="box-out-btn">Box Out</button>
 <div id="state-sidebar">
-  <!-- close button removed! -->
   <h2 id="state-sidebar-title"></h2>
   <p id="state-electoral-votes"></p>
   <div class="separator"></div>
@@ -278,7 +274,6 @@
     </div>
   </div>
 </div>
-
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
 
@@ -441,12 +436,8 @@ function initializeMainMap() {
     container: 'map',
     style: 'mapbox://styles/mapbox/light-v10',
     center: [-98.5795, 39.8283],
-    zoom: 3,
-    minZoom: 2.6,  // restrict zoom out so US fills most of view
-    maxBounds: [ // restrict pan/zoom outside of the USA
-      [-130, 21], // Southwest coordinates (Hawaii offscreen)
-      [-65, 50]   // Northeast coordinates (Maine top, Alaska mostly offscreen)
-    ]
+    zoom: 3
+    // No zoom lock, no maxBounds.
   });
   mainMap.on('load', () => {
     if (!statesGeoJSON || !statesGeoJSON.features) {
@@ -501,49 +492,15 @@ function initializeMainMap() {
       paint: { 'line-color': '#000000', 'line-width': 2 }
     });
 
+    // --- FIXED: Only add up EV for each candidate based on .winner and .electoral_votes ---
     let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
     statesGeoJSON.features.forEach(f => {
-      const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
-      const stateName = f.properties[nameKey];
-      let stateGopVotes = 0, stateDemVotes = 0;
-      const stateFP = getStateFP(stateName);
-      if (stateFP) {
-        countiesGeoJSON.features.forEach(c => {
-          if (c.properties.STATEFP === stateFP) {
-            const countyFIPS = c.properties.GEOID;
-            const stats = countyElectionStats[countyFIPS];
-            if (stats) {
-              stateGopVotes += stats.bush_votes || 0;
-              stateDemVotes += stats.gore_votes || 0;
-            }
-          }
-        });
-      }
-      const total = stateGopVotes + stateDemVotes;
-      if (total > 0) {
-        f.properties.votes_gop = stateGopVotes;
-        f.properties.votes_dem = stateDemVotes;
-        f.properties.reporting = 100;
-        if (stateGopVotes > stateDemVotes) {
-          ev_bush += f.properties.electoral_votes || 0;
-          f.properties.status = 'GOP Win';
-          f.properties.winner = 'Bush';
-        } else if (stateDemVotes > stateGopVotes) {
-          ev_gore += f.properties.electoral_votes || 0;
-          f.properties.status = 'DEM Win';
-          f.properties.winner = 'Gore';
-        } else {
-          f.properties.status = 'Uncalled';
-        }
-        total_gop_votes += stateGopVotes;
-        total_dem_votes += stateDemVotes;
-        total_votes += total;
-      } else {
-        f.properties.status = 'Uncalled';
-      }
+      const ev = f.properties.electoral_votes || 0;
+      const winner = f.properties.winner || "";
+      if (winner === 'Bush') ev_bush += ev;
+      else if (winner === 'Gore') ev_gore += ev;
     });
 
-    const totalEV = ev_bush + ev_gore;
     // Set EV numbers at the top bar
     document.getElementById('bush-votes').textContent = ev_bush;
     document.getElementById('gore-votes').textContent = ev_gore;
@@ -551,6 +508,7 @@ function initializeMainMap() {
     document.getElementById('gore-ev').textContent = ev_gore;
 
     // Gauge/progress bars now based on EV not pop vote
+    const totalEV = ev_bush + ev_gore;
     const bushEVPerc = totalEV > 0 ? (ev_bush / totalEV * 100).toFixed(1) : 0;
     const goreEVPerc = totalEV > 0 ? (ev_gore / totalEV * 100).toFixed(1) : 0;
     document.getElementById('bush-bar').style.width = `${bushEVPerc}%`;
@@ -578,10 +536,19 @@ function initializeMainMap() {
     document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
     document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
 
-    // Keep pop vote reporting % at top
+    // For top, keep pop vote reporting % (from counties)
+    countiesGeoJSON.features.forEach(f => {
+      const stateFP = f.properties.STATEFP;
+      const countyFIPS = f.properties.GEOID;
+      const stats = countyElectionStats[countyFIPS];
+      if (stats) {
+        total_gop_votes += stats.bush_votes || 0;
+        total_dem_votes += stats.gore_votes || 0;
+        total_votes += (stats.bush_votes || 0) + (stats.gore_votes || 0);
+      }
+    });
     const total_registered = 105405100;
-    const totalVotes = total_gop_votes + total_dem_votes;
-    const reporting_pct = ((totalVotes / total_registered) * 100).toFixed(1);
+    const reporting_pct = ((total_votes / total_registered) * 100).toFixed(1);
     document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
 
     enableStateHover();
