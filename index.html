@@ -68,23 +68,23 @@
       background: #ccc;
     }
     #state-sidebar {
-      display: none; position: fixed; top: 0; right: 0; width: 400px; height: 100%;
-      background: #222; color: white; padding: 20px; z-index: 1000; overflow-y: auto;
-      box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+      display: none; position: fixed; top: 0; right: 0; width: 350px; height: 100%;
+      background: #fff; color: #333; padding: 15px; z-index: 1000; overflow-y: auto;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.2);
     }
-    #state-sidebar h2 { margin: 0 0 10px; font-size: 1.5rem; }
-    #state-sidebar p { margin: 5px 0; }
-    #candidate-stats { margin: 10px 0; }
-    #close-sidebar-btn { display: none; position: absolute; top: 10px; right: 10px; background: #444; border: none; color: white; padding: 5px 10px; cursor: pointer; }
-    .separator { border-bottom: 1px solid #444; margin: 10px 0; }
+    #close-sidebar-btn {
+      position: absolute; top: 10px; right: 10px; background: #e0e0e0; border: none;
+      color: #333; padding: 5px 10px; cursor: pointer; border-radius: 3px;
+    }
+    .separator { border-bottom: 1px solid #e0e0e0; margin: 10px 0; }
     .candidate-row {
       display: flex; align-items: center; margin: 10px 0;
     }
     .candidate-image-small {
-      width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+      width: 30px; height: 30px; border-radius: 50%; object-fit: cover;
     }
     .bar-graph {
-      flex-grow: 1; height: 20px; background: #444; border-radius: 10px; overflow: hidden; position: relative;
+      flex-grow: 1; height: 20px; background: #f5f5f5; border-radius: 10px; overflow: hidden; position: relative;
     }
     .bar-fill {
       height: 100%; transition: width 0.5s ease-in-out;
@@ -96,7 +96,7 @@
       margin-left: 10px; min-width: 120px; text-align: right;
     }
     .reporting-bar {
-      width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; margin: 10px 0;
+      width: 100%; height: 10px; background: #f5f5f5; border-radius: 5px; overflow: hidden; margin: 10px 0;
     }
     .reporting-fill {
       height: 100%; background: #4CAF50; transition: width 0.5s ease-in-out;
@@ -108,7 +108,7 @@
     #projection-ticker-wrap {
       width: 100%;
       background: #191d22;
-      padding: 60px 0 60px 0;
+      padding: 60px 0;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -228,33 +228,120 @@
       background: #303540;
     }
     /* CNN Panel Styles */
-    .info-panel-skeleton__child {
+    .info-panel {
       background: #fff;
-      padding: 15px;
+      padding: 0;
       border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .removeBoxShadow-3g-Yj1 { box-shadow: none; }
-    .removeBorderRadius-3p7iOz { border-radius: 0; }
-    .crm_header-wrapper-3EU6xJ { background: #f5f5f5; padding: 10px; margin-bottom: 10px; }
-    .crm_header__badge-B-Brd9 { background: #e0e0e0; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
-    .crm_header__badge--projected-winner-3Wo7CN { color: #0066cc; }
-    .crm_header__title-56GsTo { font-size: 18px; font-weight: bold; margin: 0; color: #333; }
-    .core-result__total-counts-3ERRqA { font-size: 14px; color: #666; }
-    .proportional_allocation__electoral_votes__count-2KN0Jo { font-weight: bold; color: #000; }
-    .proportional_allocation__electoral_votes__count--candidate-1AGAdz { color: #cc0000; }
-    .crm__table-row-24jQKZ { background: var(--background); }
-    .crm__table-name-lHI_NS { font-size: 14px; }
-    .crm__table-party-name-3THSeb { font-size: 12px; color: #666; }
-    .crm__table-percent-2gMmh, .crm__table-vote-3VxbcR { font-size: 14px; }
-    .crm__table-winner-g58kjh { font-weight: bold; }
-    .crm__table-ahead-t0s7t1 { font-size: 12px; color: #0066cc; }
-    .crm__footer-3SiIYZ { margin-top: 10px; }
-    .crm__footer--reporting-percent-sQLRdb { font-weight: bold; color: #000; }
-    .crm__footer--timestamp-KI2iXs { font-size: 12px; color: #666; }
-    .crm__footer--badge-label-33rX7V { font-size: 12px; color: #0066cc; }
-    .crm__footer--link-3TLLYQ a { color: #0066cc; text-decoration: none; font-size: 12px; }
-    .crm__footer--link-3TLLYQ a:hover { text-decoration: underline; }
+    .crm-header-wrapper {
+      background: #f5f5f5;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .crm-header-badge {
+      background: #e0e0e0;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      color: #0066cc;
+    }
+    .crm-header-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 0;
+      color: #333;
+    }
+    .crm-electoral-counts {
+      font-size: 14px;
+      color: #666;
+    }
+    .crm-electoral-votes-count {
+      font-weight: bold;
+      color: #000;
+    }
+    .crm-candidate-count {
+      color: #cc0000;
+    }
+    .crm-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+    }
+    .crm-table th, .crm-table td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .crm-table th {
+      background: #f5f5f5;
+      font-weight: bold;
+    }
+    .crm-table-row {
+      background: var(--background);
+    }
+    .crm-table-name {
+      font-size: 14px;
+    }
+    .crm-table-party {
+      font-size: 12px;
+      color: #666;
+    }
+    .crm-table-percent, .crm-table-vote {
+      font-size: 14px;
+    }
+    .crm-table-winner {
+      font-weight: bold;
+    }
+    .crm-table-ahead {
+      font-size: 12px;
+      color: #0066cc;
+    }
+    .crm-footer {
+      margin-top: 10px;
+    }
+    .crm-footer-reporting {
+      font-size: 12px;
+    }
+    .crm-footer-percent {
+      font-weight: bold;
+      color: #000;
+    }
+    .crm-footer-timestamp {
+      font-size: 12px;
+      color: #666;
+    }
+    .crm-footer-badge {
+      font-size: 12px;
+      color: #0066cc;
+    }
+    .crm-footer-link a {
+      color: #0066cc;
+      text-decoration: none;
+      font-size: 12px;
+    }
+    .crm-footer-link a:hover {
+      text-decoration: underline;
+    }
+    .headshot {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      vertical-align: middle;
+    }
+    .party-color-circle {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      background: var(--partyColor);
+      border-radius: 50%;
+      margin-right: 8px;
+      text-align: center;
+    }
+    .winner-checkmark svg {
+      width: 12px;
+      height: 12px;
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
@@ -290,93 +377,50 @@
 <button id="box-out-btn">Box Out</button>
 <div id="state-sidebar">
   <button id="close-sidebar-btn">Close</button>
-  <div class="info-panel-skeleton__child removeBoxShadow-3g-Yj1 removeBorderRadius-3p7iOz">
-    <article class="cnn-pcl-czhcw6">
-      <div>
-        <div class="crm_header-wrapper-3EU6xJ cnn-pcl-kncc0a animate-curtain-cQPysc" id="crm-header">
-          <div class="crm_header-1J_oCD cnn-pcl-kncc0a">
-            <div class="crm_header__top-gTIswA cnn-pcl-kncc0a">
-              <ul class="cnn-pcl-kncc0a">
-                <li class="cnn-pcl-kncc0a">
-                  <span class="crm_header__badge-B-Brd9 crm_header__badge--projected-winner-3Wo7CN cnn-pcl-kncc0a">Projected Winner</span>
-                </li>
-              </ul>
-            </div>
-            <h2 class="crm_header__title-56GsTo cnn-pcl-kncc0a called-TO52GQ" id="state-title">President: South Carolina</h2>
-            <span class="core-result__total-counts-3ERRqA cnn-pcl-16ijt2z" id="electoral-counts">
-              <div class="proportional_allocation__container-2V6AnU cnn-pcl-1dp2cka" data-testid="pcl-proportional_allocation">
-                <div class="proportional_allocation-3yPuT0 cnn-pcl-1dp2cka breakdown-tDDJI0 called-2G0qVn" data-testid="pcl-proportional_allocation_main">
-                  <p class="proportional_allocation__electoral_votes-unvYsv cnn-pcl-1dp2cka" data-testid="pcl-proportional_allocation_title">
-                    <span class="proportional_allocation__electoral_votes__count-2KN0Jo cnn-pcl-1dp2cka" id="electoral-votes">9</span> electoral votes
-                  </p>
-                  <div class="proportional_allocation__candidates-3875Sx cnn-pcl-1dp2cka" data-testid="pcl-propotional_allocation_electoral_vote_wrapper" id="winner-candidate"></div>
-                </div>
-              </div>
-            </span>
-          </div>
-          <div class="crm_header__followable-PsZSKp cnn-pcl-kncc0a winner-1KFepr">
-            <label title="Follow" class="cnn-pcl-1lz7ded">
-              <input type="checkbox" class="cnn-pcl-1lz7ded">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g id="Filled?=False">
-                  <path fill-rule="evenodd" clip-rule="evenodd" d="M5.58124 21.8137L12 17.2289L18.4188 21.8137C19.0806 22.2865 20 21.8134 20 21V5C20 3.34315 18.6569 2 17 2H7C5.34315 2 4 3.34315 4 5V21C4 21.8134 4.91937 22.2865 5.58124 21.8137ZM18 5V19.0568L12.5812 15.1863C12.2335 14.9379 11.7665 14.9379 11.4188 15.1863L6 19.0568V5C6 4.44772 6.44772 4 7 4H17C17.5523 4 18 4.44772 18 5Z" fill="currentColor"></path>
-                </g>
-              </svg>
-            </label>
-            <div></div>
+  <div class="info-panel">
+    <div class="crm-header-wrapper">
+      <div class="crm-header">
+        <div class="crm-header-top">
+          <span class="crm-header-badge">Projected Winner</span>
+        </div>
+        <h2 class="crm-header-title" id="state-title">President: South Carolina</h2>
+        <div class="crm-electoral-counts" id="electoral-counts">
+          <div class="proportional_allocation">
+            <p class="crm-electoral-votes">
+              <span class="crm-electoral-votes-count" id="electoral-votes">9</span> electoral votes
+            </p>
+            <div class="proportional_allocation-candidates" id="winner-candidate"></div>
           </div>
         </div>
       </div>
-      <table class="cnn-pcl-ausn7d" id="candidate-table">
-        <thead>
-          <tr class="cnn-pcl-ausn7d">
-            <th class="cnn-pcl-ausn7d">CANDIDATE</th>
-            <th class="cnn-pcl-ausn7d">PERCENT</th>
-            <th class="cnn-pcl-ausn7d">VOTES</th>
-          </tr>
-        </thead>
-        <tbody id="candidate-rows"></tbody>
-      </table>
-      <footer class="crm__footer-3SiIYZ cnn-pcl-1x515v3">
-        <div class="crm__footer--container-2NtXLX cnn-pcl-1x515v3">
-          <div class="crm__footer--voteReporting">
-            <div class="crm__footer--reporting-container-hiSU5k cnn-pcl-1x515v3" data-testid="percentreporting">
-              <p class="crm__footer--reporting-text-6OCKQT cnn-pcl-1x515v3" translate="no">Est.</p>
-              <b class="crm__footer--reporting-percent-sQLRdb cnn-pcl-1x515v3" id="reporting-percent">99%</b>
-              <p class="crm__footer--reporting-text-6OCKQT cnn-pcl-1x515v3">votes in</p>
-              <div class="crm__footer--reporting-progress-bar-wrapper-NyVWyP cnn-pcl-1x515v3">
-                <p class="crm__footer--reporting-progress-bar-I-xrxE cnn-pcl-1x515v3" style="--progressBar: 99%;"></p>
-              </div>
-            </div>
-            <p data-testid="timestamp" class="crm__footer--timestamp-KI2iXs cnn-pcl-1x515v3" id="timestamp">
-              <time>Updated 11:52 a.m. ET, Dec. 19</time>
-            </p>
-          </div>
-          <div class="crm__footer--raceIndicators">
-            <p class="crm__footer--badge-label-33rX7V cnn-pcl-1x515v3">
-              <span data-testid="iconinformational" class="crm__footer--icon-2SpQFl cnn-pcl-1x515v3">
-                <svg width="10" height="10" aria-label="Race called" role="img" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" data-icon="checkmark">
-                  <g id="footer-checkmark-icon" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                    <g id="footer-icon-/-checkmark--/-dem">
-                      <path d="M0,8 C0,12.4181333 3.58186667,16 8,16 C12.4181333,16 16,12.4181333 16,8 C16,3.5816 12.4181333,0 8,0 C3.58186667,0 0,3.5816 0,8 Z" id="footer-path-1-copy" fill="#6E6E6E"></path>
-                      <path d="M13.5967059,5.98070588 L8.248,11.3294118 L7.24329412,12.3341176 C7.10541176,12.472 6.93788235,12.5407059 6.74117647,12.5407059 C6.544,12.5407059 6.37647059,12.472 6.23858824,12.3341176 L5.23435294,11.3294118 L2.55952941,8.65505882 C2.42164706,8.51717647 2.35294118,8.34964706 2.35294118,8.15294118 C2.35294118,7.95576471 2.42164706,7.78823529 2.55952941,7.65035294 L3.56470588,6.64564706 C3.70258824,6.50823529 3.86964706,6.43905882 4.06682353,6.43905882 C4.264,6.43905882 4.43105882,6.50823529 4.56894118,6.64564706 L6.74117647,8.82494118 L11.5872941,3.97129412 C11.7247059,3.83341176 11.8922353,3.76470588 12.0894118,3.76470588 C12.2865882,3.76470588 12.4541176,3.83341176 12.592,3.97129412 L13.5967059,4.976 C13.7345882,5.11435294 13.8032941,5.28188235 13.8032941,5.47858824 C13.8032941,5.67529412 13.7345882,5.84282353 13.5967059,5.98070588 Z" id="footer-Fill-1" fill="#FFF"></path>
-                    </g>
-                  </g>
-                </svg>
-              </span>
-              <span>Projected Winner</span>
-            </p>
-          </div>
+    </div>
+    <table class="crm-table" id="candidate-table">
+      <thead>
+        <tr>
+          <th>CANDIDATE</th>
+          <th>PERCENT</th>
+          <th>VOTES</th>
+        </tr>
+      </thead>
+      <tbody id="candidate-rows"></tbody>
+    </table>
+    <div class="crm-footer">
+      <div class="crm-footer-reporting">
+        <span>Est.</span>
+        <span class="crm-footer-percent" id="reporting-percent">99%</span>
+        <span>votes in</span>
+        <div class="reporting-bar">
+          <div class="reporting-fill" style="width: 99%;"></div>
         </div>
-        <div class="crm__footer--link-3TLLYQ cnn-pcl-1x515v3">
-          <a href="/election/2000/results/south-carolina/president" aria-label="See county results" data-testid="footerlink" class="cnn-pcl-1x515v3">See county results
-            <svg width="15" height="15" role="img" viewBox="0 0 1024 1024">
-              <path id="a-caret-right" fill="#6E6E6E" fill-rule="nonzero" d="M768.072 514.022c0 10.236-3.904 20.47-11.712 28.282l-344.098 344.156c-15.62 15.624-40.946 15.624-56.568 0.006-15.622-15.622-15.624-40.948-0.006-56.568l315.82-315.876-315.868-315.922c-15.618-15.624-15.618-40.952 0.004-56.568 15.624-15.62 40.95-15.618 56.57 0.006l344.144 344.204c7.81 7.81 11.714 18.044 11.714 28.28z"></path>
-            </svg>
-          </a>
-        </div>
-      </footer>
-    </article>
+      </div>
+      <div class="crm-footer-timestamp" id="timestamp">
+        <time>Updated 01:04 AM CDT, Jun 16, 2025</time>
+      </div>
+      <div class="crm-footer-badge">Projected Winner</div>
+      <div class="crm-footer-link">
+        <a href="/election/2000/results/south-carolina/president">See county results</a>
+      </div>
+    </div>
   </div>
 </div>
 <div id="projection-ticker-wrap">
@@ -666,6 +710,7 @@
       document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
       document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
 
+      const total_registered = 105405100;
       countiesGeoJSON.features.forEach(f => {
         const stateFP = f.properties.STATEFP;
         const countyFIPS = f.properties.GEOID;
@@ -676,7 +721,6 @@
           total_votes += (stats.bush_votes || 0) + (stats.gore_votes || 0);
         }
       });
-      const total_registered = 105405100;
       const reporting_pct = ((total_votes / total_registered) * 100).toFixed(1);
       document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
 
@@ -843,7 +887,7 @@
     // Update CNN-style panel
     document.getElementById('state-title').textContent = `President: ${stateName}`;
     document.getElementById('electoral-votes').textContent = electoralVotes;
-    document.getElementById('winner-candidate').innerHTML = winnerCandidate ? `<p data-testid="pcl-proportional_allocation_electoral_vote" class="proportional_allocation__electoral_votes-unvYsv cnn-pcl-1dp2cka">${winnerCandidate} <span class="proportional_allocation__electoral_votes__count-2KN0Jo proportional_allocation__electoral_votes__count--candidate-1AGAdz cnn-pcl-1dp2cka" style="--partyColor: ${winnerCandidate === 'Bush' ? '#CC0000' : '#008AEF'};">${electoralVotes}</span></p>` : '';
+    document.getElementById('winner-candidate').innerHTML = winnerCandidate ? `<p>${winnerCandidate} <span class="crm-electoral-votes-count crm-candidate-count">${electoralVotes}</span></p>` : '';
 
     const candidateRows = document.getElementById('candidate-rows');
     candidateRows.innerHTML = '';
@@ -863,50 +907,37 @@
       const candidates = [
         { name: 'Bush', votes: stateGopVotes, party: 'Republican', color: '#CC0000', image: 'images/George-W-Bush.jpg' },
         { name: 'Gore', votes: stateDemVotes, party: 'Democratic', color: '#008AEF', image: 'images/Al_Gore.jpg' },
-        { name: 'Other', votes: stateOtherVotes, party: 'Other', color: '#FF8E02', image: 'https://via.placeholder.com/40?text=?' }
+        { name: 'Other', votes: stateOtherVotes, party: 'Other', color: '#FF8E02', image: 'https://via.placeholder.com/30?text=?' }
       ];
       candidates.forEach(c => {
         if (c.votes > 0) {
           const percent = ((c.votes / stateTotalVotes) * 100).toFixed(1);
           const ahead = winner === c.name && stateGopVotes !== stateDemVotes ? Math.abs(stateGopVotes - stateDemVotes).toLocaleString() : '';
           const row = document.createElement('tr');
-          row.className = 'crm__table-row-24jQKZ cnn-pcl-vazgmx';
+          row.className = 'crm-table-row';
           row.style.setProperty('--background', `${c.color}27`);
-          row.style.setProperty('--width', `${percent}%`);
-          row.style.setProperty('--winnerPartyColor', c.color);
           row.innerHTML = `
-            <td class="cnn-pcl-vazgmx">
-              <div class="crm__table-name-wrapper-1ctpJ_ cnn-pcl-vazgmx">
-                <div data-testid="headshot" class="party-color-circle-background cnn-pcl-dmsf95" style="--partyColor: ${c.color};">
-                  <img class="headshot cnn-pcl-dmsf95" src="${c.image}" aria-hidden="true" alt="">
+            <td>
+              <div style="display: flex; align-items: center;">
+                <div class="party-color-circle" style="--partyColor: ${c.color};">
+                  <img src="${c.image}" alt="${c.name}" class="headshot">
                 </div>
                 <div>
-                  <p data-testid="candidate-name" class="crm__table-name-lHI_NS cnn-pcl-vazgmx" translate="no">
-                    <span class="before-text-2DoOMN cnn-pcl-vazgmx">${c.name.split(' ')[0]} </span>
-                    <span class="last-word-icon-1vznOi cnn-pcl-vazgmx">${c.name.split(' ')[1] || c.name} 
-                      ${winner === c.name ? '<span data-testid="winnercheckmark" class="crm__table-icon-2GYpLX cnn-pcl-vazgmx"><svg width="12" height="12" aria-label="Race called" role="img" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" data-icon="checkmark"><g id="table-checkmark-icon" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="table-icon-/-checkmark--/-dem"><path d="M0,8 C0,12.4181333 3.58186667,16 8,16 C12.4181333,16 16,12.4181333 16,8 C16,3.5816 12.4181333,0 8,0 C3.58186667,0 0,3.5816 0,8 Z" id="table-path-1-copy" fill="#${c.color.slice(1)}"></path><path d="M13.5967059,5.98070588 L8.248,11.3294118 L7.24329412,12.3341176 C7.10541176,12.472 6.93788235,12.5407059 6.74117647,12.5407059 C6.544,12.5407059 6.37647059,12.472 6.23858824,12.3341176 L5.23435294,11.3294118 L2.55952941,8.65505882 C2.42164706,8.51717647 2.35294118,8.34964706 2.35294118,8.15294118 C2.35294118,7.95576471 2.42164706,7.78823529 2.55952941,7.65035294 L3.56470588,6.64564706 C3.70258824,6.50823529 3.86964706,6.43905882 4.06682353,6.43905882 C4.264,6.43905882 4.43105882,6.50823529 4.56894118,6.64564706 L6.74117647,8.82494118 L11.5872941,3.97129412 C11.7247059,3.83341176 11.8922353,3.76470588 12.0894118,3.76470588 C12.2865882,3.76470588 12.4541176,3.83341176 12.592,3.97129412 L13.5967059,4.976 C13.7345882,5.11435294 13.8032941,5.28188235 13.8032941,5.47858824 C13.8032941,5.67529412 13.7345882,5.84282353 13.5967059,5.98070588 Z" id="table-Fill-1" fill="#FFF"></path></g></g></svg></span>' : ''}
-                  </p>
-                  <p data-testid="party-label" class="crm__table-party-name-3THSeb cnn-pcl-vazgmx" translate="no">${c.party}</p>
+                  <div class="crm-table-name">${c.name} ${winner === c.name ? '<span class="winner-checkmark">' + checkmarkSvg(c.color, 12) + '</span>' : ''}</div>
+                  <div class="crm-table-party">${c.party}</div>
                 </div>
               </div>
             </td>
-            <td class="cnn-pcl-vazgmx">
-              <p data-testid="votepercent" class="crm__table-data crm__table-percent-2gMmh cnn-pcl-vazgmx ${winner === c.name ? 'crm__table-winner-g58kjh' : ''}">${percent}%</p>
-            </td>
-            <td class="cnn-pcl-vazgmx">
-              <p data-testid="votes" class="crm__table-data crm__table-vote-3VxbcR cnn-pcl-vazgmx ${winner === c.name ? 'crm__table-winner-g58kjh' : ''}">${c.votes.toLocaleString()}</p>
-              ${winner === c.name && ahead ? `<p data-testid="aheadcount" class="crm__table-data crm__table-ahead-t0s7t1 cnn-pcl-vazgmx">${ahead} ahead</p>` : ''}
-            </td>
+            <td class="${winner === c.name ? 'crm-table-winner' : ''}">${percent}%</td>
+            <td class="${winner === c.name ? 'crm-table-winner' : ''}">${c.votes.toLocaleString()}${ahead ? `<br><span class="crm-table-ahead">${ahead} ahead</span>` : ''}</td>
           `;
           candidateRows.appendChild(row);
         }
       });
       document.getElementById('reporting-percent').textContent = '100%';
-      document.getElementById('timestamp').innerHTML = `<time>Updated ${new Date().toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' })}</time>`;
     } else {
-      document.getElementById('candidate-rows').innerHTML = '<tr><td colspan="3">No data available</td></tr>';
+      candidateRows.innerHTML = '<tr><td colspan="3">No data available</td></tr>';
       document.getElementById('reporting-percent').textContent = '0%';
-      document.getElementById('timestamp').innerHTML = '<time>Updated N/A</time>';
     }
     document.getElementById('state-sidebar').style.display = 'block';
   }
