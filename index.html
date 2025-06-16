@@ -153,7 +153,7 @@
     .arc-very-likely-gore { stroke: #3498db; }
     .needle-candidate-labels {
       width: 100%; display: flex; justify-content: center;
-      margin-top:keyboard: 16px;
+      margin-top: 16px;
       font-size: 2.0rem;
       font-weight: 800;
       text-shadow: 0 2px 10px #000d;
@@ -261,7 +261,6 @@
       <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
       <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
       <g id="arc-labels-group"></g>
-      cedo
       <g id="needle-group">
         <polygon id="nyt-needle" class="needle-arrow" points="250,64 243,162 257,162"/>
         <circle id="needle-dot" class="needle-dot" cx="250" cy="154" r="16"/>
@@ -281,13 +280,35 @@
 mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
 
 let countiesGeoJSON = null;
-let countyElectionStats = null;
+let countyElectionStats = {};
 let statesGeoJSON = null;
-let stateStats = null;
+let stateStats = {};
 
 Promise.all([
   fetch('data/county-geo.json').then(r => r.json()).then(data => { countiesGeoJSON = data; }),
-  fetch('data/election-stats-county.json').then(r => r.json()).then(data => { countyElectionStats = data; }),
+  fetch('https://raw.githubusercontent.com/tonmcg/US_County_Level_Election_Results_08-20/master/2000-2020_county_returns.csv')
+    .then(r => r.text())
+    .then(text => {
+      const rows = text.trim().split('\n').slice(1); // Skip header
+      rows.forEach(row => {
+        const [year, state, state_po, county_name, county_fips, office, candidate, party, candidatevotes, totalvotes, mode, version] = row.split(',');
+        if (year === '2000') {
+          const fips = county_fips.padStart(5, '0'); // Ensure 5-digit FIPS
+          if (!countyElectionStats[fips]) {
+            countyElectionStats[fips] = { bush_votes: 0, gore_votes: 0, winner: null };
+          }
+          if (candidate === 'George W. Bush' && party === 'REPUBLICAN') {
+            countyElectionStats[fips].bush_votes = +candidatevotes || 0;
+          } else if (candidate === 'Al Gore' && party === 'DEMOCRAT') {
+            countyElectionStats[fips].gore_votes = +candidatevotes || 0;
+          }
+          const total = countyElectionStats[fips].bush_votes + countyElectionStats[fips].gore_votes;
+          if (total > 0) {
+            countyElectionStats[fips].winner = countyElectionStats[fips].bush_votes > countyElectionStats[fips].gore_votes ? 'Bush' : 'Gore';
+          }
+        }
+      });
+    }),
   fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; }),
   fetch('data/election2000-stats.json').then(r => r.json()).then(data => { stateStats = data; })
 ]).then(() => initializeMainMap());
@@ -361,7 +382,8 @@ function addCountiesLayer(stateFP) {
     features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
   };
   filtered.features.forEach(f => {
-    const stats = countyElectionStats[f.properties.GEOID];
+    const fips = f.properties.GEOID;
+    const stats = countyElectionStats[fips];
     if (stats) {
       const total = stats.bush_votes + stats.gore_votes;
       const margin = Math.abs(stats.bush_votes - stats.gore_votes) / total * 100;
@@ -478,7 +500,7 @@ function addCountiesLayer(stateFP) {
   } else {
     candidateStatsDiv.textContent = 'No data available';
   }
-  document.getElementById('last-updated').textContent = 'Updated: 10:02 p.m. ET, Jan 14';
+  document.getElementById('last-updated').textContent = 'Updated: 07:53 PM CDT, Jun 15, 2025'; // Updated timestamp
   document.getElementById('state-sidebar').style.display = 'block';
 
   countiesLayerAdded = true;
@@ -537,13 +559,12 @@ function initializeMainMap() {
       source: 'states',
       paint: {
         'fill-color': [
-          'match',
-          ['get', 'status'],
-          'GOP Win', '#d12c0f',
-          'DEM Win', '#0e47e6',
-          'Lean GOP', '#f4a6a6',
-          'Lean DEM', '#a6c8f4',
-          'Uncalled', '#cccccc',
+          'case',
+          ['==', ['get', 'status'], 'GOP Win'], '#d12c0f',
+          ['==', ['get', 'status'], 'DEM Win'], '#0e47e6',
+          ['==', ['get', 'status'], 'Lean GOP'], '#f4a6a6',
+          ['==', ['get', 'status'], 'Lean DEM'], '#a6c8f4',
+          ['==', ['get', 'status'], 'Uncalled'], '#cccccc',
           '#ffffff'
         ],
         'fill-opacity': 1.0
@@ -558,19 +579,43 @@ function initializeMainMap() {
 
     let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
     statesGeoJSON.features.forEach(f => {
-      const s = f.properties;
-      const gop = +s.votes_gop || 0;
-      const dem = +s.votes_dem || 0;
-      const reporting = +s.reporting || 0;
-      const total = gop + dem;
-      total_gop_votes += gop;
-      total_dem_votes += dem;
-      total_votes += total;
-      if (reporting === 100) {
-        if (gop > dem) ev_bush += +s.electoral_votes;
-        else if (dem > gop) ev_gore += +s.electoral_votes;
+      const stateFIPS = f.properties.STATEFP;
+      const stateName = f.properties.name;
+      let stateGopVotes = 0, stateDemVotes = 0;
+      countiesGeoJSON.features.forEach(c => {
+        if (c.properties.STATEFP === stateFIPS) {
+          const countyFIPS = c.properties.GEOID;
+          const stats = countyElectionStats[countyFIPS];
+          if (stats) {
+            stateGopVotes += stats.bush_votes || 0;
+            stateDemVotes += stats.gore_votes || 0;
+          }
+        }
+      });
+      const total = stateGopVotes + stateDemVotes;
+      if (total > 0) {
+        f.properties.votes_gop = stateGopVotes;
+        f.properties.votes_dem = stateDemVotes;
+        f.properties.reporting = 100; // Assuming full reporting for simplicity
+        if (stateGopVotes > stateDemVotes) {
+          ev_bush += f.properties.electoral_votes;
+          f.properties.status = 'GOP Win';
+          f.properties.winner = 'Bush';
+        } else if (stateDemVotes > stateGopVotes) {
+          ev_gore += f.properties.electoral_votes;
+          f.properties.status = 'DEM Win';
+          f.properties.winner = 'Gore';
+        } else {
+          f.properties.status = 'Uncalled';
+        }
+        total_gop_votes += stateGopVotes;
+        total_dem_votes += stateDemVotes;
+        total_votes += total;
+      } else {
+        f.properties.status = 'Uncalled';
       }
     });
+
     const totalVotes = total_gop_votes + total_dem_votes;
     const bushPercentage = totalVotes > 0 ? (total_gop_votes / totalVotes * 100).toFixed(1) : 0;
     const gorePercentage = totalVotes > 0 ? (total_dem_votes / totalVotes * 100).toFixed(1) : 0;
@@ -671,5 +716,3 @@ document.getElementById('close-sidebar-btn').onclick = () => {
   document.getElementById('header').style.display = 'flex';
 };
 </script>
-</body>
-</html>
