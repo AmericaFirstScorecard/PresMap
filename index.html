@@ -28,15 +28,6 @@
       position: absolute; color: #fff; font-size: 12px;
       font-weight: bold; text-shadow: 0 0 2px rgba(0,0,0,0.7);
     }
-    .threshold-marker {
-      position: absolute; left: calc(270 / 538 * 100%);
-      width: 2px; height: 100%; background: #fff; z-index: 10;
-    }
-    .threshold-label {
-      position: relative; left: calc(270 / 538 * 100% - 20px);
-      color: #fff; font-size: 12px; font-weight: bold;
-      margin-bottom: 5px; text-align: left;
-    }
     .candidate-labels {
       display: flex; justify-content: space-between;
       font-size: 14px; font-weight: bold; margin-bottom: 5px;
@@ -211,26 +202,6 @@
       .arc-label { font-size: 11px;}
       .arc-label-center { font-size: 13px;}
     }
-    #box-out-btn {
-      display: none;
-      position: absolute;
-      top: 20px;
-      right: 32px;
-      z-index: 1100;
-      background: #3a3a3a;
-      color: #e0e0e0;
-      padding: 10px 22px;
-      border: none;
-      border-radius: 10px;
-      font-size: 17px;
-      font-weight: 800;
-      box-shadow: 0 3px 18px #0008;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    #box-out-btn:hover {
-      background: #4a4a4a;
-    }
     /* CNN Panel Styles */
     .info-panel {
       background: #2a2a2a;
@@ -241,13 +212,6 @@
       background: #3a3a3a;
       padding: 10px;
       margin-bottom: 10px;
-    }
-    .crm-header-badge {
-      background: #444;
-      padding: 2px 8px;
-      border-radius: 3px;
-      font-size: 12px;
-      color: #66b3ff;
     }
     .crm-header-title {
       font-size: 18px;
@@ -262,9 +226,6 @@
     .crm-electoral-votes-count {
       font-weight: bold;
       color: #fff;
-    }
-    .crm-candidate-count {
-      color: #e74c3c;
     }
     .crm-table {
       width: 100%;
@@ -315,17 +276,15 @@
       font-size: 12px;
       color: #b0b0b0;
     }
-    .crm-footer-badge {
-      font-size: 12px;
-      color: #66b3ff;
-    }
-    .crm-footer-link a {
-      color: #66b3ff;
-      text-decoration: none;
-      font-size: 12px;
-    }
-    .crm-footer-link a:hover {
-      text-decoration: underline;
+    .party-color-circle {
+      display: inline-block;
+      width: 34px;
+      height: 34px;
+      background: var(--partyColor);
+      border-radius: 50%;
+      margin-right: 8px;
+      text-align: center;
+      line-height: 34px;
     }
     .headshot {
       width: 30px;
@@ -333,19 +292,17 @@
       border-radius: 50%;
       vertical-align: middle;
     }
-    .party-color-circle {
-      display: inline-block;
-      width: 30px;
-      height: 30px;
-      background: var(--partyColor);
-      border-radius: 50%;
-      margin-right: 8px;
-      text-align: center;
-    }
     .winner-checkmark svg {
       width: 12px;
       height: 12px;
       vertical-align: middle;
+    }
+    #projected-winner-banner {
+      background-color: #FFD700;
+      padding: 10px;
+      margin-top: 10px;
+      display: none;
+      align-items: center;
     }
   </style>
 </head>
@@ -354,15 +311,13 @@
   <div class="title">2000 Live Election Map</div>
   <div class="progress-container">
     <div class="candidate-labels">
-      <span>Bush: <span id="bush-votes">0</span> EV</span>
-      <span>Gore: <span id="gore-votes">0</span> EV</span>
+      <span>Bush: <span id="bush-ev">0</span> EV</span>
+      <span>Gore: <span id="gore-ev">0</span> EV</span>
     </div>
     <div class="progress-bar-container">
       <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image">
       <div style="width: 100%; position: relative;">
-        <div class="threshold-label">270 to Win</div>
         <div class="progress-bar-wrapper">
-          <div class="threshold-marker"></div>
           <div class="progress-bar bush" id="bush-bar" style="width: 0%"></div>
           <div class="progress-bar gore" id="gore-bar" style="width: 0%"></div>
           <div class="vote-label" id="bush-label" style="left: 5px">0%</div>
@@ -373,30 +328,21 @@
     </div>
   </div>
   <div class="candidate-stats">
-    <div class="candidate-stat-left" id="bush-pv">Bush: <span id="bush-ev">0</span> EV</div>
+    <div class="candidate-stat-left" id="bush-pv"></div>
     <div class="stat-box" id="reporting">Reporting: 0%</div>
-    <div class="candidate-stat-right" id="gore-pv">Gore: <span id="gore-ev">0</span> EV</div>
+    <div class="candidate-stat-right" id="gore-pv"></div>
   </div>
 </div>
 <div id="map"></div>
-<button id="box-out-btn">Box Out</button>
 <div id="state-sidebar">
   <button id="close-sidebar-btn">Close</button>
   <div class="info-panel">
     <div class="crm-header-wrapper">
-      <div class="crm-header">
-        <div class="crm-header-top">
-          <span class="crm-header-badge">Projected Winner</span>
-        </div>
-        <h2 class="crm-header-title" id="state-title">President: South Carolina</h2>
-        <div class="crm-electoral-counts" id="electoral-counts">
-          <div class="proportional_allocation">
-            <p class="crm-electoral-votes">
-              <span class="crm-electoral-votes-count" id="electoral-votes">9</span> electoral votes
-            </p>
-            <div class="proportional_allocation-candidates" id="winner-candidate"></div>
-          </div>
-        </div>
+      <h2 class="crm-header-title" id="state-title">President: South Carolina</h2>
+      <div class="crm-electoral-counts" id="electoral-counts">
+        <p class="crm-electoral-votes">
+          <span class="crm-electoral-votes-count" id="electoral-votes">9</span> electoral votes
+        </p>
       </div>
     </div>
     <table class="crm-table" id="candidate-table">
@@ -409,6 +355,14 @@
       </thead>
       <tbody id="candidate-rows"></tbody>
     </table>
+    <div id="projected-winner-banner">
+      <img id="winner-image" src="" alt="Winner" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">
+      <span id="winner-text" style="font-size: 18px; font-weight: bold;"></span>
+      <svg class="checkmark" viewBox="0 0 24 24" style="width: 24px; height: 24px; margin-left: 10px;">
+        <circle cx="12" cy="12AVI" r="12" fill="#4CAF50"/>
+        <polyline points="7,13 11,17 17,8" fill="none" stroke="#fff" stroke-width="2"/>
+      </svg>
+    </div>
     <div class="crm-footer">
       <div class="crm-footer-reporting">
         <span>Est.</span>
@@ -420,10 +374,6 @@
       </div>
       <div class="crm-footer-timestamp" id="timestamp">
         <time>Updated Wed, Oct 23, 2024 10:00 AM CDT</time>
-      </div>
-      <div class="crm-footer-badge">Projected Winner</div>
-      <div class="crm-footer-link">
-        <a href="/election/2000/results/south-carolina/president">See county results</a>
       </div>
     </div>
   </div>
@@ -591,12 +541,14 @@
       statePopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
         .setLngLat(e.lngLat)
         .setHTML(
-          `<strong>${p[nameKey]}</strong><br/>
-          <b>Electoral Votes:</b> ${p.electoral_votes || 'N/A'}<br/>
-          <b>Reporting:</b> ${p.reporting || 0}%<br/>
-          <b style="color:#e74c3c;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
-          <b style="color:#3498db;">${demCheck}${demName}:</b> ${dem.toLocaleString()} (${demPerc}%)<br/>
-          <b>Winner:</b> ${winner}`
+          `<div style="color: black;">
+            <strong>${p[nameKey]}</strong><br/>
+            <b>Electoral Votes:</b> ${p.electoral_votes || 'N/A'}<br/>
+            <b>Reporting:</b> ${p.reporting || 0}%<br/>
+            <b style="color:#e74c3c;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
+            <b style="color:#3498db;">${demCheck}${demName}:</b> ${dem.toLocaleString()} (${demPerc}%)<br/>
+            <b>Winner:</b> ${winner}
+          </div>`
         )
         .addTo(mainMap);
     };
@@ -683,18 +635,16 @@
         else if (winner === 'Gore') ev_gore += ev;
       });
 
-      document.getElementById('bush-votes').textContent = ev_bush;
-      document.getElementById('gore-votes').textContent = ev_gore;
       document.getElementById('bush-ev').textContent = ev_bush;
       document.getElementById('gore-ev').textContent = ev_gore;
 
-      const totalEV = ev_bush + ev_gore;
-      const bushEVPerc = totalEV > 0 ? (ev_bush / totalEV * 100).toFixed(1) : 0;
-      const goreEVPerc = totalEV > 0 ? (ev_gore / totalEV * 100).toFixed(1) : 0;
-      document.getElementById('bush-bar').style.width = `${bushEVPerc}%`;
-      document.getElementById('gore-bar').style.width = `${goreEVPerc}%`;
-      document.getElementById('bush-label').textContent = `${bushEVPerc}%`;
-      document.getElementById('gore-label').textContent = `${goreEVPerc}%`;
+      const total_popular_votes = total_gop_votes + total_dem_votes;
+      const bush_popular_perc = total_popular_votes > 0 ? (total_gop_votes / total_popular_votes * 100).toFixed(1) : 0;
+      const gore_popular_perc = total_popular_votes > 0 ? (total_dem_votes / total_popular_votes * 100).toFixed(1) : 0;
+      document.getElementById('bush-bar').style.width = `${bush_popular_perc}%`;
+      document.getElementById('gore-bar').style.width = `${gore_popular_perc}%`;
+      document.getElementById('bush-label').textContent = `${bush_popular_perc}%`;
+      document.getElementById('gore-label').textContent = `${gore_popular_perc}%`;
 
       const bushProj = Math.min(ev_bush / 270, 1);
       const goreProj = Math.min(ev_gore / 270, 1);
@@ -717,7 +667,6 @@
 
       const total_registered = 105405100;
       countiesGeoJSON.features.forEach(f => {
-        const stateFP = f.properties.STATEFP;
         const countyFIPS = f.properties.GEOID;
         const stats = countyElectionStats[countyFIPS];
         if (stats) {
@@ -728,6 +677,11 @@
       });
       const reporting_pct = ((total_votes / total_registered) * 100).toFixed(1);
       document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
+
+      const bush_popular_perc_display = total_votes > 0 ? (total_gop_votes / total_votes * 100).toFixed(1) : 0;
+      const gore_popular_perc_display = total_votes > 0 ? (total_dem_votes / total_votes * 100).toFixed(1) : 0;
+      document.getElementById('bush-pv').innerHTML = `Bush: ${total_gop_votes.toLocaleString()} (${bush_popular_perc_display}%)`;
+      document.getElementById('gore-pv').innerHTML = `Gore: ${total_dem_votes.toLocaleString()} (${gore_popular_perc_display}%)`;
 
       enableStateHover();
       mainMap.on('click', 'states-fill', (e) => {
@@ -743,7 +697,6 @@
           mainMap.flyTo({ center: e.lngLat, zoom: 6 });
         }
         document.getElementById('header').style.display = 'none';
-        document.getElementById('box-out-btn').style.display = 'block';
         document.getElementById('projection-ticker-wrap').style.display = 'none';
         mainMap.getContainer().classList.add('full-screen');
         disableStateHover();
@@ -850,7 +803,7 @@
         const f = e.features[0];
         const geoid = f.properties.GEOID;
         const stats = countyElectionStats[geoid];
-        let html = `<strong>${f.properties.NAME} County</strong>`;
+        let html = `<div style="color: black;"><strong>${f.properties.NAME} County</strong>`;
         if (stats) {
           html += `<br>Bush: ${stats.bush_votes.toLocaleString()}`;
           html += `<br>Gore: ${stats.gore_votes.toLocaleString()}`;
@@ -859,6 +812,7 @@
         } else {
           html += `<br>No data.`;
         }
+        html += `</div>`;
         if (countyPopup) countyPopup.remove();
         countyPopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
           .setLngLat(e.lngLat)
@@ -882,7 +836,6 @@
 
     document.getElementById('state-title').textContent = `President: ${stateName}`;
     document.getElementById('electoral-votes').textContent = electoralVotes;
-    document.getElementById('winner-candidate').innerHTML = winnerCandidate ? `<p>${winnerCandidate} <span class="crm-electoral-votes-count crm-candidate-count">${electoralVotes}</span></p>` : '';
 
     const candidateRows = document.getElementById('candidate-rows');
     candidateRows.innerHTML = '';
@@ -902,7 +855,7 @@
       const candidates = [
         { name: 'Bush', votes: stateGopVotes, party: 'Republican', color: '#e74c3c', image: 'images/George-W-Bush.jpg' },
         { name: 'Gore', votes: stateDemVotes, party: 'Democratic', color: '#3498db', image: 'images/Al_Gore.jpg' },
-        { name: 'Other', votes: stateOtherVotes, party: 'Other', color: '#FF8E02 tapped', image: 'https://via.placeholder.com/30?text=?' }
+        { name: 'Other', votes: stateOtherVotes, party: 'Other', color: '#FFD700', image: 'https://via.placeholder.com/30?text=?' }
       ];
       candidates.forEach(c => {
         if (c.votes > 0) {
@@ -934,6 +887,16 @@
       candidateRows.innerHTML = '<tr><td colspan="3">No data available</td></tr>';
       document.getElementById('reporting-percent').textContent = '0%';
     }
+
+    if (winnerCandidate) {
+      const winnerImage = winnerCandidate === 'Bush' ? 'images/George-W-Bush.jpg' : 'images/Al_Gore.jpg';
+      document.getElementById('winner-image').src = winnerImage;
+      document.getElementById('winner-text').textContent = `${winnerCandidate} has won the state of ${stateName} for ${electoralVotes} electoral votes`;
+      document.getElementById('projected-winner-banner').style.display = 'flex';
+    } else {
+      document.getElementById('projected-winner-banner').style.display = 'none';
+    }
+
     document.getElementById('state-sidebar').style.display = 'block';
   }
 
@@ -948,14 +911,9 @@
     enableStateHover();
   }
 
-  document.getElementById('box-out-btn').onclick = () => {
-    removeCountiesLayer();
-    mainMap.flyTo({ center: [-98.5795, 39.8283], zoom: 3 });
-    document.getElementById('box-out-btn').style.display = 'none';
-  };
-
   document.getElementById('close-sidebar-btn').onclick = () => {
     removeCountiesLayer();
+    mainMap.flyTo({ center: [-98.5795, 39.8283], zoom: 3 });
   };
 </script>
 </body>
