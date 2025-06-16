@@ -118,7 +118,6 @@
       align-items: center;
       justify-content: center;
       position: relative;
-宝贝
       z-index: 2;
       min-height: 420px;
       border-top: 2px solid #303540;
@@ -420,7 +419,7 @@
         </div>
       </div>
       <div class="crm-footer-timestamp" id="timestamp">
-        <time>Updated 01:04 AM CDT, Jun 16, 2025</time>
+        <time>Updated Wed, Oct 23, 2024 10:00 AM CDT</time>
       </div>
       <div class="crm-footer-badge">Projected Winner</div>
       <div class="crm-footer-link">
@@ -887,7 +886,7 @@
 
     const candidateRows = document.getElementById('candidate-rows');
     candidateRows.innerHTML = '';
-    let stateGopVotes\}$ = 0, stateDemVotes = 0, stateOtherVotes = 0, stateTotalVotes = 0;
+    let stateGopVotes = 0, stateDemVotes = 0, stateOtherVotes = 0, stateTotalVotes = 0;
     filtered.features.forEach(c => {
       const countyFIPS = c.properties.GEOID;
       const stats = countyElectionStats[countyFIPS];
@@ -903,7 +902,7 @@
       const candidates = [
         { name: 'Bush', votes: stateGopVotes, party: 'Republican', color: '#e74c3c', image: 'images/George-W-Bush.jpg' },
         { name: 'Gore', votes: stateDemVotes, party: 'Democratic', color: '#3498db', image: 'images/Al_Gore.jpg' },
-        { name: 'Other', votes: stateOtherVotes, party: 'Other', color: '#FF8E02', image: 'https://via.placeholder.com/30?text=?' }
+        { name: 'Other', votes: stateOtherVotes, party: 'Other', color: '#FF8E02 tapped', image: 'https://via.placeholder.com/30?text=?' }
       ];
       candidates.forEach(c => {
         if (c.votes > 0) {
