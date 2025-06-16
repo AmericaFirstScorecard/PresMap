@@ -312,7 +312,7 @@ let stateStats = {};
 let mainMap = null;
 let statePopup = null;
 let stateHoverHandlers = {mousemove:null, mouseleave:null};
-let currentState = null; // Track currently selected state for sidebar
+let currentState = null;
 
 const stateNameToFips = {
   "alabama": "01", "alaska": "02", "arizona": "04", "arkansas": "05", "california": "06",
@@ -335,9 +335,12 @@ function populateStateStatsFromCSV(rows) {
   for (const row of rows) {
     let stateName = (row['State'] || '').trim();
     if (!stateName) continue;
-    // Normalize status to title case
-    let status = (row['Election status'] || 'Uncalled').trim();
-    status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    // Find the Election status column dynamically
+    const statusKey = Object.keys(row).find(k => k.toLowerCase().includes('election status')) || 'Election status';
+    let rawStatus = (row[statusKey] || 'Uncalled').trim();
+    console.log(`Raw Election Status for ${stateName}: "${rawStatus}"`); // Debug raw status
+    let status = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
+    console.log(`Normalized Status for ${stateName}: "${status}"`); // Debug normalized status
     newStateStats[stateName.toLowerCase()] = {
       state: stateName,
       electoral_votes: parseInt(row['Electoral Votes'] || 0),
@@ -376,8 +379,8 @@ function updateGeoJSONAndMap() {
     const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
     const matchedRow = stateStats[geoName];
     if (matchedRow) {
-      // Explicitly check status and winner
       let status;
+      console.log(`Processing ${matchedRow.state}: CSV Status = ${matchedRow.status}, Winner = ${matchedRow.winner || 'None'}`); // Debug status
       if (matchedRow.status === 'Called' && matchedRow.winner === 'Bush') {
         status = 'GOP Win';
       } else if (matchedRow.status === 'Called' && matchedRow.winner === 'Gore') {
@@ -385,7 +388,6 @@ function updateGeoJSONAndMap() {
       } else {
         status = 'Uncalled';
       }
-      // Warn if Winner is set for Uncalled states
       if (status === 'Uncalled' && matchedRow.winner && matchedRow.winner !== '') {
         console.warn(`Warning: State ${matchedRow.state} is Uncalled but has Winner: ${matchedRow.winner}`);
       }
@@ -405,13 +407,14 @@ function updateGeoJSONAndMap() {
         reporting: matchedRow.reporting
       };
       statusCounts[status]++;
-      // Debug log for each state
       console.log(`State: ${matchedRow.state}, Status: ${status}, Winner: ${matchedRow.winner || 'None'}, GOP Votes: ${matchedRow.votes_gop}, DEM Votes: ${matchedRow.votes_dem}`);
     }
   });
   console.log('State status counts after update:', statusCounts);
   if (mainMap && mainMap.getSource('states')) {
     mainMap.getSource('states').setData(statesGeoJSON);
+    // Force map repaint
+    mainMap.triggerRepaint();
     // Debug rendered features for Alabama
     if (mainMap.isStyleLoaded()) {
       const alabamaFeatures = mainMap.queryRenderedFeatures(undefined, { layers: ['states-fill'], filter: ['==', ['get', 'state'], 'Alabama'] });
@@ -433,7 +436,6 @@ function updateUIElements() {
     const ev = f.properties.electoral_votes || 0;
     const status = f.properties.status || 'Uncalled';
     const winner = f.properties.winner || '';
-    // Only count electoral votes for called states
     if (status === 'GOP Win' && winner === 'Bush') {
       ev_bush += ev;
     } else if (status === 'DEM Win' && winner === 'Gore') {
@@ -534,7 +536,7 @@ Promise.all([
           }
           setArcSegs();
           initializeMainMap();
-          setInterval(refreshElectionData, 60000); // Refresh every 60 seconds
+          setInterval(refreshElectionData, 60000);
         }
       });
     }
@@ -659,15 +661,15 @@ function initializeMainMap() {
       paint: {
         'fill-color': [
           'match', ['get', 'status'],
-          'GOP Win', '#d12c0f', // Solid red for called Bush
-          'DEM Win', '#0e47e6', // Solid blue for called Gore
+          'GOP Win', '#d12c0f',
+          'DEM Win', '#0e47e6',
           'Uncalled', [
             'case',
-            ['>', ['to-number', ['get', 'votes_gop'], 0], ['to-number', ['get', 'votes_dem'], 0]], '#f4a6a6', // Light red for Bush lead
-            ['>', ['to-number', ['get', 'votes_dem'], 0], ['to-number', ['get', 'votes_gop'], 0]], '#a6c8f4', // Light blue for Gore lead
-            '#cccccc' // Gray for tied or no votes
+            ['>', ['to-number', ['get', 'votes_gop'], 0], ['to-number', ['get', 'votes_dem'], 0]], '#f4a6a6',
+            ['>', ['to-number', ['get', 'votes_dem'], 0], ['to-number', ['get', 'votes_gop'], 0]], '#a6c8f4',
+            '#cccccc'
           ],
-          '#ffffff' // Default for missing data
+          '#ffffff'
         ],
         'fill-opacity': 1.0
       }
@@ -685,7 +687,7 @@ function initializeMainMap() {
       const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
       const stateName = p[nameKey];
       if (!stateName) return;
-      currentState = stateName; // Store the selected state
+      currentState = stateName;
       addCountiesLayer(stateName);
       const bounds = getStateBounds(stateName);
       if (bounds) {
@@ -914,7 +916,7 @@ function removeCountiesLayer() {
   document.getElementById('header').style.display = 'flex';
   document.getElementById('projection-ticker-wrap').style.display = 'flex';
   enableStateHover();
-  currentState = null; // Clear selected state
+  currentState = null;
 }
 
 document.getElementById('box-out-btn').onclick = () => {
