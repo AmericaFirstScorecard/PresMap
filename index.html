@@ -222,7 +222,7 @@
       font-weight: 800;
       box-shadow: 0 3px 18px #0008;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background: 0.2s;
     }
     #box-out-btn:hover {
       background: #303540;
@@ -360,11 +360,12 @@ function populateStateStatsFromCSV(rows) {
 }
 
 function populateCountyStatsFromCSV(rows) {
+  console.log('County CSV rows (first 5):', rows.slice(0, 5)); // Log first few rows for debugging
   const newCountyStats = {};
   for (const row of rows) {
     if (String(row.year) !== "2000" || !row.county_fips) continue;
     const fips = String(row.county_fips).padStart(5, "0");
-    const candidate = (row.candidate || "").toLowerCase();
+    const candidate = (row.candidate || "").toLowerCase().trim();
     if (!newCountyStats[fips]) {
       newCountyStats[fips] = { bush_votes: 0, gore_votes: 0, other_votes: 0, totalvotes: +row.totalvotes || 0 };
     }
@@ -383,6 +384,8 @@ function populateCountyStatsFromCSV(rows) {
     else c.winner = "Tied";
   }
   countyElectionStats = newCountyStats;
+  console.log('County Election Stats size:', Object.keys(countyElectionStats).length); // Log number of counties processed
+  console.log('Sample County Stats:', Object.entries(countyElectionStats).slice(0, 5)); // Log sample entries
 }
 
 function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
@@ -776,6 +779,7 @@ function addCountiesLayer(stateName) {
       f.properties.winner = stats.winner;
       f.properties.margin = margin;
     } else {
+      console.warn(`No stats found for county FIPS: ${fips}, County Name: ${f.properties.NAME}`); // Log missing stats
       f.properties.winner = "Tied";
       f.properties.margin = 0;
     }
