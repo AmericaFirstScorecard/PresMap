@@ -18,5 +18,4 @@
   "48439": { "name": "Tarrant", "state": "TX", "fips": "48439", "votes_gop": 267758, "votes_dem": 144657, "votes_other": 11663, "winner": "Bush" },
   "48453": { "name": "Travis", "state": "TX", "fips": "48453", "votes_gop": 123473, "votes_dem": 137780, "votes_other": 16127, "winner": "Gore" },
   "48491": { "name": "Williamson", "state": "TX", "fips": "48491", "votes_gop": 42357, "votes_dem": 17077, "votes_other": 1779, "winner": "Bush" }
-  // ...repeat for all other counties as needed
 }
