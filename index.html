@@ -327,15 +327,12 @@ const stateNameToFips = {
   "district of columbia": "11", "puerto rico": "72"
 };
 const stateFipsMap = {...stateNameToFips};
-
-// Google Sheets CSV for state results
 const STATE_CSV_URL = 'https://docs.google.com/spreadsheets/d/10zbHap425MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
 
 function populateStateStatsFromCSV(rows) {
   for (const row of rows) {
     let stateName = (row['State'] || row['state'] || '').trim();
     if (!stateName) continue;
-    let key = stateName.toLowerCase();
     stateStats[stateName] = {
       state: stateName,
       electoral_votes: parseInt(row['Electoral Votes'] || row['EV'] || row['electoralvotes'] || row['Bush_EV'] || row['Gore_EV'] || 0),
@@ -373,6 +370,16 @@ Promise.all([
     skipEmptyLines: true,
     complete: function(results) {
       populateStateStatsFromCSV(results.data);
+      // INJECT CSV DATA INTO GEOJSON PROPERTIES
+      statesGeoJSON.features.forEach(f => {
+        const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
+        const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
+        let matchedRow = null;
+        Object.keys(stateStats).forEach(csvKey => {
+          if (csvKey.trim().toLowerCase() === geoName) matchedRow = stateStats[csvKey];
+        });
+        if (matchedRow) Object.assign(f.properties, matchedRow);
+      });
       Papa.parse('data/countypres20.csv', {
         download: true,
         header: true,
