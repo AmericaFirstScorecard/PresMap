@@ -292,7 +292,7 @@ Promise.all([
   fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; }),
   fetch('data/election2000-stats.json').then(r => r.json()).then(data => { stateStats = data; }),
 ]).then(() => {
-  Papa.parse('data/countypres_2000-2020 (1).csv', {
+  Papa.parse('data/countypres20.csv', {
     download: true,
     header: true,
     skipEmptyLines: true,
@@ -316,6 +316,7 @@ Promise.all([
           countyElectionStats[fips].other_votes += +row.candidatevotes;
         }
       }
+      // Compute winner for each county
       for (const fips in countyElectionStats) {
         const c = countyElectionStats[fips];
         if (c.bush_votes > c.gore_votes) c.winner = "Bush";
@@ -336,7 +337,7 @@ const arcSegs = [
   { label: "Likely Gore", start: 30, end: 60 },
   { label: "Very likely Gore", start: 60, end: 90 }
 ];
-const svgCx = 250, svgCy = 154, arcR = 110, labelR = 82;
+const svgCx = 250, svgCy = 154, arcR = 110;
 
 function arcPath(cx, cy, r, startAngle, endAngle) {
   const start = polar(cx, cy, r, startAngle);
@@ -360,34 +361,39 @@ function setArcSegs() {
   document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 30, 60));
   document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 60, 90));
 }
-function setArcLabels() {
-  const labelsGroup = document.getElementById('arc-labels-group');
-  labelsGroup.innerHTML = '';
-}
-setArcSegs(); setArcLabels();
+setArcSegs();
 
 let mainMap = null;
 let statePopup = null;
 let countiesLayerAdded = false;
-let showingStateFP = null;
 
-function getMajorCities(stateFP) {
-  if (stateFP === "48") { // Texas
-    return [
-      { name: "Austin", coordinates: [-97.7431, 30.2672] },
-      { name: "Houston", coordinates: [-95.3698, 29.7604] },
-      { name: "Dallas", coordinates: [-96.7969, 32.7767] },
-      { name: "San Antonio", coordinates: [-98.4936, 29.4241] },
-      { name: "El Paso", coordinates: [-106.4850, 31.7619] }
-    ];
-  } else if (stateFP === "01") { // Alabama
-    return [
-      { name: "Birmingham", coordinates: [-86.8025, 33.5207] },
-      { name: "Montgomery", coordinates: [-86.2990, 32.3792] },
-      { name: "Mobile", coordinates: [-88.0431, 30.6954] }
-    ];
+function getStateBounds(stateFP) {
+  for (const f of statesGeoJSON.features) {
+    if (f.properties.STATEFP == stateFP) {
+      let coords = [];
+      // Defensive for Polygon/MultiPolygon
+      if (f.geometry.type === "Polygon") {
+        coords = f.geometry.coordinates.flat();
+      } else if (f.geometry.type === "MultiPolygon") {
+        coords = f.geometry.coordinates.flat(2);
+      }
+      if (!coords.length) return null;
+      let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
+      coords.forEach(coord => {
+        if (!Array.isArray(coord) || coord.length < 2) return;
+        minLng = Math.min(minLng, coord[0]);
+        maxLng = Math.max(maxLng, coord[0]);
+        minLat = Math.min(minLat, coord[1]);
+        maxLat = Math.max(maxLat, coord[1]);
+      });
+      if (
+        minLng === 180 || maxLng === -180 ||
+        minLat === 90 || maxLat === -90
+      ) return null;
+      return [[minLng, minLat], [maxLng, maxLat]];
+    }
   }
-  return [];
+  return null;
 }
 
 function addCountiesLayer(stateFP) {
@@ -445,58 +451,13 @@ function addCountiesLayer(stateFP) {
     });
   }
 
-  const majorCities = getMajorCities(stateFP);
-  const cityFeatures = majorCities.map(city => ({
-    type: 'Feature',
-    properties: { name: city.name },
-    geometry: { type: 'Point', coordinates: city.coordinates }
-  }));
-  const cityGeoJSON = { type: 'FeatureCollection', features: cityFeatures };
-
-  if (mainMap.getSource('main-cities')) {
-    mainMap.getSource('main-cities').setData(cityGeoJSON);
-  } else {
-    mainMap.addSource('main-cities', { type: 'geojson', data: cityGeoJSON });
-    mainMap.addLayer({
-      id: 'main-cities-labels',
-      type: 'symbol',
-      source: 'main-cities',
-      layout: {
-        'text-field': ['get', 'name'],
-        'text-font': ['Inter Semi Bold', 'Arial Unicode MS Bold'],
-        'text-size': 12,
-        'text-anchor': 'top'
-      },
-      paint: {
-        'text-color': '#ffffff',
-        'text-halo-color': '#000000',
-        'text-halo-width': 1
-      }
-    });
-    mainMap.addLayer({
-      id: 'main-cities-points',
-      type: 'circle',
-      source: 'main-cities',
-      paint: {
-        'circle-radius': 4,
-        'circle-color': '#ffffff',
-        'circle-stroke-width': 1,
-        'circle-stroke-color': '#000000'
-      }
-    });
-  }
-
+  // Sidebar details:
   const stateFeature = statesGeoJSON.features.find(f => f.properties.STATEFP === stateFP);
   const stateName = stateFeature.properties.name;
   const electoralVotes = stateFeature.properties.electoral_votes;
-  const stats = stateStats[stateName];
-
-  document.getElementById('state-sidebar-title').textContent = `President: ${stateName}`;
-  document.getElementById('state-electoral-votes').textContent = `${electoralVotes} electoral votes`;
   const candidateStatsDiv = document.getElementById('candidate-stats');
   candidateStatsDiv.innerHTML = '';
 
-  // Calculate from the MIT CSV!
   let stateGopVotes = 0, stateDemVotes = 0, stateOtherVotes = 0, stateTotalVotes = 0;
   countiesGeoJSON.features.forEach(c => {
     if (c.properties.STATEFP === stateFP) {
@@ -510,6 +471,9 @@ function addCountiesLayer(stateFP) {
       }
     }
   });
+
+  document.getElementById('state-sidebar-title').textContent = `President: ${stateName}`;
+  document.getElementById('state-electoral-votes').textContent = `${electoralVotes} electoral votes`;
 
   if (stateGopVotes + stateDemVotes + stateOtherVotes > 0) {
     const candidates = [
@@ -540,37 +504,15 @@ function addCountiesLayer(stateFP) {
   document.getElementById('state-sidebar').style.display = 'block';
 
   countiesLayerAdded = true;
-  showingStateFP = stateFP;
 }
 
 function removeCountiesLayer() {
   if (mainMap.getLayer('main-counties-fill')) mainMap.removeLayer('main-counties-fill');
   if (mainMap.getLayer('main-counties-outline')) mainMap.removeLayer('main-counties-outline');
-  if (mainMap.getLayer('main-cities-labels')) mainMap.removeLayer('main-cities-labels');
-  if (mainMap.getLayer('main-cities-points')) mainMap.removeLayer('main-cities-points');
   if (mainMap.getSource('main-counties')) mainMap.removeSource('main-counties');
-  if (mainMap.getSource('main-cities')) mainMap.removeSource('main-cities');
   countiesLayerAdded = false;
-  showingStateFP = null;
   document.getElementById('state-sidebar').style.display = 'none';
   document.getElementById('header').style.display = 'flex';
-}
-
-function getStateBounds(stateFP) {
-  for (const f of statesGeoJSON.features) {
-    if (f.properties.STATEFP == stateFP) {
-      const coords = f.geometry.coordinates.flat(2);
-      let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
-      coords.forEach(coord => {
-        minLng = Math.min(minLng, coord[0]);
-        maxLng = Math.max(maxLng, coord[0]);
-        minLat = Math.min(minLat, coord[1]);
-        maxLat = Math.max(maxLat, coord[1]);
-      });
-      return [[minLng, minLat], [maxLng, maxLat]];
-    }
-  }
-  return null;
 }
 
 function initializeMainMap() {
@@ -582,6 +524,7 @@ function initializeMainMap() {
   });
 
   mainMap.on('load', () => {
+    // Merge in state stats if present
     statesGeoJSON.features.forEach(f => {
       const stateName = f.properties.name;
       const s = stateStats[stateName];
@@ -613,10 +556,10 @@ function initializeMainMap() {
       paint: { 'line-color': '#000000', 'line-width': 2 }
     });
 
+    // Aggregate totals
     let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
     statesGeoJSON.features.forEach(f => {
       const stateFIPS = f.properties.STATEFP;
-      const stateName = f.properties.name;
       let stateGopVotes = 0, stateDemVotes = 0;
       countiesGeoJSON.features.forEach(c => {
         if (c.properties.STATEFP === stateFIPS) {
@@ -632,7 +575,7 @@ function initializeMainMap() {
       if (total > 0) {
         f.properties.votes_gop = stateGopVotes;
         f.properties.votes_dem = stateDemVotes;
-        f.properties.reporting = 100; // Assuming full reporting for simplicity
+        f.properties.reporting = 100;
         if (stateGopVotes > stateDemVotes) {
           ev_bush += f.properties.electoral_votes;
           f.properties.status = 'GOP Win';
@@ -670,6 +613,7 @@ function initializeMainMap() {
     document.getElementById('gore-pv').textContent = `Gore: ${total_dem_votes.toLocaleString()} (${perc_dem}%)`;
     document.getElementById('reporting').textContent = `Reporting: ${reporting_pct}%`;
 
+    // NYT-style projection needle
     const bushProj = Math.min(ev_bush / 270, 1);
     const goreProj = Math.min(ev_gore / 270, 1);
     let projBush, projGore;
@@ -722,16 +666,13 @@ function initializeMainMap() {
     mainMap.on('click', 'states-fill', (e) => {
       const p = e.features[0].properties;
       const stateFP = p.STATEFP || p.statefp || p.STATEFP10;
-
       addCountiesLayer(stateFP);
-
       const bounds = getStateBounds(stateFP);
       if (bounds) {
         mainMap.fitBounds(bounds, { padding: 40, duration: 1100 });
       } else {
         mainMap.flyTo({ center: e.lngLat, zoom: 6 });
       }
-
       document.getElementById('header').style.display = 'none';
       document.getElementById('box-out-btn').style.display = 'block';
     });
