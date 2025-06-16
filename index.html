@@ -287,21 +287,44 @@ let countiesGeoJSON = null;
 let countyElectionStats = {};
 let statesGeoJSON = null;
 let stateStats = {};
-let stateFipsMap = {}; // Map state names to STATEFP
+let stateFipsMap = {};
 
 Promise.all([
-  fetch('data/county-geo.json').then(r => r.json()).then(data => { countiesGeoJSON = data; console.log('Counties loaded:', data.features.length); }),
-  fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; 
-    // Create a map of state names to STATEFP from county-geo.json
-    countiesGeoJSON.features.forEach(f => {
-      if (f.properties.name && f.properties.STATEFP) {
-        stateFipsMap[f.properties.name] = f.properties.STATEFP;
-      }
-    });
-    console.log('States loaded:', data.features.length, 'FIPS map created:', Object.keys(stateFipsMap).length);
-  }),
-  fetch('data/election2000-stats.json').then(r => r.json()).then(data => { stateStats = data; console.log('State stats loaded'); }),
+  fetch('data/county-geo.json')
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+      return r.json();
+    })
+    .then(data => { countiesGeoJSON = data; console.log('Counties loaded:', data.features.length); })
+    .catch(error => console.error('Error loading county-geo.json:', error)),
+  fetch('data/us-states.geo.json')
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+      return r.json();
+    })
+    .then(data => { 
+      statesGeoJSON = data; 
+      // Create a map of state names to STATEFP from county-geo.json
+      countiesGeoJSON.features.forEach(f => {
+        if (f.properties.name && f.properties.STATEFP) {
+          stateFipsMap[f.properties.name] = f.properties.STATEFP;
+        }
+      });
+      console.log('States loaded:', data.features.length, 'FIPS map created:', Object.keys(stateFipsMap).length);
+    })
+    .catch(error => console.error('Error loading us-states.geo.json:', error)),
+  fetch('data/election2000-stats.json')
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+      return r.json();
+    })
+    .then(data => { stateStats = data; console.log('State stats loaded'); })
+    .catch(error => console.error('Error loading election2000-stats.json:', error)),
 ]).then(() => {
+  if (!statesGeoJSON || !statesGeoJSON.features) {
+    console.error('States GeoJSON is invalid or not loaded');
+    return; // Prevent further execution if states data is missing
+  }
   Papa.parse('data/countypres20.csv', {
     download: true,
     header: true,
@@ -339,7 +362,7 @@ Promise.all([
       initializeMainMap();
     }
   });
-});
+}).catch(error => console.error('Error in Promise.all:', error));
 
 const arcSegs = [
   { label: "Very likely Bush", start: -90, end: -60 },
@@ -379,6 +402,10 @@ let mainMap = null;
 let statePopup = null;
 
 function getStateBounds(stateName) {
+  if (!statesGeoJSON || !statesGeoJSON.features) {
+    console.log('States GeoJSON not available');
+    return null;
+  }
   const stateFeature = statesGeoJSON.features.find(f => f.properties.name === stateName);
   if (!stateFeature) {
     console.log(`No state found for name: ${stateName}`);
@@ -417,6 +444,10 @@ function getStateBounds(stateName) {
 }
 
 function addCountiesLayer(stateName) {
+  if (!statesGeoJSON || !statesGeoJSON.features) {
+    console.log('States GeoJSON not available');
+    return;
+  }
   const stateFP = stateFipsMap[stateName];
   if (!stateFP) {
     console.log(`No STATEFP found for state name: ${stateName}`);
@@ -537,7 +568,7 @@ function addCountiesLayer(stateName) {
     }
   });
 
-  document.getElementById('state-sidebar-title').textName = `President: ${stateName}`;
+  document.getElementById('state-sidebar-title').textContent = `President: ${stateName}`;
   document.getElementById('state-electoral-votes').textContent = `${electoralVotes} electoral votes`;
 
   if (stateTotalVotes > 0) {
@@ -578,6 +609,10 @@ function removeCountiesLayer() {
 }
 
 function initializeMainMap() {
+  if (!statesGeoJSON || !statesGeoJSON.features) {
+    console.error('Cannot initialize map: States GeoJSON not loaded');
+    return;
+  }
   mainMap = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/light-v10',
