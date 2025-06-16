@@ -289,6 +289,21 @@ let statesGeoJSON = null;
 let stateStats = {};
 let stateFipsMap = {};
 
+// Predefined state name to FIPS map as a fallback
+const stateNameToFips = {
+  "Alabama": "01", "Alaska": "02", "Arizona": "04", "Arkansas": "05", "California": "06",
+  "Colorado": "08", "Connecticut": "09", "Delaware": "10", "Florida": "12", "Georgia": "13",
+  "Hawaii": "15", "Idaho": "16", "Illinois": "17", "Indiana": "18", "Iowa": "19",
+  "Kansas": "20", "Kentucky": "21", "Louisiana": "22", "Maine": "23", "Maryland": "24",
+  "Massachusetts": "25", "Michigan": "26", "Minnesota": "27", "Mississippi": "28", "Missouri": "29",
+  "Montana": "30", "Nebraska": "31", "Nevada": "32", "New Hampshire": "33", "New Jersey": "34",
+  "New Mexico": "35", "New York": "36", "North Carolina": "37", "North Dakota": "38", "Ohio": "39",
+  "Oklahoma": "40", "Oregon": "41", "Pennsylvania": "42", "Rhode Island": "44", "South Carolina": "45",
+  "South Dakota": "46", "Tennessee": "47", "Texas": "48", "Utah": "49", "Vermont": "50",
+  "Virginia": "51", "Washington": "53", "West Virginia": "54", "Wisconsin": "55", "Wyoming": "56",
+  "District of Columbia": "11", "Puerto Rico": "72"
+};
+
 Promise.all([
   fetch('data/county-geo.json')
     .then(r => {
@@ -304,15 +319,22 @@ Promise.all([
     })
     .then(data => { 
       statesGeoJSON = data; 
-      // Create a map of state names to STATEFP from county-geo.json
-      countiesGeoJSON.features.forEach(f => {
-        if (f.properties.name && f.properties.STATEFP) {
-          stateFipsMap[f.properties.name] = f.properties.STATEFP;
-        }
-      });
-      console.log('States loaded:', data.features.length, 'FIPS map created:', Object.keys(stateFipsMap).length);
+      // Try to create FIPS map from statesGeoJSON if available
+      if (statesGeoJSON.features) {
+        statesGeoJSON.features.forEach(f => {
+          if (f.properties.name && f.properties.STATEFP) {
+            stateFipsMap[f.properties.name] = f.properties.STATEFP;
+          }
+        });
+      }
+      console.log('States loaded:', statesGeoJSON ? statesGeoJSON.features.length : 0, 'FIPS map created:', Object.keys(stateFipsMap).length);
     })
-    .catch(error => console.error('Error loading us-states.geo.json:', error)),
+    .catch(error => {
+      console.error('Error loading us-states.geo.json:', error);
+      // Fallback to predefined stateNameToFips if statesGeoJSON fails
+      Object.assign(stateFipsMap, stateNameToFips);
+      console.log('Falling back to predefined FIPS map:', Object.keys(stateFipsMap).length);
+    }),
   fetch('data/election2000-stats.json')
     .then(r => {
       if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
@@ -321,9 +343,9 @@ Promise.all([
     .then(data => { stateStats = data; console.log('State stats loaded'); })
     .catch(error => console.error('Error loading election2000-stats.json:', error)),
 ]).then(() => {
-  if (!statesGeoJSON || !statesGeoJSON.features) {
-    console.error('States GeoJSON is invalid or not loaded');
-    return; // Prevent further execution if states data is missing
+  if (!countiesGeoJSON || !countiesGeoJSON.features) {
+    console.error('Counties GeoJSON is invalid or not loaded');
+    return;
   }
   Papa.parse('data/countypres20.csv', {
     download: true,
@@ -403,15 +425,43 @@ let statePopup = null;
 
 function getStateBounds(stateName) {
   if (!statesGeoJSON || !statesGeoJSON.features) {
-    console.log('States GeoJSON not available');
-    return null;
+    console.log('States GeoJSON not available, using county data for bounds');
+    // Fallback: Aggregate bounds from counties
+    const stateFP = stateFipsMap[stateName];
+    if (!stateFP) {
+      console.log(`No STATEFP mapped for name: ${stateName}`);
+      return null;
+    }
+    const countyFeatures = countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP);
+    if (!countyFeatures.length) {
+      console.log(`No counties found for state name: ${stateName} (STATEFP: ${stateFP})`);
+      return null;
+    }
+    let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
+    countyFeatures.forEach(f => {
+      const coords = f.geometry.type === "Polygon" ? f.geometry.coordinates[0] : f.geometry.coordinates.flat(2);
+      coords.forEach(coord => {
+        if (Array.isArray(coord) && coord.length >= 2) {
+          minLng = Math.min(minLng, coord[0]);
+          maxLng = Math.max(maxLng, coord[0]);
+          minLat = Math.min(minLat, coord[1]);
+          maxLat = Math.max(maxLat, coord[1]);
+        }
+      });
+    });
+    if (minLng === 180 || maxLng === -180 || minLat === 90 || maxLat === -90) {
+      console.log(`Invalid bounds for state name: ${stateName}`);
+      return null;
+    }
+    console.log(`Bounds for ${stateName} (STATEFP: ${stateFP}) from counties:`, [[minLng, minLat], [maxLng, maxLat]]);
+    return [[minLng, minLat], [maxLng, maxLat]];
   }
   const stateFeature = statesGeoJSON.features.find(f => f.properties.name === stateName);
   if (!stateFeature) {
     console.log(`No state found for name: ${stateName}`);
     return null;
   }
-  const stateFP = stateFipsMap[stateName]; // Get STATEFP from the map
+  const stateFP = stateFipsMap[stateName];
   if (!stateFP) {
     console.log(`No STATEFP mapped for name: ${stateName}`);
     return null;
@@ -444,17 +494,13 @@ function getStateBounds(stateName) {
 }
 
 function addCountiesLayer(stateName) {
-  if (!statesGeoJSON || !statesGeoJSON.features) {
-    console.log('States GeoJSON not available');
+  if (!countiesGeoJSON || !countiesGeoJSON.features) {
+    console.log('Counties GeoJSON not loaded or invalid');
     return;
   }
   const stateFP = stateFipsMap[stateName];
   if (!stateFP) {
     console.log(`No STATEFP found for state name: ${stateName}`);
-    return;
-  }
-  if (!countiesGeoJSON || !countiesGeoJSON.features) {
-    console.log('Counties GeoJSON not loaded or invalid');
     return;
   }
   const filtered = {
@@ -547,6 +593,16 @@ function addCountiesLayer(stateName) {
   }
 
   // Sidebar details
+  if (!statesGeoJSON || !statesGeoJSON.features) {
+    console.log('States GeoJSON not available, using minimal sidebar');
+    document.getElementById('state-sidebar-title').textContent = `President: ${stateName}`;
+    document.getElementById('state-electoral-votes').textContent = 'Electoral votes: N/A';
+    document.getElementById('candidate-stats').textContent = 'No state data available';
+    document.getElementById('reporting-status').textContent = '';
+    document.getElementById('last-updated').textContent = '';
+    document.getElementById('state-sidebar').style.display = 'block';
+    return;
+  }
   const stateFeature = statesGeoJSON.features.find(f => f.properties.name === stateName);
   if (!stateFeature) {
     console.log(`State feature not found for name: ${stateName}`);
@@ -609,8 +665,8 @@ function removeCountiesLayer() {
 }
 
 function initializeMainMap() {
-  if (!statesGeoJSON || !statesGeoJSON.features) {
-    console.error('Cannot initialize map: States GeoJSON not loaded');
+  if (!countiesGeoJSON || !countiesGeoJSON.features) {
+    console.error('Cannot initialize map: Counties GeoJSON not loaded');
     return;
   }
   mainMap = new mapboxgl.Map({
@@ -621,6 +677,29 @@ function initializeMainMap() {
   });
 
   mainMap.on('load', () => {
+    // Use countiesGeoJSON as the base layer if statesGeoJSON is unavailable
+    if (!statesGeoJSON || !statesGeoJSON.features) {
+      console.log('Using countiesGeoJSON as base layer due to missing statesGeoJSON');
+      // Aggregate state boundaries from counties (simplified for now)
+      const stateFeatures = {};
+      countiesGeoJSON.features.forEach(f => {
+        const stateFP = f.properties.STATEFP;
+        if (!stateFeatures[stateFP]) {
+          stateFeatures[stateFP] = {
+            type: "Feature",
+            properties: { STATEFP: stateFP, name: stateNameToFips[stateFP] || `State ${stateFP}` },
+            geometry: { type: "MultiPolygon", coordinates: [] }
+          };
+        }
+        if (f.geometry.type === "Polygon") {
+          stateFeatures[stateFP].geometry.coordinates.push(f.geometry.coordinates);
+        } else if (f.geometry.type === "MultiPolygon") {
+          stateFeatures[stateFP].geometry.coordinates.push(...f.geometry.coordinates);
+        }
+      });
+      statesGeoJSON = { type: "FeatureCollection", features: Object.values(stateFeatures) };
+    }
+
     // Merge in state stats if present
     statesGeoJSON.features.forEach(f => {
       const stateName = f.properties.name;
@@ -675,11 +754,11 @@ function initializeMainMap() {
         f.properties.votes_dem = stateDemVotes;
         f.properties.reporting = 100;
         if (stateGopVotes > stateDemVotes) {
-          ev_bush += f.properties.electoral_votes;
+          ev_bush += f.properties.electoral_votes || 0;
           f.properties.status = 'GOP Win';
           f.properties.winner = 'Bush';
         } else if (stateDemVotes > stateGopVotes) {
-          ev_gore += f.properties.electoral_votes;
+          ev_gore += f.properties.electoral_votes || 0;
           f.properties.status = 'DEM Win';
           f.properties.winner = 'Gore';
         } else {
@@ -751,8 +830,8 @@ function initializeMainMap() {
         .setLngLat(e.lngLat)
         .setHTML(
           `<strong>${p.name}</strong><br/>
-          <b>Electoral Votes:</b> ${p.electoral_votes}<br/>
-          <b>Reporting:</b> ${p.reporting}%<br/>
+          <b>Electoral Votes:</b> ${p.electoral_votes || 'N/A'}<br/>
+          <b>Reporting:</b> ${p.reporting || 0}%<br/>
           <b style="color:#d12c0f;">${gopCheck}${gopName}:</b> ${gop.toLocaleString()} (${gopPerc}%)<br/>
           <b style="color:#0e47e6;">${demCheck}${demName}:</b> ${dem.toLocaleString()} (${demPerc}%)<br/>
           <b>Winner:</b> ${winner}`
