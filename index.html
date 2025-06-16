@@ -329,18 +329,18 @@ const stateNameToFips = {
 };
 const stateFipsMap = {...stateNameToFips};
 const STATE_CSV_URL = 'https://docs.google.com/spreadsheets/d/10zbHap425MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
+const COUNTY_CSV_URL = 'https://docs.google.com/spreadsheets/d/1edopYcOoeeom30K3WsCmzVwvJ8rHcdYH7xB7B7QCQBI/export?format=csv';
 
 function populateStateStatsFromCSV(rows) {
   const newStateStats = {};
   for (const row of rows) {
     let stateName = (row['State'] || '').trim();
     if (!stateName) continue;
-    // Find the Election status column dynamically
     const statusKey = Object.keys(row).find(k => k.toLowerCase().includes('election status')) || 'Election status';
     let rawStatus = (row[statusKey] || 'Uncalled').trim();
-    console.log(`Raw Election Status for ${stateName}: "${rawStatus}"`); // Debug raw status
+    console.log(`Raw Election Status for ${stateName}: "${rawStatus}"`);
     let status = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
-    console.log(`Normalized Status for ${stateName}: "${status}"`); // Debug normalized status
+    console.log(`Normalized Status for ${stateName}: "${status}"`);
     newStateStats[stateName.toLowerCase()] = {
       state: stateName,
       electoral_votes: parseInt(row['Electoral Votes'] || 0),
@@ -357,6 +357,32 @@ function populateStateStatsFromCSV(rows) {
     };
   }
   stateStats = newStateStats;
+}
+
+function populateCountyStatsFromCSV(rows) {
+  const newCountyStats = {};
+  for (const row of rows) {
+    if (String(row.year) !== "2000" || !row.county_fips) continue;
+    const fips = String(row.county_fips).padStart(5, "0");
+    const candidate = (row.candidate || "").toLowerCase();
+    if (!newCountyStats[fips]) {
+      newCountyStats[fips] = { bush_votes: 0, gore_votes: 0, other_votes: 0, totalvotes: +row.totalvotes || 0 };
+    }
+    if (candidate.includes("bush")) {
+      newCountyStats[fips].bush_votes += +row.candidatevotes || 0;
+    } else if (candidate.includes("gore")) {
+      newCountyStats[fips].gore_votes += +row.candidatevotes || 0;
+    } else {
+      newCountyStats[fips].other_votes += +row.candidatevotes || 0;
+    }
+  }
+  for (const fips in newCountyStats) {
+    const c = newCountyStats[fips];
+    if (c.bush_votes > c.gore_votes) c.winner = "Bush";
+    else if (c.gore_votes > c.bush_votes) c.winner = "Gore";
+    else c.winner = "Tied";
+  }
+  countyElectionStats = newCountyStats;
 }
 
 function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
@@ -380,7 +406,7 @@ function updateGeoJSONAndMap() {
     const matchedRow = stateStats[geoName];
     if (matchedRow) {
       let status;
-      console.log(`Processing ${matchedRow.state}: CSV Status = ${matchedRow.status}, Winner = ${matchedRow.winner || 'None'}`); // Debug status
+      console.log(`Processing ${matchedRow.state}: CSV Status = ${matchedRow.status}, Winner = ${matchedRow.winner || 'None'}`);
       if (matchedRow.status === 'Called' && matchedRow.winner === 'Bush') {
         status = 'GOP Win';
       } else if (matchedRow.status === 'Called' && matchedRow.winner === 'Gore') {
@@ -413,9 +439,7 @@ function updateGeoJSONAndMap() {
   console.log('State status counts after update:', statusCounts);
   if (mainMap && mainMap.getSource('states')) {
     mainMap.getSource('states').setData(statesGeoJSON);
-    // Force map repaint
     mainMap.triggerRepaint();
-    // Debug rendered features for Alabama
     if (mainMap.isStyleLoaded()) {
       const alabamaFeatures = mainMap.queryRenderedFeatures(undefined, { layers: ['states-fill'], filter: ['==', ['get', 'state'], 'Alabama'] });
       if (alabamaFeatures.length > 0) {
@@ -483,17 +507,41 @@ function updateUIElements() {
 }
 
 function refreshElectionData() {
-  Papa.parse(STATE_CSV_URL, {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete: function(results) {
-      populateStateStatsFromCSV(results.data);
-      updateGeoJSONAndMap();
-    },
-    error: function(err) {
-      console.error('Error fetching CSV:', err);
-    }
+  Promise.all([
+    new Promise((resolve, reject) => {
+      Papa.parse(STATE_CSV_URL, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          populateStateStatsFromCSV(results.data);
+          resolve();
+        },
+        error: function(err) {
+          console.error('Error fetching state CSV:', err);
+          reject(err);
+        }
+      });
+    }),
+    new Promise((resolve, reject) => {
+      Papa.parse(COUNTY_CSV_URL, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          populateCountyStatsFromCSV(results.data);
+          resolve();
+        },
+        error: function(err) {
+          console.error('Error fetching county CSV:', err);
+          reject(err);
+        }
+      });
+    })
+  ]).then(() => {
+    updateGeoJSONAndMap();
+  }).catch(err => {
+    console.error('Error during data refresh:', err);
   });
 }
 
@@ -501,46 +549,10 @@ Promise.all([
   fetch('data/county-geo.json').then(r => r.json()).then(data => { countiesGeoJSON = data; }),
   fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; populateStateFipsMapFromGeoJSON(statesGeoJSON); }),
 ]).then(() => {
-  Papa.parse(STATE_CSV_URL, {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete: function(results) {
-      populateStateStatsFromCSV(results.data);
-      updateGeoJSONAndMap();
-      Papa.parse('data/countypres20.csv', {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results2) {
-          for (const row of results2.data) {
-            if (String(row.year) !== "2000" || !row.county_fips) continue;
-            const fips = String(row.county_fips).padStart(5, "0");
-            const candidate = (row.candidate || "").toLowerCase();
-            if (!countyElectionStats[fips]) {
-              countyElectionStats[fips] = { bush_votes: 0, gore_votes: 0, other_votes: 0, totalvotes: +row.totalvotes || 0 };
-            }
-            if (candidate.includes("bush")) {
-              countyElectionStats[fips].bush_votes += +row.candidatevotes || 0;
-            } else if (candidate.includes("gore")) {
-              countyElectionStats[fips].gore_votes += +row.candidatevotes || 0;
-            } else {
-              countyElectionStats[fips].other_votes += +row.candidatevotes || 0;
-            }
-          }
-          for (const fips in countyElectionStats) {
-            const c = countyElectionStats[fips];
-            if (c.bush_votes > c.gore_votes) c.winner = "Bush";
-            else if (c.gore_votes > c.bush_votes) c.winner = "Gore";
-            else c.winner = "Tied";
-          }
-          setArcSegs();
-          initializeMainMap();
-          setInterval(refreshElectionData, 60000);
-        }
-      });
-    }
-  });
+  refreshElectionData();
+  setArcSegs();
+  initializeMainMap();
+  setInterval(refreshElectionData, 60000); // Update every minute
 });
 
 const arcSegs = [
