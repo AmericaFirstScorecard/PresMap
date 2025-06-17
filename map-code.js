@@ -1,50 +1,65 @@
+// map-code.js
+
 mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
 
-let mainMap = null;
-let statesGeoJSON = null;
 let countiesGeoJSON = null;
+let statesGeoJSON = null;
+let mainMap = null;
+let currentState = null;
+let statePopup = null;
 
-// Utility: Get state FIPS code map
-function buildStateFipsMap(statesGeoJSON) {
-  const fipsMap = {};
-  statesGeoJSON.features.forEach(f => {
-    const props = f.properties;
-    const nameKey = Object.keys(props).find(k => k.toLowerCase().includes('name')) || 'name';
-    const fipsKey = Object.keys(props).find(k => k.toLowerCase().includes('statefp') || k.toLowerCase().includes('fips')) || 'STATEFP';
-    fipsMap[(props[nameKey] || '').trim().toLowerCase()] = String(props[fipsKey]).padStart(2, '0');
+function fetchAllGeoJSON() {
+  return Promise.all([
+    fetch('data/county-geo.json').then(r => r.json()),
+    fetch('data/us-states.geo.json').then(r => r.json())
+  ]).then(([countyData, stateData]) => {
+    countiesGeoJSON = countyData;
+    statesGeoJSON = stateData;
   });
-  return fipsMap;
 }
-let stateFipsMap = {};
 
-// 1. Fetch all GeoJSON and data first, then build map!
-Promise.all([
-  fetch('data/us-states.geo.json').then(r => r.json()),
-  fetch('data/county-geo.json').then(r => r.json())
-]).then(([statesJson, countiesJson]) => {
-  statesGeoJSON = statesJson;
-  countiesGeoJSON = countiesJson;
-  stateFipsMap = buildStateFipsMap(statesGeoJSON);
+function getStateFP(stateName) {
+  // Example FIPS lookup, update if you have a more complete FIPS map elsewhere
+  const fipsMap = {
+    "alabama":"01","alaska":"02","arizona":"04","arkansas":"05","california":"06","colorado":"08","connecticut":"09","delaware":"10",
+    "florida":"12","georgia":"13","hawaii":"15","idaho":"16","illinois":"17","indiana":"18","iowa":"19","kansas":"20",
+    "kentucky":"21","louisiana":"22","maine":"23","maryland":"24","massachusetts":"25","michigan":"26","minnesota":"27",
+    "mississippi":"28","missouri":"29","montana":"30","nebraska":"31","nevada":"32","new hampshire":"33","new jersey":"34",
+    "new mexico":"35","new york":"36","north carolina":"37","north dakota":"38","ohio":"39","oklahoma":"40","oregon":"41",
+    "pennsylvania":"42","rhode island":"44","south carolina":"45","south dakota":"46","tennessee":"47","texas":"48","utah":"49",
+    "vermont":"50","virginia":"51","washington":"53","west virginia":"54","wisconsin":"55","wyoming":"56","district of columbia":"11"
+  };
+  if (!stateName) return null;
+  return fipsMap[stateName.trim().toLowerCase()] || null;
+}
 
-  // Now wait for both state and county results to be ready
-  ElectionState.fetchStateResults(() => {
-    ElectionCounties.fetchCountyResults(() => {
-      initMap(); // all data ready, build map!
-    });
+function updateStateGeoJSONWithStats() {
+  if (!statesGeoJSON || !statesGeoJSON.features || !window.stateStats) return;
+  statesGeoJSON.features.forEach(f => {
+    const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
+    const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
+    const stat = getStateStats(geoName);
+    if (stat) {
+      f.properties = {
+        ...f.properties,
+        ...stat
+      };
+    }
   });
-});
+}
 
-function initMap() {
+function initializeMap() {
   mainMap = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/light-v10',
-    center: [-98.6, 39.8],
-    zoom: 3,
+    center: [-98.5795, 39.8283],
+    zoom: 3
   });
 
   mainMap.on('load', () => {
-    // --- STATE LAYER ---
-    mainMap.addSource('states', { type: 'geojson', data: colorStatesGeo(statesGeoJSON) });
+    updateStateGeoJSONWithStats();
+
+    mainMap.addSource('states', { type: 'geojson', data: statesGeoJSON });
     mainMap.addLayer({
       id: 'states-fill',
       type: 'fill',
@@ -56,160 +71,129 @@ function initMap() {
           'Gore', '#0e47e6',
           /* other */ '#cccccc'
         ],
-        'fill-opacity': 0.92
+        'fill-opacity': 1.0
       }
     });
     mainMap.addLayer({
       id: 'states-outline',
       type: 'line',
       source: 'states',
-      paint: { 'line-color': '#222', 'line-width': 1.5 }
+      paint: { 'line-color': '#000000', 'line-width': 2 }
     });
-
-    // --- COUNTY LAYER (initially off, toggled on click) ---
-    mainMap.addSource('counties', { type: 'geojson', data: {type:'FeatureCollection', features:[]} });
-    mainMap.addLayer({
-      id: 'counties-fill',
-      type: 'fill',
-      source: 'counties',
-      layout: { visibility: 'none' },
-      paint: {
-        'fill-color': [
-          'match', ['get', 'winner'],
-          'Bush', '#f2b0a9',
-          'Gore', '#a8c7ee',
-          /* other */ '#bbbbbb'
-        ],
-        'fill-opacity': 0.80
-      }
-    });
-    mainMap.addLayer({
-      id: 'counties-outline',
-      type: 'line',
-      source: 'counties',
-      layout: { visibility: 'none' },
-      paint: { 'line-color': '#fff', 'line-width': 0.3 }
-    });
-
-    // --- State Hover Popup ---
-    let popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false });
 
     mainMap.on('mousemove', 'states-fill', (e) => {
-      mainMap.getCanvas().style.cursor = 'pointer';
-      const props = e.features[0].properties;
-      const stateName = (props.name || props.NAME || props.state || '').trim();
-      const stats = ElectionState.getStats(stateName);
-      popup.setLngLat(e.lngLat)
-        .setHTML(`
-          <strong>${stateName}</strong><br>
-          GOP: ${stats?.votes_gop?.toLocaleString() || 0}<br>
-          DEM: ${stats?.votes_dem?.toLocaleString() || 0}<br>
-          Winner: ${stats?.winner || 'Uncalled'}
-        `)
+      const p = e.features[0].properties;
+      const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
+      if (statePopup) statePopup.remove();
+      statePopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
+        .setLngLat(e.lngLat)
+        .setHTML(`<strong>${p[nameKey]}</strong><br/>Bush: ${p.votes_gop}<br/>Gore: ${p.votes_dem}<br/>Winner: ${p.winner}`)
         .addTo(mainMap);
     });
     mainMap.on('mouseleave', 'states-fill', () => {
-      mainMap.getCanvas().style.cursor = '';
-      popup.remove();
+      if (statePopup) statePopup.remove();
     });
 
-    // --- State Click: Show County Layer for that State ---
     mainMap.on('click', 'states-fill', (e) => {
-      const props = e.features[0].properties;
-      const stateName = (props.name || props.NAME || props.state || '').trim();
-      showCountiesForState(stateName);
+      const p = e.features[0].properties;
+      currentState = p.state || p.name || p.NAME;
+      addCountiesLayer(currentState);
     });
-
-    // --- County Hover Popup ---
-    let countyPopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false });
-    mainMap.on('mousemove', 'counties-fill', (e) => {
-      mainMap.getCanvas().style.cursor = 'pointer';
-      const props = e.features[0].properties;
-      const stats = ElectionCounties.getStats(props.GEOID);
-      countyPopup.setLngLat(e.lngLat)
-        .setHTML(`
-          <strong>${props.NAME} County</strong><br>
-          Bush: ${stats?.bush_votes?.toLocaleString() || 0}<br>
-          Gore: ${stats?.gore_votes?.toLocaleString() || 0}<br>
-          Other: ${stats?.other_votes?.toLocaleString() || 0}<br>
-          Winner: ${stats?.winner || 'Tied'}
-        `)
-        .addTo(mainMap);
-    });
-    mainMap.on('mouseleave', 'counties-fill', () => {
-      mainMap.getCanvas().style.cursor = '';
-      countyPopup.remove();
-    });
-
-    // Optional: Add a reset/box out button logic here to go back to states
-    // E.g., document.getElementById('box-out-btn').onclick = hideCounties;
-
   });
 }
 
-// --- Helper to color and update state features from ElectionState ---
-function colorStatesGeo(statesGeo) {
-  return {
-    ...statesGeo,
-    features: statesGeo.features.map(f => {
-      const props = f.properties;
-      const stateName = (props.name || props.NAME || props.state || '').trim();
-      const stats = ElectionState.getStats(stateName);
-      return {
-        ...f,
-        properties: {
-          ...props,
-          winner: stats?.winner || 'Uncalled',
-        }
-      };
-    })
-  };
-}
-
-// --- Show counties for a selected state, color by winner, zoom in ---
-function showCountiesForState(stateName) {
-  // Get FIPS code for this state
-  const stateFP = stateFipsMap[stateName.trim().toLowerCase()];
-  // Filter county GeoJSON for that state
+function addCountiesLayer(stateName) {
+  const stateFP = getStateFP(stateName);
+  if (!stateFP || !countiesGeoJSON) return;
   const filtered = {
     ...countiesGeoJSON,
-    features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP).map(f => {
-      const stats = ElectionCounties.getStats(f.properties.GEOID);
-      return {
-        ...f,
-        properties: {
-          ...f.properties,
-          winner: stats?.winner || 'Tied',
-        }
-      };
-    })
+    features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
   };
-  // Update county source and layer visibility
-  mainMap.getSource('counties').setData(filtered);
-  mainMap.setLayoutProperty('counties-fill', 'visibility', 'visible');
-  mainMap.setLayoutProperty('counties-outline', 'visibility', 'visible');
-
-  // Optionally hide states layer for clarity
-  // mainMap.setLayoutProperty('states-fill', 'visibility', 'none');
-  // mainMap.setLayoutProperty('states-outline', 'visibility', 'none');
-
-  // Zoom to the selected state
-  const stateFeature = statesGeoJSON.features.find(f => {
-    const props = f.properties;
-    const n = (props.name || props.NAME || props.state || '').trim();
-    return n.toLowerCase() === stateName.trim().toLowerCase();
+  filtered.features.forEach(f => {
+    const fips = f.properties.GEOID;
+    const stats = getCountyStats(fips);
+    if (stats) {
+      const total = stats.bush_votes + stats.gore_votes + stats.other_votes;
+      const margin = total > 0 ? Math.abs(stats.bush_votes - stats.gore_votes) / total * 100 : 0;
+      f.properties.winner = stats.winner;
+      f.properties.margin = margin;
+    } else {
+      f.properties.winner = "Tied";
+      f.properties.margin = 0;
+    }
   });
-  if (stateFeature) {
-    const bbox = turf.bbox(stateFeature); // turf.js required!
-    mainMap.fitBounds(bbox, { padding: 40, duration: 1100 });
+
+  if (mainMap.getLayer('main-counties-fill')) mainMap.removeLayer('main-counties-fill');
+  if (mainMap.getLayer('main-counties-outline')) mainMap.removeLayer('main-counties-outline');
+  if (mainMap.getSource('main-counties')) mainMap.removeSource('main-counties');
+
+  if (filtered.features.length > 0) {
+    mainMap.addSource('main-counties', { type: 'geojson', data: filtered });
+    mainMap.addLayer({
+      id: 'main-counties-fill',
+      type: 'fill',
+      source: 'main-counties',
+      paint: {
+        'fill-color': [
+          'case',
+          ['==', ['get', 'winner'], 'Bush'],
+          '#e74c3c',
+          ['==', ['get', 'winner'], 'Gore'],
+          '#3498db',
+          '#b5b5b5'
+        ],
+        'fill-opacity': 0.85
+      }
+    });
+    mainMap.addLayer({
+      id: 'main-counties-outline',
+      type: 'line',
+      source: 'main-counties',
+      paint: { 'line-color': '#ffffff', 'line-width': 0.5 }
+    });
+
+    let countyPopup = null;
+    mainMap.on('mousemove', 'main-counties-fill', (e) => {
+      mainMap.getCanvas().style.cursor = 'pointer';
+      const f = e.features[0];
+      const geoid = f.properties.GEOID;
+      const stats = getCountyStats(geoid);
+      let html = `<strong>${f.properties.NAME} County</strong>`;
+      if (stats) {
+        html += `<br>Bush: ${stats.bush_votes.toLocaleString()}`;
+        html += `<br>Gore: ${stats.gore_votes.toLocaleString()}`;
+        if (stats.other_votes > 0) html += `<br>Other: ${stats.other_votes.toLocaleString()}`;
+        html += `<br>Winner: ${stats.winner}`;
+      } else {
+        html += `<br>No data available.`;
+      }
+      if (countyPopup) countyPopup.remove();
+      countyPopup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
+        .setLngLat(e.lngLat)
+        .setHTML(html)
+        .addTo(mainMap);
+    });
+    mainMap.on('mouseleave', 'main-counties-fill', () => {
+      mainMap.getCanvas().style.cursor = '';
+      if (countyPopup) countyPopup.remove();
+      countyPopup = null;
+    });
   }
 }
 
-// --- Hide counties and reset to nationwide state view (call on "Box Out" click, etc.) ---
-function hideCounties() {
-  mainMap.setLayoutProperty('counties-fill', 'visibility', 'none');
-  mainMap.setLayoutProperty('counties-outline', 'visibility', 'none');
-  // mainMap.setLayoutProperty('states-fill', 'visibility', 'visible');
-  // mainMap.setLayoutProperty('states-outline', 'visibility', 'visible');
-  mainMap.flyTo({ center: [-98.6, 39.8], zoom: 3 });
-}
+window.initElectionMap = function () {
+  Promise.all([
+    fetchStateData(),
+    fetchCountyData(),
+    fetchAllGeoJSON()
+  ]).then(() => {
+    initializeMap();
+  });
+};
+
+// Optional: auto-init when DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.fetchStateData && window.fetchCountyData) {
+    window.initElectionMap();
+  }
+});
