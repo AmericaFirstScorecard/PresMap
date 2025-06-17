@@ -359,8 +359,8 @@ function populateStateStatsFromCSV(rows) {
 }
 
 function populateCountyStatsFromCSV(rows, headers) {
-  console.log('County CSV headers:', headers); // Log all headers
-  console.log('County CSV rows (first 5):', rows.slice(0, 5)); // Log first few rows
+  console.log('County CSV headers:', headers);
+  console.log('County CSV rows (first 5):', rows.slice(0, 5));
   if (!rows.length) {
     console.warn('No rows found in county CSV.');
     return;
@@ -570,7 +570,10 @@ function refreshElectionData() {
 }
 
 Promise.all([
-  fetch('data/county-geo.json').then(r => r.json()).then(data => { countiesGeoJSON = data; }),
+  fetch('data/county-geo.json').then(r => r.json()).then(data => {
+    countiesGeoJSON = data;
+    console.log('Sample County GEOIDs (first 5):', countiesGeoJSON.features.slice(0, 5).map(f => f.properties.GEOID));
+  }),
   fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; populateStateFipsMapFromGeoJSON(statesGeoJSON); }),
 ]).then(() => {
   refreshElectionData();
