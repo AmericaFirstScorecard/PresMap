@@ -330,45 +330,30 @@ const stateFipsMap = {...stateNameToFips};
 const STATE_CSV_URL = 'https://docs.google.com/spreadsheets/d/10zbHap425MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
 const COUNTY_CSV_URL = 'https://docs.google.com/spreadsheets/d/1edopYcOoeeom30K3WsCmzVwvJ8rHcdYH7xB7B7QCQBI/export?format=csv';
 
-function populateCountyStatsFromCSV(rows, headers) {
-  const newCountyStats = {};
+function populateStateStatsFromCSV(rows) {
+  const newStateStats = {};
   for (const row of rows) {
-    // Get FIPS, always pad to 5 digits (e.g., 01001)
-    let fips = row.county_fips || row.CountyFIPS || row.FIPS || row.GEOID || "";
-    fips = String(fips).padStart(5, "0");
-    if (!/^\d{5}$/.test(fips)) continue;
-
-    // Get party and votes
-    let party = (row.party || "").trim().toUpperCase();
-    let votes = parseInt(row.candidatevotes || "0");
-
-    // Initialize if not exists
-    if (!newCountyStats[fips]) {
-      newCountyStats[fips] = { bush_votes: 0, gore_votes: 0, other_votes: 0, totalvotes: 0, winner: "" };
-    }
-
-    // Assign votes based on party
-    if (party === "REPUBLICAN") {
-      newCountyStats[fips].bush_votes += votes;
-    } else if (party === "DEMOCRAT") {
-      newCountyStats[fips].gore_votes += votes;
-    } else {
-      newCountyStats[fips].other_votes += votes;
-    }
-
-    // Use the totalvotes value from this row (they’re all the same for this county)
-    let tv = parseInt(row.totalvotes || "0");
-    if (tv > 0) newCountyStats[fips].totalvotes = tv;
+    let stateName = (row['State'] || '').trim();
+    if (!stateName) continue;
+    const statusKey = Object.keys(row).find(k => k.toLowerCase().includes('election status')) || 'Election status';
+    let rawStatus = (row[statusKey] || 'Uncalled').trim();
+    let status = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
+    newStateStats[stateName.toLowerCase()] = {
+      state: stateName,
+      electoral_votes: parseInt(row['Electoral Votes'] || 0),
+      votes_gop: parseInt(row['Republican Votes'] || 0),
+      votes_dem: parseInt(row['Democrat Votes'] || 0),
+      votes_other: parseInt(row['Other Votes'] || 0),
+      total_votes: parseInt(row['Total Votes'] || 0),
+      winner: (row['Winner'] || '').trim(),
+      status: status,
+      gop_candidate: (row['Republican Candidate'] || 'Bush').trim(),
+      dem_candidate: (row['Democrat Candidate'] || 'Gore').trim(),
+      other_candidate: (row['Other Candidate'] || '').trim(),
+      reporting: parseFloat(row['Reporting %'] || 0)
+    };
   }
-
-  // Compute winner for each county
-  for (const fips in newCountyStats) {
-    const stats = newCountyStats[fips];
-    if (stats.bush_votes > stats.gore_votes) stats.winner = "Bush";
-    else if (stats.gore_votes > stats.bush_votes) stats.winner = "Gore";
-    else stats.winner = "Tied";
-  }
-  countyElectionStats = newCountyStats;
+  stateStats = newStateStats;
 }
 
 // ** COUNTY CSV UPDATED LOGIC **
