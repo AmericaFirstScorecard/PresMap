@@ -719,12 +719,13 @@ function initializeMainMap() {
             ['get', 'dem_candidate'], '#0e47e6',
             '#cccccc'
           ],
-          [
+          'Uncalled', [
             'case',
             ['>', ['to-number', ['get', 'votes_gop'], 0], ['to-number', ['get', 'votes_dem'], 0]], '#f4a6a6',
             ['>', ['to-number', ['get', 'votes_dem'], 0], ['to-number', ['get', 'votes_gop'], 0]], '#a6c8f4',
             '#cccccc'
-          ]
+          ],
+          '#cccccc' // default color if status is neither 'Called' nor 'Uncalled'
         ],
         'fill-opacity': 1.0
       }
