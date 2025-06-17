@@ -252,9 +252,9 @@
     </div>
   </div>
   <div class="candidate-stats">
-    <div class="candidate-stat-left" id="bush-pv">Bush: <span id="bush-ev">0</span> EV</div>
+    <div class="candidate-stat-left" id="bush-pv">Bush: <span id="bush-pop">0</span> Votes</div>
     <div class="stat-box" id="reporting">Reporting: 0%</div>
-    <div class="candidate-stat-right" id="gore-pv">Gore: <span id="gore-ev">0</span> EV</div>
+    <div class="candidate-stat-right" id="gore-pv">Gore: <span id="gore-pop">0</span> Votes</div>
   </div>
 </div>
 <div id="map"></div>
@@ -447,9 +447,30 @@ function updateGeoJSONAndMap() {
     addCountiesLayer(currentState);
   }
 }
+
 function updateUIElements() {
-  let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
+  let ev_bush = 0, ev_gore = 0;
+  let national_bush_votes = 0, national_gore_votes = 0, national_total_votes = 0;
+
+  // Aggregate county votes to state and national totals
+  const stateVoteTotals = {};
+  for (const fips in countyElectionStats) {
+    const stateFP = fips.substring(0, 2); // Extract state FIPS from county FIPS
+    const stats = countyElectionStats[fips];
+    if (!stateVoteTotals[stateFP]) {
+      stateVoteTotals[stateFP] = { bush_votes: 0, gore_votes: 0, total_votes: 0 };
+    }
+    stateVoteTotals[stateFP].bush_votes += stats.bush_votes || 0;
+    stateVoteTotals[stateFP].gore_votes += stats.gore_votes || 0;
+    stateVoteTotals[stateFP].total_votes += stats.totalvotes || 0;
+    national_bush_votes += stats.bush_votes || 0;
+    national_gore_votes += stats.gore_votes || 0;
+    national_total_votes += stats.totalvotes || 0;
+  }
+
+  // Update state GeoJSON with aggregated county votes
   statesGeoJSON.features.forEach(f => {
+    const stateFP = f.properties.STATEFP;
     const ev = f.properties.electoral_votes || 0;
     const status = f.properties.status || 'Uncalled';
     const winner = f.properties.winner || '';
@@ -458,16 +479,16 @@ function updateUIElements() {
     } else if (status === 'DEM Win' && winner === 'Gore') {
       ev_gore += ev;
     }
-    total_gop_votes += Number(f.properties.votes_gop) || 0;
-    total_dem_votes += Number(f.properties.votes_dem) || 0;
-    total_votes += Number(f.properties.total_votes) || 0;
+    if (stateVoteTotals[stateFP]) {
+      f.properties.votes_gop = stateVoteTotals[stateFP].bush_votes;
+      f.properties.votes_dem = stateVoteTotals[stateFP].gore_votes;
+      f.properties.total_votes = stateVoteTotals[stateFP].total_votes;
+    }
   });
 
+  // Update electoral vote display (unchanged)
   document.getElementById('bush-votes').textContent = ev_bush;
   document.getElementById('gore-votes').textContent = ev_gore;
-  document.getElementById('bush-ev').textContent = ev_bush;
-  document.getElementById('gore-ev').textContent = ev_gore;
-
   const totalEV = ev_bush + ev_gore;
   const bushEVPerc = totalEV > 0 ? (ev_bush / totalEV * 100).toFixed(1) : 0;
   const goreEVPerc = totalEV > 0 ? (ev_gore / totalEV * 100).toFixed(1) : 0;
@@ -476,6 +497,11 @@ function updateUIElements() {
   document.getElementById('bush-label').textContent = bushEVPerc + "%";
   document.getElementById('gore-label').textContent = goreEVPerc + "%";
 
+  // Update popular vote display
+  document.getElementById('bush-pop').textContent = national_bush_votes.toLocaleString();
+  document.getElementById('gore-pop').textContent = national_gore_votes.toLocaleString();
+
+  // Update projection needle based on electoral votes (unchanged)
   const bushProj = Math.min(ev_bush / 270, 1);
   const goreProj = Math.min(ev_gore / 270, 1);
   let projBush, projGore;
@@ -495,7 +521,8 @@ function updateUIElements() {
   document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
   document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
 
-  const reporting_pct = Object.values(stateStats).reduce((acc, s) => acc + (s.reporting || 0), 0) / Object.keys(stateStats).length;
+  // Update reporting percentage based on county data
+  const reporting_pct = national_total_votes > 0 ? (national_total_votes / national_total_votes * 100).toFixed(1) : 0;
   document.getElementById('reporting').textContent = "Reporting: " + reporting_pct.toFixed(1) + "%";
 }
 
