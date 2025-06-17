@@ -4,10 +4,8 @@
   <meta charset="utf-8">
   <title>2000 Live Election Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Mapbox GL JS -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
-  <!-- PapaParse for CSV parsing -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     html, body { height: 100%; margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background: #11161b;}
@@ -237,7 +235,7 @@
       <span>Gore: <span id="gore-votes">0</span> EV</span>
     </div>
     <div class="progress-bar-container">
-      <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/George-W-Bush.jpeg/220px-George-W-Bush.jpeg" alt="Bush" class="candidate-image">
       <div style="width: 100%; position: relative;">
         <div class="threshold-label">270 to Win</div>
         <div class="progress-bar-wrapper">
@@ -248,7 +246,7 @@
           <div class="vote-label" id="gore-label" style="right: 5px">0%</div>
         </div>
       </div>
-      <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Al_Gore_in_2007_%28cropped%29.jpg/220px-Al_Gore_in_2007_%28cropped%29.jpg" alt="Gore" class="candidate-image">
     </div>
   </div>
   <div class="candidate-stats">
@@ -274,8 +272,8 @@
 <div id="projection-ticker-wrap">
   <div class="nyt-projection-title">Chance of Winning <span style="font-weight:400;">(Projection)</span></div>
   <div class="needle-svg-wrap" style="position: relative;">
-    <img src="images/George-W-Bush.jpg" class="needle-img-candidate needle-img-bush" id="needle-img-bush" alt="Bush"/>
-    <img src="images/Al_Gore.jpg" class="needle-img-candidate needle-img-gore" id="needle-img-gore" alt="Gore"/>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/George-W-Bush.jpeg/220px-George-W-Bush.jpeg" class="needle-img-candidate needle-img-bush" id="needle-img-bush" alt="Bush"/>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Al_Gore_in_2007_%28cropped%29.jpg/220px-Al_Gore_in_2007_%28cropped%29.jpg" class="needle-img-candidate needle-img-gore" id="needle-img-gore" alt="Gore"/>
     <svg class="needle-checkmark" id="needle-check-bush" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#e74c3c"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg class="needle-checkmark gore" id="needle-check-gore" viewBox="0 0 53 53"><circle cx="26.5" cy="26.5" r="25" fill="#3498db"/><path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
     <svg id="nyt-needle-svg" width="500" height="270" viewBox="0 0 500 270">
@@ -302,10 +300,12 @@
   </div>
 </div>
 <script>
-// ========== USER CONFIG ==============
+// USER CONFIG
 mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
 const COUNTY_CSV_URL = 'https://docs.google.com/spreadsheets/d/1edopYcOoeeom30K3WsCmzVwvJ8rHcdYH7xB7B7QCQBI/export?format=csv';
-// ========== END USER CONFIG ===========
+const COUNTY_GEOJSON_URL = 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json';
+const STATES_GEOJSON_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json';
+// END USER CONFIG
 
 let countiesGeoJSON = null;
 let countyElectionStats = {};
@@ -313,7 +313,7 @@ let statesGeoJSON = null;
 let stateStats = {};
 let mainMap = null;
 let statePopup = null;
-let stateHoverHandlers = {mousemove:null, mouseleave:null};
+let stateHoverHandlers = {mousemove: null, mouseleave: null};
 let currentState = null;
 
 const stateNameToFips = {
@@ -345,7 +345,6 @@ const stateElectoralVotes = {
   "wyoming": 3
 };
 
-// ----------- COUNTY CSV PARSER FOR PARTY FORMAT ---------------
 function populateCountyStatsFromCSV(rows, headers) {
   const newCountyStats = {};
   const stateVoteTotals = {};
@@ -355,7 +354,7 @@ function populateCountyStatsFromCSV(rows, headers) {
     if (!/^\d{5}$/.test(fips)) continue;
 
     let party = (row.party || "").trim().toUpperCase();
-    let votes = parseInt(row.candidatevotes || "0");
+    let votes = parseInt(row.candidatevotes || "0", 10);
     if (!newCountyStats[fips]) {
       newCountyStats[fips] = { bush_votes: 0, gore_votes: 0, other_votes: 0, totalvotes: 0, winner: "" };
     }
@@ -366,7 +365,7 @@ function populateCountyStatsFromCSV(rows, headers) {
     } else {
       newCountyStats[fips].other_votes += votes;
     }
-    let tv = parseInt(row.totalvotes || "0");
+    let tv = parseInt(row.totalvotes || "0", 10);
     if (tv > 0) newCountyStats[fips].totalvotes = tv;
 
     const stateFP = fips.substring(0, 2);
@@ -390,7 +389,6 @@ function populateCountyStatsFromCSV(rows, headers) {
   }
   countyElectionStats = newCountyStats;
 
-  // Populate stateStats from county data
   stateStats = {};
   const fipsToStateName = Object.fromEntries(Object.entries(stateFipsMap).map(([name, fips]) => [fips, name]));
   for (const stateFP in stateVoteTotals) {
@@ -415,7 +413,6 @@ function populateCountyStatsFromCSV(rows, headers) {
     };
   }
 }
-// ----------- END COUNTY PARSER -----------------
 
 function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
   if (statesGeoJSON?.features?.length > 0) {
@@ -431,6 +428,7 @@ function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
 }
 
 function updateGeoJSONAndMap() {
+  if (!statesGeoJSON || !statesGeoJSON.features) return;
   const statusCounts = { 'GOP Win': 0, 'DEM Win': 0, 'Uncalled': 0 };
   statesGeoJSON.features.forEach(f => {
     const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
@@ -489,7 +487,6 @@ function updateUIElements() {
     national_total_votes += s.total_votes;
   }
 
-  // Update electoral vote display
   document.getElementById('bush-votes').textContent = ev_bush;
   document.getElementById('gore-votes').textContent = ev_gore;
   const totalEV = ev_bush + ev_gore || 538;
@@ -500,20 +497,25 @@ function updateUIElements() {
   document.getElementById('bush-label').textContent = bushEVPerc + "%";
   document.getElementById('gore-label').textContent = goreEVPerc + "%";
 
-  // Update popular vote display
   document.getElementById('bush-pop').textContent = national_bush_votes.toLocaleString();
   document.getElementById('gore-pop').textContent = national_gore_votes.toLocaleString();
 
-  // Update projection needle
   const bushProj = Math.min(ev_bush / 270, 1);
   const goreProj = Math.min(ev_gore / 270, 1);
   let projBush, projGore;
-  if (ev_bush >= 270 && ev_bush > ev_gore) { projBush = 1; projGore = 0; }
-  else if (ev_gore >= 270 && ev_gore > ev_bush <xaiArtifact artifact_id="5fa8b342-7e21-42eb-91e8-228da989945e" artifact_version_id="1587a5d9-b3e3-4759-a517-19a4b87cedff" title="index.html" contentType="text/html">
-else if (bushProj + goreProj > 0) {
+  if (ev_bush >= 270 && ev_bush > ev_gore) {
+    projBush = 1;
+    projGore = 0;
+  } else if (ev_gore >= 270 && ev_gore > ev_bush) {
+    projBush = 0;
+    projGore = 1;
+  } else if (bushProj + goreProj > 0) {
     projBush = bushProj / (bushProj + goreProj);
     projGore = goreProj / (bushProj + goreProj);
-  } else { projBush = projGore = 0.5; }
+  } else {
+    projBush = 0.5;
+    projGore = 0.5;
+  }
   let angle = projBush === 1 ? -90 : projGore === 1 ? 90 : -90 + 180 * projGore;
   document.getElementById('needle-group').setAttribute('transform', `rotate(${angle},250,154)`);
   document.getElementById('nyt-proj-bush-big').textContent = Math.round(projBush * 100) + "%";
@@ -521,7 +523,6 @@ else if (bushProj + goreProj > 0) {
   document.getElementById('needle-check-bush').style.display = projBush === 1 ? 'block' : 'none';
   document.getElementById('needle-check-gore').style.display = projGore === 1 ? 'block' : 'none';
 
-  // Update reporting percentage
   const reporting_pct = national_total_votes > 0 ? 100 : 0;
   document.getElementById('reporting').textContent = "Reporting: " + reporting_pct + "%";
 }
@@ -552,15 +553,30 @@ function refreshElectionData() {
 }
 
 Promise.all([
-  fetch('data/county-geo.json').then(r => r.json()).then(data => {
+  fetch(COUNTY_GEOJSON_URL).then(r => {
+    if (!r.ok) throw new Error(`HTTP error! Status: ${r.status}`);
+    return r.json();
+  }).then(data => {
     countiesGeoJSON = data;
+  }).catch(err => {
+    console.error('Error fetching county GeoJSON:', err);
   }),
-  fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; populateStateFipsMapFromGeoJSON(statesGeoJSON); }),
+  fetch(STATES_GEOJSON_URL).then(r => {
+    if (!r.ok) throw new Error(`HTTP error! Status: ${r.status}`);
+    return r.json();
+  }).then(data => {
+    statesGeoJSON = data;
+    populateStateFipsMapFromGeoJSON(statesGeoJSON);
+  }).catch(err => {
+    console.error('Error fetching states GeoJSON:', err);
+  }),
 ]).then(() => {
   refreshElectionData();
   setArcSegs();
   initializeMainMap();
   setInterval(refreshElectionData, 60000);
+}).catch(err => {
+  console.error('Error initializing data:', err);
 });
 
 const arcSegs = [
@@ -594,6 +610,18 @@ function setArcSegs() {
   document.getElementById('arc-le-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 10, 30));
   document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 30, 60));
   document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 60, 90));
+
+  const arcLabelsGroup = document.getElementById('arc-labels-group');
+  arcSegs.forEach(seg => {
+    const midAngle = (seg.start + seg.end) / 2;
+    const pos = polar(svgCx, svgCy, arcR + 20, midAngle);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', pos.x);
+    text.setAttribute('y', pos.y);
+    text.setAttribute('class', midAngle === 0 ? 'arc-label arc-label-center' : 'arc-label');
+    text.textContent = seg.label;
+    arcLabelsGroup.appendChild(text);
+  });
 }
 function checkmarkSvg(color="#fff", size=20) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="vertical-align:middle;">
@@ -601,15 +629,21 @@ function checkmarkSvg(color="#fff", size=20) {
     <polyline points="7,13 11,17 17,8" fill="none" stroke="#fff" stroke-width="2"/>
   </svg>`;
 }
-function getStateFP(stateName) { if (!stateName) return null; return stateFipsMap[stateName.trim().toLowerCase()] || null; }
+function getStateFP(stateName) {
+  if (!stateName) return null;
+  return stateFipsMap[stateName.trim().toLowerCase()] || null;
+}
 
 function enableStateHover() {
   if (!mainMap || !mainMap.getLayer('states-fill')) return;
   if (stateHoverHandlers.mousemove) return;
   stateHoverHandlers.mousemove = function(e) {
+    if (!e.features || !e.features[0]) return;
     const p = e.features[0].properties;
     const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
-    const gop = +p.votes_gop || 0, dem = +p.votes_dem || 0, total = gop + dem + (+p.votes_other || 0);
+    const gop = Number(p.votes_gop) || 0;
+    const dem = Number(p.votes_dem) || 0;
+    const total = gop + dem + (Number(p.votes_other) || 0);
     const gopPerc = total > 0 ? ((gop / total) * 100).toFixed(1) : 0;
     const demPerc = total > 0 ? ((dem / total) * 100).toFixed(1) : 0;
     const winner = p.winner || 'Uncalled';
@@ -630,19 +664,25 @@ function enableStateHover() {
       )
       .addTo(mainMap);
   };
-  stateHoverHandlers.mouseleave = function() { if (statePopup) statePopup.remove(); };
+  stateHoverHandlers.mouseleave = function() {
+    if (statePopup) statePopup.remove();
+    statePopup = null;
+  };
   mainMap.on('mousemove', 'states-fill', stateHoverHandlers.mousemove);
   mainMap.on('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
 }
 function disableStateHover() {
   if (!mainMap || !mainMap.getLayer('states-fill')) return;
-  if (stateHoverHandlers.mousemove)
+  if (stateHoverHandlers.mousemove) {
     mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
-  if (stateHoverHandlers.mouseleave)
+    stateHoverHandlers.mousemove = null;
+  }
+  if (stateHoverHandlers.mouseleave) {
     mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
-  stateHoverHandlers.mousemove = null;
-  stateHoverHandlers.mouseleave = null;
+    stateHoverHandlers.mouseleave = null;
+  }
   if (statePopup) statePopup.remove();
+  statePopup = null;
 }
 
 function initializeMainMap() {
@@ -655,104 +695,106 @@ function initializeMainMap() {
   mainMap.on('load', () => {
     if (!statesGeoJSON || !statesGeoJSON.features) {
       const stateFeatures = {};
-      countiesGeoJSON.features.forEach(f => {
-        const stateFP = f.properties.STATEFP;
-        if (!stateFeatures[stateFP]) {
-          stateFeatures[stateFP] = {
-            type: "Feature",
-            properties: { STATEFP: stateFP, name: Object.keys(stateFipsMap).find(key => stateFipsMap[key] === stateFP) || `State ${stateFP}` },
-            geometry: { type: "MultiPolygon", coordinates: [] }
-          };
-        }
-        if (f.geometry.type === "Polygon") {
-          stateFeatures[stateFP].geometry.coordinates.push(f.geometry.coordinates);
-        } else if (f.geometry.type === "MultiPolygon") {
-          stateFeatures[stateFP].geometry.coordinates.push(...f.geometry.coordinates);
-        }
-      });
-      statesGeoJSON = { type: "FeatureCollection", features: Object.values(stateFeatures) };
+      if (countiesGeoJSON && countiesGeoJSON.features) {
+        countiesGeoJSON.features.forEach(f => {
+          const stateFP = f.properties.STATEFP;
+          if (!stateFeatures[stateFP]) {
+            stateFeatures[stateFP] = {
+              type: "Feature",
+              properties: { STATEFP: stateFP, name: Object.keys(stateFipsMap).find(key => stateFipsMap[key] === stateFP) || `State ${stateFP}` },
+              geometry: { type: "MultiPolygon", coordinates: [] }
+            };
+          }
+          if (f.geometry.type === "Polygon") {
+            stateFeatures[stateFP].geometry.coordinates.push(f.geometry.coordinates);
+          } else if (f.geometry.type === "MultiPolygon") {
+            stateFeatures[stateFP].geometry.coordinates.push(...f.geometry.coordinates);
+          }
+        });
+        statesGeoJSON = { type: "FeatureCollection", features: Object.values(stateFeatures) };
+      }
     }
 
-    mainMap.addSource('states', { type: 'geojson', data: statesGeoJSON });
-    mainMap.addLayer({
-      id: 'states-fill',
-      type: 'fill',
-      source: 'states',
-      paint: {
-        'fill-color': [
-          'match', ['get', 'status'],
-          'GOP Win', '#d12c0f',
-          'DEM Win', '#0e47e6',
-          'Uncalled', [
-            'case',
-            ['>', ['to-number', ['get', 'votes_gop'], 0], ['to-number', ['get', 'votes_dem'], 0]], '#f4a6a6',
-            ['>', ['to-number', ['get', 'votes_dem'], 0], ['to-number', ['get', 'votes_gop'], 0]], '#a6c8f4',
-            '#cccccc'
+    if (statesGeoJSON) {
+      mainMap.addSource('states', { type: 'geojson', data: statesGeoJSON });
+      mainMap.addLayer({
+        id: 'states-fill',
+        type: 'fill',
+        source: 'states',
+        paint: {
+          'fill-color': [
+            'match', ['get', 'status'],
+            'GOP Win', '#d12c0f',
+            'DEM Win', '#0e47e6',
+            'Uncalled', [
+              'case',
+              ['>', ['to-number', ['get', 'votes_gop'], 0], ['to-number', ['get', 'votes_dem'], 0]], '#f4a6a6',
+              ['>', ['to-number', ['get', 'votes_dem'], 0], ['to-number', ['get', 'votes_gop'], 0]], '#a6c8f4',
+              '#cccccc'
+            ],
+            '#ffffff'
           ],
-          '#ffffff'
-        ],
-        'fill-opacity': 1.0
-      }
-    });
-    mainMap.addLayer({
-      id: 'states-outline',
-      type: 'line',
-      source: 'states',
-      paint: { 'line-color': '#000000', 'line-width': 2 }
-    });
+          'fill-opacity': 1.0
+        }
+      });
+      mainMap.addLayer({
+        id: 'states-outline',
+        type: 'line',
+        source: 'states',
+        paint: { 'line-color': '#000000', 'line-width': 2 }
+      });
 
-    enableStateHover();
-    mainMap.on('click', 'states-fill', (e) => {
-      const p = e.features[0].properties;
-      const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
-      const stateName = p[nameKey];
-      if (!stateName) return;
-      currentState = stateName;
-      addCountiesLayer(stateName);
-      const bounds = getStateBounds(stateName);
-      if (bounds) {
-        mainMap.fitBounds(bounds, { padding: 40, duration: 1100 });
-      } else {
-        mainMap.flyTo({ center: e.lngLat, zoom: 6 });
-      }
-      document.getElementById('header').style.display = 'none';
-      document.getElementById('box-out-btn').style.display = 'block';
-      document.getElementById('projection-ticker-wrap').style.display = 'none';
-      disableStateHover();
-    });
+      enableStateHover();
+      mainMap.on('click', 'states-fill', (e) => {
+        if (!e.features || !e.features[0]) return;
+        const p = e.features[0].properties;
+        const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
+        const stateName = p[nameKey];
+        if (!stateName) return;
+        currentState = stateName;
+        addCountiesLayer(stateName);
+        const bounds = getStateBounds(stateName);
+        if (bounds) {
+          mainMap.fitBounds(bounds, { padding: 40, duration: 1100 });
+        } else {
+          mainMap.flyTo({ center: e.lngLat, zoom: 6 });
+        }
+        document.getElementById('header').style.display = 'none';
+        document.getElementById('box-out-btn').style.display = 'block';
+        document.getElementById('projection-ticker-wrap').style.display = 'none';
+        disableStateHover();
+      });
+    }
   });
 }
+
 function getStateBounds(stateName) {
   const stateFP = getStateFP(stateName);
   if (!stateFP) return null;
-  if (!statesGeoJSON || !statesGeoJSON.features) {
+  let coords = [];
+  if (statesGeoJSON && statesGeoJSON.features) {
+    const stateFeature = statesGeoJSON.features.find(f => {
+      const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
+      return (f.properties[nameKey] || '').trim().toLowerCase() === stateName.trim().toLowerCase();
+    });
+    if (stateFeature) {
+      if (stateFeature.geometry.type === "Polygon") {
+        coords = stateFeature.geometry.coordinates[0];
+      } else if (stateFeature.geometry.type === "MultiPolygon") {
+        coords = stateFeature.geometry.coordinates.flat(2);
+      }
+    }
+  } else if (countiesGeoJSON && countiesGeoJSON.features) {
     const countyFeatures = countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP);
-    if (!countyFeatures.length) return null;
-    let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
-    countyFeatures.forEach(f => {
-      const coords = f.geometry.type === "Polygon" ? f.geometry.coordinates[0] : f.geometry.coordinates.flat(2);
-      coords.forEach(coord => {
-        if (Array.isArray(coord) && coord.length >= 2) {
-          minLng = Math.min(minLng, coord[0]);
-          maxLng = Math.max(maxLng, coord[0]);
-          minLat = Math.min(minLat, coord[1]);
-          maxLat = Math.max(maxLat, coord[1]);
+    if (countyFeatures.length) {
+      countyFeatures.forEach(f => {
+        if (f.geometry.type === "Polygon") {
+          coords.push(...f.geometry.coordinates[0]);
+        } else if (f.geometry.type === "MultiPolygon") {
+          coords.push(...f.geometry.coordinates.flat(2));
         }
       });
-    });
-    if (minLng === 180 || maxLng === -180 || minLat === 90 || maxLat === -90) return null;
-    return [[minLng, minLat], [maxLng, maxLat]];
-  }
-  const stateFeature = statesGeoJSON.features.find(f => {
-    const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
-    return (f.properties[nameKey] || '').trim().toLowerCase() === stateName.trim().toLowerCase();
-  });
-  if (!stateFeature) return null;
-  let coords = [];
-  if (stateFeature.geometry.type === "Polygon") {
-    coords = stateFeature.geometry.coordinates[0];
-  } else if (stateFeature.geometry.type === "MultiPolygon") {
-    coords = stateFeature.geometry.coordinates.flat(2);
+    }
   }
   if (!coords.length) return null;
   let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
@@ -764,6 +806,7 @@ function getStateBounds(stateName) {
       maxLat = Math.max(maxLat, coord[1]);
     }
   });
+  if (minLng === 180 || maxLng === -180 || minLat === 90 || maxLat === -90) return null;
   return [[minLng, minLat], [maxLng, maxLat]];
 }
 
@@ -772,7 +815,7 @@ function addCountiesLayer(stateName) {
   if (!stateFP) return;
   const filtered = {
     ...countiesGeoJSON,
-    features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
+    features: countiesGeoJSON ? countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP) : []
   };
   if (Object.keys(countyElectionStats).length === 0) {
     // No county stats yet, skip color
@@ -878,7 +921,7 @@ function addCountiesLayer(stateName) {
 
       candidateStatsDiv.innerHTML = 
         `<div class="candidate-row">
-          <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image-small">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/George-W-Bush.jpeg/220px-George-W-Bush.jpeg" alt="Bush" class="candidate-image-small">
           <div class="candidate-details">
             <span style="color: #e74c3c;">George Bush</span><br>
             <span>${bushPct}%</span> <span>${stateGopVotes.toLocaleString()} votes</span>
@@ -889,11 +932,11 @@ function addCountiesLayer(stateName) {
           </div>
         </div>
         <div class="candidate-row">
-          <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image-small">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Al_Gore_in_2007_%28cropped%29.jpg/220px-Al_Gore_in_2007_%28cropped%29.jpg" alt="Gore" class="candidate-image-small">
           <div class="candidate-details">
             <span style="color: #3498db;">Al Gore</span><br>
             <span>${gorePct}%</span> <span>${stateDemVotes.toLocaleString()} votes</span>
-            ${stateDemVotes > stateGopVotes ? `<span>✓ ${lead. toLocaleString()} ahead</span>` : ''}
+            ${stateDemVotes > stateGopVotes ? `<span>✓ ${lead.toLocaleString()} ahead</span>` : ''}
           </div>
           <div class="bar-graph">
             <div class="bar-fill gore" style="width: ${gorePct}%"></div>
@@ -948,6 +991,8 @@ document.getElementById('box-out-btn').onclick = () => {
 
 document.getElementById('close-sidebar-btn').onclick = () => {
   removeCountiesLayer();
+  mainMap.flyTo({ center: [-98.5795, 39.8283], zoom: 3 });
+  document.getElementById('box-out-btn').style.display = 'none';
 };
 </script>
 </body>
