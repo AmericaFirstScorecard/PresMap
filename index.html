@@ -336,7 +336,6 @@ const stateFipsMap = {...stateNameToFips};
 function populateCountyStatsFromCSV(rows, headers) {
   const newCountyStats = {};
   for (const row of rows) {
-    // FIPS: always pad to 5 digits
     let fips = row.county_fips || row.CountyFIPS || row.FIPS || row.GEOID || "";
     fips = String(fips).padStart(5, "0");
     if (!/^\d{5}$/.test(fips)) continue;
@@ -418,13 +417,14 @@ function updateGeoJSONAndMap() {
     const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
     const matchedRow = stateStats[geoName];
     const stateFP = f.properties.STATEFP;
-    let votes_gop = 0, votes_dem = 0, votes_other = 0, total_votes = 0, winner = '', status = 'Uncalled';
+    let votes_gop = 0, votes_dem = 0, votes_other = 0, total_votes = 0, winner = '', status = 'Uncalled', reporting = 0;
 
     if (stateVoteTotals[stateFP]) {
       votes_gop = stateVoteTotals[stateFP].bush_votes;
       votes_dem = stateVoteTotals[stateFP].gore_votes;
       votes_other = stateVoteTotals[stateFP].other_votes;
       total_votes = stateVoteTotals[stateFP].total_votes;
+      reporting = total_votes > 0 ? 100 : 0; // Assume full reporting if any votes are present
       if (votes_gop > votes_dem) {
         winner = 'Bush';
         status = 'GOP Win';
@@ -449,7 +449,7 @@ function updateGeoJSONAndMap() {
       gop_candidate: matchedRow ? matchedRow.gop_candidate : 'Bush',
       dem_candidate: matchedRow ? matchedRow.dem_candidate : 'Gore',
       other_candidate: matchedRow ? matchedRow.other_candidate : '',
-      reporting: total_votes > 0 ? 100 : 0
+      reporting: reporting
     };
     statusCounts[status]++;
   });
@@ -893,7 +893,7 @@ function addCountiesLayer(stateName) {
       stateGopVotes += stats.bush_votes || 0;
       stateDemVotes += stats.gore_votes || 0;
       stateOtherVotes += stats.other_votes || 0;
-      stateTotalVotes += stats.bush_votes + stats.gore_votes + stats.other_votes;
+      stateTotalVotes += stats.totalvotes || 0;
     }
   });
 
