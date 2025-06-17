@@ -4,42 +4,174 @@
   <meta charset="utf-8">
   <title>2000 Live Election Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Mapbox GL JS & CSS -->
+  <!-- Mapbox GL JS -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
   <!-- PapaParse for CSV parsing -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <!-- Turf.js for geometry bounding boxes -->
-  <script src="https://cdn.jsdelivr.net/npm/@turf/turf/turf.min.js"></script>
-
-  <!-- Custom CSS -->
-  <link href="style.css" rel="stylesheet" />
+  <style>
+    html, body { height: 100%; margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background: #11161b;}
+    #header {
+      background: #222; color: white; padding: 15px 20px;
+      z-index: 1000; display: flex; flex-direction: column; align-items: center;
+      position: relative;
+    }
+    .progress-container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 10px; }
+    .progress-bar-wrapper {
+      display: flex; align-items: center; position: relative;
+      width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden;
+    }
+    .progress-bar { height: 100%; transition: width 0.5s ease-in-out; }
+    .progress-bar.bush { background: #e74c3c; }
+    .progress-bar.gore { background: #3498db; position: absolute; right: 0; }
+    .vote-label {
+      position: absolute; color: white; font-size: 12px;
+      font-weight: bold; text-shadow: 0 0 2px rgba(0,0,0,0.7);
+    }
+    .threshold-marker {
+      position: absolute; left: calc(270 / 538 * 100%);
+      width: 2px; height: 100%; background: #fff; z-index: 10;
+    }
+    .threshold-label {
+      position: relative; left: calc(270 / 538 * 100% - 20px);
+      color: white; font-size: 12px; font-weight: bold;
+      margin-bottom: 5px; text-align: left;
+    }
+    .candidate-labels {
+      display: flex; justify-content: space-between;
+      font-size: 14px; font-weight: bold; margin-bottom: 5px;
+    }
+    .stat-box { margin-top: 5px; font-size: 12px; }
+    .candidate-image {
+      width: 70px; height: 70px; border-radius: 50%; object-fit: cover;
+    }
+    .progress-bar-container {
+      display: flex; align-items: center; width: 100%; gap: 15px;
+    }
+    .candidate-stats {
+      display: flex; justify-content: space-between;
+      width: 100%; max-width: 800px; font-size: 12px;
+    }
+    .candidate-stat-left, .candidate-stat-right {
+      text-align: center; width: 150px;
+    }
+    .title {
+      font-size: 30px; font-weight: bold; margin-bottom: 10px;
+    }
+    #map {
+      position: relative;
+      width: 100vw;
+      height: 70vh;
+      min-height: 400px;
+      max-height: 80vh;
+      z-index: 1;
+      background: #ccc;
+    }
+    #state-sidebar {
+      display: none; position: fixed; top: 0; right: 0; width: 340px; height: 100%;
+      background: #222; color: white; padding: 20px; z-index: 1000; overflow-y: auto;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+    }
+    #state-sidebar h2 { margin: 0 0 10px; font-size: 1.5rem; }
+    #state-sidebar p { margin: 5px 0; }
+    #close-sidebar-btn { display: none; position: absolute; top: 10px; right: 10px; background: #444; border: none; color: white; padding: 5px 10px; cursor: pointer; }
+    .separator { border-bottom: 1px solid #444; margin: 10px 0; }
+    .candidate-row {
+      display: flex; flex-direction: column; align-items: center; margin: 10px 0;
+    }
+    .candidate-image-small {
+      width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+    }
+    .bar-graph {
+      width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; position: relative;
+    }
+    .bar-fill {
+      height: 100%; transition: width 0.5s ease-in-out;
+    }
+    .bar-fill.bush { background: #e74c3c; }
+    .bar-fill.gore { background: #3498db; }
+    .bar-fill.other { background: #bbb; }
+    .candidate-details {
+      margin-top: 5px; text-align: center; width: 100%;
+    }
+    .reporting-bar {
+      width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; margin: 10px 0;
+    }
+    .reporting-fill {
+      height: 100%; background: #4CAF50; transition: width 0.5s ease-in-out;
+    }
+    @media (max-width:700px) {
+      #map { min-height: 300px; }
+      #state-sidebar { width: 100%; }
+    }
+    #box-out-btn {
+      display: none;
+      position: absolute;
+      top: 20px;
+      right: 32px;
+      z-index: 1100;
+      background: #23272e;
+      color: #fff;
+      padding: 10px 22px;
+      border: none;
+      border-radius: 10px;
+      font-size: 17px;
+      font-weight: 800;
+      box-shadow: 0 3px 18px #0008;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #box-out-btn:hover {
+      background: #303540;
+    }
+  </style>
 </head>
 <body>
-  <!-- HEADER -->
-  <div id="header">
-    <div class="title">2000 Live Election Map</div>
-    <div class="progress-container" id="progress-container"></div>
-    <div class="candidate-stats" id="candidate-stats-summary"></div>
+<div id="header">
+  <div class="title">2000 Live Election Map</div>
+  <div class="progress-container">
+    <div class="candidate-labels">
+      <span>Bush: <span id="bush-votes">0</span> EV</span>
+      <span>Gore: <span id="gore-votes">0</span> EV</span>
+    </div>
+    <div class="progress-bar-container">
+      <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image">
+      <div style="width: 100%; position: relative;">
+        <div class="threshold-label">270 to Win</div>
+        <div class="progress-bar-wrapper">
+          <div class="threshold-marker"></div>
+          <div class="progress-bar bush" id="bush-bar" style="width: 0%"></div>
+          <div class="progress-bar gore" id="gore-bar" style="width: 0%"></div>
+          <div class="vote-label" id="bush-label" style="left: 5px">0%</div>
+          <div class="vote-label" id="gore-label" style="right: 5px">0%</div>
+        </div>
+      </div>
+      <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image">
+    </div>
   </div>
-
-  <!-- MAIN MAP -->
-  <div id="map"></div>
-
-  <!-- SIDEBAR (state or county results, appears dynamically) -->
-  <div id="sidebar"></div>
-  <button id="box-out-btn" style="display: none;">Box Out</button>
-
-  <!-- PROJECTION TICKER (NYT-style needle, optional) -->
-  <div id="projection-ticker-wrap"></div>
-
-  <!-- SCRIPTS: Modular JavaScript (order matters) -->
-  <script src="config.js"></script>
-  <script src="assets.js"></script>
-  <script src="utils.js"></script>
-  <script src="election-state.js"></script>
-  <script src="election-counties.js"></script>
-  <script src="sidebar.js"></script>
-  <script src="map-code.js"></script>
+  <div class="candidate-stats">
+    <div class="candidate-stat-left" id="bush-pv">Bush: <span id="bush-ev">0</span> EV</div>
+    <div class="stat-box" id="reporting">Reporting: 0%</div>
+    <div class="candidate-stat-right" id="gore-pv">Gore: <span id="gore-ev">0</span> EV</div>
+  </div>
+</div>
+<div id="map"></div>
+<button id="box-out-btn">Box Out</button>
+<div id="state-sidebar">
+  <button id="close-sidebar-btn">Close</button>
+  <h2 id="state-sidebar-title"></h2>
+  <p id="state-electoral-votes"></p>
+  <div class="separator"></div>
+  <div id="candidate-stats"></div>
+  <div class="reporting-bar">
+    <div class="reporting-fill" id="reporting-fill" style="width: 0%;"></div>
+  </div>
+  <p id="reporting-status"></p>
+  <p id="last-updated"></p>
+</div>
+<!-- Modular JS (order matters!) -->
+<script src="election-state.js"></script>
+<script src="election-counties.js"></script>
+<script src="map-code.js"></script>
 </body>
 </html>
