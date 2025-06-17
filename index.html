@@ -7,165 +7,56 @@
   <!-- Mapbox GL JS -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
-  <!-- PapaParse for CSV parsing -->
+  <!-- PapaParse for CSV parsing (for states only) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- County election results (modularized) -->
+  <script src="election-counties.js"></script>
   <style>
+    /* --- YOUR EXISTING CSS --- */
     html, body { height: 100%; margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background: #11161b;}
-    #header {
-      background: #222; color: white; padding: 15px 20px;
-      z-index: 1000; display: flex; flex-direction: column; align-items: center;
-      position: relative;
-    }
+    #header {background: #222; color: white; padding: 15px 20px;z-index: 1000; display: flex; flex-direction: column; align-items: center;position: relative;}
     .progress-container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 10px; }
-    .progress-bar-wrapper {
-      display: flex; align-items: center; position: relative;
-      width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden;
-    }
-    .progress-bar { height: 100%; transition: width: 0.5s ease-in-out; }
+    .progress-bar-wrapper {display: flex; align-items: center; position: relative;width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden;}
+    .progress-bar { height: 100%; transition: width 0.5s ease-in-out; }
     .progress-bar.bush { background: #e74c3c; }
     .progress-bar.gore { background: #3498db; position: absolute; right: 0; }
-    .vote-label {
-      position: absolute; color: white; font-size: 12px;
-      font-weight: bold; text-shadow: 0 0 2px rgba(0,0,0,0.7);
-    }
-    .threshold-marker {
-      position: absolute; left: calc(270 / 538 * 100%);
-      width: 2px; height: 100%; background: #fff; z-index: 10;
-    }
-    .threshold-label {
-      position: relative; left: calc(270 / 538 * 100% - 20px);
-      color: white; font-size: 12px; font-weight: bold;
-      margin-bottom: 5px; text-align: left;
-    }
-    .candidate-labels {
-      display: flex; justify-content: space-between;
-      font-size: 14px; font-weight: bold; margin-bottom: 5px;
-    }
+    .vote-label {position: absolute; color: white; font-size: 12px;font-weight: bold; text-shadow: 0 0 2px rgba(0,0,0,0.7);}
+    .threshold-marker {position: absolute; left: calc(270 / 538 * 100%);width: 2px; height: 100%; background: #fff; z-index: 10;}
+    .threshold-label {position: relative; left: calc(270 / 538 * 100% - 20px);color: white; font-size: 12px; font-weight: bold;margin-bottom: 5px; text-align: left;}
+    .candidate-labels {display: flex; justify-content: space-between;font-size: 14px; font-weight: bold; margin-bottom: 5px;}
     .stat-box { margin-top: 5px; font-size: 12px; }
-    .candidate-image {
-      width: 70px; height: 70px; border-radius: 50%; object-fit: cover;
-    }
-    .progress-bar-container {
-      display: flex; align-items: center; width: 100%; gap: 15px;
-    }
-    .candidate-stats {
-      display: flex; justify-content: space-between;
-      width: 100%; max-width: 800px; font-size: 12px;
-    }
-    .candidate-stat-left, .candidate-stat-right {
-      text-align: center; width: 150px;
-    }
-    .title {
-      font-size: 30px; font-weight: bold; margin-bottom: 10px;
-    }
-    #map {
-      position: relative;
-      width: 100vw;
-      height: 70vh;
-      min-height: 400px;
-      max-height: 80vh;
-      z-index: 1;
-      background: #ccc;
-    }
-    #state-sidebar {
-      display: none; position: fixed; top: 0; right: 0; width: 340px; height: 100%;
-      background: #222; color: white; padding: 20px; z-index: 1000; overflow-y: auto;
-      box-shadow: -2px 0 10px rgba(0,0,0,0.5);
-    }
+    .candidate-image {width: 70px; height: 70px; border-radius: 50%; object-fit: cover;}
+    .progress-bar-container {display: flex; align-items: center; width: 100%; gap: 15px;}
+    .candidate-stats {display: flex; justify-content: space-between;width: 100%; max-width: 800px; font-size: 12px;}
+    .candidate-stat-left, .candidate-stat-right {text-align: center; width: 150px;}
+    .title {font-size: 30px; font-weight: bold; margin-bottom: 10px;}
+    #map {position: relative;width: 100vw;height: 70vh;min-height: 400px;max-height: 80vh;z-index: 1;background: #ccc;}
+    #state-sidebar {display: none; position: fixed; top: 0; right: 0; width: 340px; height: 100%;background: #222; color: white; padding: 20px; z-index: 1000; overflow-y: auto;box-shadow: -2px 0 10px rgba(0,0,0,0.5);}
     #state-sidebar h2 { margin: 0 0 10px; font-size: 1.5rem; }
     #state-sidebar p { margin: 5px 0; }
     #close-sidebar-btn { display: none; position: absolute; top: 10px; right: 10px; background: #444; border: none; color: white; padding: 5px 10px; cursor: pointer; }
     .separator { border-bottom: 1px solid #444; margin: 10px 0; }
-    .candidate-row {
-      display: flex; flex-direction: column; align-items: center; margin: 10px 0;
-    }
-    .candidate-image-small {
-      width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
-    }
-    .bar-graph {
-      width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; position: relative;
-    }
-    .bar-fill {
-      height: 100%; transition: width: 0.5s ease-in-out;
-    }
+    .candidate-row {display: flex; flex-direction: column; align-items: center; margin: 10px 0;}
+    .candidate-image-small {width: 40px; height: 40px; border-radius: 50%; object-fit: cover;}
+    .bar-graph {width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; position: relative;}
+    .bar-fill {height: 100%; transition: width 0.5s ease-in-out;}
     .bar-fill.bush { background: #e74c3c; }
     .bar-fill.gore { background: #3498db; }
     .bar-fill.other { background: #bbb; }
-    .candidate-details {
-      margin-top: 5px; text-align: center; width: 100%;
-    }
-    .reporting-bar {
-      width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; margin: 10px 0;
-    }
-    .reporting-fill {
-      height: 100%; background: #4CAF50; transition: width: 0.5s ease-in-out;
-    }
-    @media (max-width:700px) {
-      #map { min-height: 300px; }
-      #state-sidebar { width: 100%; }
-    }
-    #projection-ticker-wrap {
-      width: 100%;
-      background: #191d22;
-      padding: 60px 0 60px 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      z-index: 2;
-      min-height: 420px;
-      border-top: 2px solid #303540;
-      margin-top: 0;
-    }
-    .nyt-projection-title {
-      color: #fff;
-      font-size: 2.4rem;
-      font-weight: 900;
-      letter-spacing: 0.5px;
-      margin-bottom: 22px;
-      text-align: center;
-      text-shadow: 0 2px 16px #000, 0 0 10px #111;
-    }
-    .needle-svg-wrap {
-      width: 500px; max-width: 99vw; margin: 0 auto; position: relative;
-    }
-    .needle-img-candidate {
-      position: absolute;
-      width: 68px; height: 68px;
-      border-radius: 50%; object-fit: cover;
-      box-shadow: 0 3px 24px #000b, 0 1px 8px #222a;
-      background: #fff;
-      z-index: 2;
-    }
+    .candidate-details {margin-top: 5px; text-align: center; width: 100%;}
+    .reporting-bar {width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; margin: 10px 0;}
+    .reporting-fill {height: 100%; background: #4CAF50; transition: width 0.5s ease-in-out;}
+    @media (max-width:700px) {#map { min-height: 300px; }#state-sidebar { width: 100%; }}
+    #projection-ticker-wrap {width: 100%;background: #191d22;padding: 60px 0 60px 0;display: flex;flex-direction: column;align-items: center;justify-content: center;position: relative;z-index: 2;min-height: 420px;border-top: 2px solid #303540;margin-top: 0;}
+    .nyt-projection-title {color: #fff;font-size: 2.4rem;font-weight: 900;letter-spacing: 0.5px;margin-bottom: 22px;text-align: center;text-shadow: 0 2px 16px #000, 0 0 10px #111;}
+    .needle-svg-wrap {width: 500px; max-width: 99vw; margin: 0 auto; position: relative;}
+    .needle-img-candidate {position: absolute;width: 68px; height: 68px;border-radius: 50%; object-fit: cover;box-shadow: 0 3px 24px #000b, 0 1px 8px #222a;background: #fff;z-index: 2;}
     .needle-img-bush { left: 10px; top: 162px; }
     .needle-img-gore { right: 10px; top: 162px; }
-    .needle-checkmark {
-      position: absolute;
-      width: 32px; height: 32px;
-      top: 210px;
-      left: 36px;
-      background: none;
-      display: none;
-      z-index: 3;
-      pointer-events: none;
-    }
+    .needle-checkmark {position: absolute;width: 32px; height: 32px;top: 210px;left: 36px;background: none;display: none;z-index: 3;pointer-events: none;}
     .needle-checkmark.gore { left: auto; right: 36px; }
-    .arc-label {
-      font-size: 15px;
-      font-weight: 700;
-      fill: #fff;
-      text-shadow: 0 2px 8px #111a, 0 0 3px #111;
-      font-family: 'Inter', sans-serif;
-      pointer-events: none;
-      dominant-baseline: middle;
-      text-anchor: middle;
-    }
-    .arc-label-center {
-      font-size: 17px;
-      font-weight: 900;
-      fill: #fff;
-    }
+    .arc-label {font-size: 15px;font-weight: 700;fill: #fff;text-shadow: 0 2px 8px #111a, 0 0 3px #111;font-family: 'Inter', sans-serif;pointer-events: none;dominant-baseline: middle;text-anchor: middle;}
+    .arc-label-center {font-size: 17px;font-weight: 900;fill: #fff;}
     .needle-arrow { fill: #fff; stroke: #222; stroke-width: 2.2; filter: drop-shadow(0 2px 6px #0008);}
     .needle-dot { fill: #191d22; stroke: #fff; stroke-width: 3.5; filter: drop-shadow(0 1px 8px #000a);}
     .arc-very-likely-bush { stroke: #e74c3c; }
@@ -175,57 +66,17 @@
     .arc-lean-gore { stroke: #b8d8f8; }
     .arc-likely-gore { stroke: #74b0e7; }
     .arc-very-likely-gore { stroke: #3498db; }
-    .needle-candidate-labels {
-      width: 100%; display: flex; justify-content: center;
-      margin-top: 16px;
-      font-size: 2.0rem;
-      font-weight: 800;
-      text-shadow: 0 2px 10px #000d;
-      gap: 40px;
-    }
+    .needle-candidate-labels {width: 100%; display: flex; justify-content: center;margin-top: 16px;font-size: 2.0rem;font-weight: 800;text-shadow: 0 2px 10px #000d;gap: 40px;}
     .needle-bush-label { color: #e74c3c; }
     .needle-gore-label { color: #3498db; }
-    .nyt-prob-row {
-      margin-top: 24px; text-align: center;
-      font-size: 1.65rem; font-weight: 900; letter-spacing: 0.3px;
-      text-shadow: 0 1px 4px #000b;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 16px;
-    }
+    .nyt-prob-row {margin-top: 24px; text-align: center;font-size: 1.65rem; font-weight: 900; letter-spacing: 0.3px;text-shadow: 0 1px 4px #000b;display: flex;justify-content: center;align-items: center;gap: 16px;}
     .proj-big-num { font-size: 2.1rem; font-weight: 900; margin: 0 8px;}
     .proj-big-num.bush { color: #e74c3c;}
     .proj-big-num.gore { color: #3498db;}
     .proj-divider { font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0 8px;}
-    @media (max-width:700px){
-      .needle-svg-wrap { width: 99vw;}
-      .needle-img-candidate { width: 44px; height: 44px; top: 125px;}
-      .needle-checkmark { width: 22px; height: 22px; top: 148px; left: 19px;}
-      .needle-checkmark.gore { right: 19px;}
-      .arc-label { font-size: 11px;}
-      .arc-label-center { font-size: 13px;}
-    }
-    #box-out-btn {
-      display: none;
-      position: absolute;
-      top: 20px;
-      right: 32px;
-      z-index: 1100;
-      background: #23272e;
-      color: #fff;
-      padding: 10px 22px;
-      border: none;
-      border-radius: 10px;
-      font-size: 17px;
-      font-weight: 800;
-      box-shadow: 0 3px 18px #0008;
-      cursor: pointer;
-      transition: background: 0.2s;
-    }
-    #box-out-btn:hover {
-      background: #303540;
-    }
+    @media (max-width:700px){.needle-svg-wrap { width: 99vw;}.needle-img-candidate { width: 44px; height: 44px; top: 125px;}.needle-checkmark { width: 22px; height: 22px; top: 148px; left: 19px;}.needle-checkmark.gore { right: 19px;}.arc-label { font-size: 11px;}.arc-label-center { font-size: 13px;}}
+    #box-out-btn {display: none;position: absolute;top: 20px;right: 32px;z-index: 1100;background: #23272e;color: #fff;padding: 10px 22px;border: none;border-radius: 10px;font-size: 17px;font-weight: 800;box-shadow: 0 3px 18px #0008;cursor: pointer;transition: background 0.2s;}
+    #box-out-btn:hover {background: #303540;}
   </style>
 </head>
 <body>
@@ -305,7 +156,6 @@
 mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
 
 let countiesGeoJSON = null;
-let countyElectionStats = {};
 let statesGeoJSON = null;
 let stateStats = {};
 let mainMap = null;
@@ -328,7 +178,6 @@ const stateNameToFips = {
 };
 const stateFipsMap = {...stateNameToFips};
 const STATE_CSV_URL = 'https://docs.google.com/spreadsheets/d/10zbHap425MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
-const COUNTY_CSV_URL = 'https://docs.google.com/spreadsheets/d/1edopYcOoeeom30K3WsCmzVwvJ8rHcdYH7xB7B7QCQBI/export?format=csv';
 
 function populateStateStatsFromCSV(rows) {
   const newStateStats = {};
@@ -337,9 +186,7 @@ function populateStateStatsFromCSV(rows) {
     if (!stateName) continue;
     const statusKey = Object.keys(row).find(k => k.toLowerCase().includes('election status')) || 'Election status';
     let rawStatus = (row[statusKey] || 'Uncalled').trim();
-    console.log(`Raw Election Status for ${stateName}: "${rawStatus}"`);
     let status = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
-    console.log(`Normalized Status for ${stateName}: "${status}"`);
     newStateStats[stateName.toLowerCase()] = {
       state: stateName,
       electoral_votes: parseInt(row['Electoral Votes'] || 0),
@@ -358,40 +205,6 @@ function populateStateStatsFromCSV(rows) {
   stateStats = newStateStats;
 }
 
-function populateCountyStatsFromCSV(rows, headers) {
-  console.log('County CSV headers:', headers);
-  console.log('County CSV rows (first 5):', rows.slice(0, 5));
-  if (!rows.length) {
-    console.warn('No rows found in county CSV.');
-    return;
-  }
-  const newCountyStats = {};
-  for (const row of rows) {
-    if (String(row.year) !== "2000" || !row.county_fips) continue;
-    const fips = String(row.county_fips).padStart(5, "0");
-    const candidate = (row.candidate || "").toLowerCase().trim();
-    if (!newCountyStats[fips]) {
-      newCountyStats[fips] = { bush_votes: 0, gore_votes: 0, other_votes: 0, totalvotes: +row.totalvotes || 0 };
-    }
-    if (candidate.includes("bush")) {
-      newCountyStats[fips].bush_votes += +row.candidatevotes || 0;
-    } else if (candidate.includes("gore")) {
-      newCountyStats[fips].gore_votes += +row.candidatevotes || 0;
-    } else {
-      newCountyStats[fips].other_votes += +row.candidatevotes || 0;
-    }
-  }
-  for (const fips in newCountyStats) {
-    const c = newCountyStats[fips];
-    if (c.bush_votes > c.gore_votes) c.winner = "Bush";
-    else if (c.gore_votes > c.bush_votes) c.winner = "Gore";
-    else c.winner = "Tied";
-  }
-  countyElectionStats = newCountyStats;
-  console.log('County Election Stats size:', Object.keys(countyElectionStats).length);
-  console.log('Sample County Stats:', Object.entries(countyElectionStats).slice(0, 5));
-}
-
 function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
   if (statesGeoJSON?.features?.length > 0) {
     statesGeoJSON.features.forEach(f => {
@@ -406,23 +219,18 @@ function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
 }
 
 function updateGeoJSONAndMap() {
-  const statusCounts = { 'GOP Win': 0, 'DEM Win': 0, 'Uncalled': 0 };
   statesGeoJSON.features.forEach(f => {
     const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
     const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
     const matchedRow = stateStats[geoName];
     if (matchedRow) {
       let status;
-      console.log(`Processing ${matchedRow.state}: CSV Status = ${matchedRow.status}, Winner = ${matchedRow.winner || 'None'}`);
       if (matchedRow.status === 'Called' && matchedRow.winner === 'Bush') {
         status = 'GOP Win';
       } else if (matchedRow.status === 'Called' && matchedRow.winner === 'Gore') {
         status = 'DEM Win';
       } else {
         status = 'Uncalled';
-      }
-      if (status === 'Uncalled' && matchedRow.winner && matchedRow.winner !== '') {
-        console.warn(`Warning: State ${matchedRow.state} is Uncalled but has Winner: ${matchedRow.winner}`);
       }
       f.properties = {
         ...f.properties,
@@ -439,21 +247,11 @@ function updateGeoJSONAndMap() {
         other_candidate: matchedRow.other_candidate,
         reporting: matchedRow.reporting
       };
-      statusCounts[status]++;
-      console.log(`State: ${matchedRow.state}, Status: ${status}, Winner: ${matchedRow.winner || 'None'}, GOP Votes: ${matchedRow.votes_gop}, DEM Votes: ${matchedRow.votes_dem}`);
     }
   });
-  console.log('State status counts after update:', statusCounts);
   if (mainMap && mainMap.getSource('states')) {
     mainMap.getSource('states').setData(statesGeoJSON);
     mainMap.triggerRepaint();
-    if (mainMap.isStyleLoaded()) {
-      const alabamaFeatures = mainMap.queryRenderedFeatures(undefined, { layers: ['states-fill'], filter: ['==', ['get', 'state'], 'Alabama'] });
-      if (alabamaFeatures.length > 0) {
-        const props = alabamaFeatures[0].properties;
-        console.log(`Rendered Alabama: Status: ${props.status}, GOP Votes: ${props.votes_gop}, DEM Votes: ${props.votes_dem}`);
-      }
-    }
   }
   updateUIElements();
   if (currentState) {
@@ -462,7 +260,7 @@ function updateGeoJSONAndMap() {
 }
 
 function updateUIElements() {
-  let ev_bush = 0, ev_gore = 0, total_gop_votes = 0, total_dem_votes = 0, total_votes = 0;
+  let ev_bush = 0, ev_gore = 0;
   statesGeoJSON.features.forEach(f => {
     const ev = f.properties.electoral_votes || 0;
     const status = f.properties.status || 'Uncalled';
@@ -472,9 +270,6 @@ function updateUIElements() {
     } else if (status === 'DEM Win' && winner === 'Gore') {
       ev_gore += ev;
     }
-    total_gop_votes += Number(f.properties.votes_gop) || 0;
-    total_dem_votes += Number(f.properties.votes_dem) || 0;
-    total_votes += Number(f.properties.total_votes) || 0;
   });
 
   document.getElementById('bush-votes').textContent = ev_bush;
@@ -489,90 +284,26 @@ function updateUIElements() {
   document.getElementById('gore-bar').style.width = goreEVPerc + "%";
   document.getElementById('bush-label').textContent = bushEVPerc + "%";
   document.getElementById('gore-label').textContent = goreEVPerc + "%";
-
-  const bushProj = Math.min(ev_bush / 270, 1);
-  const goreProj = Math.min(ev_gore / 270, 1);
-  let projBush, projGore;
-  if (ev_bush >= 270 && ev_bush > ev_gore) { projBush = 1; projGore = 0; }
-  else if (ev_gore >= 270 && ev_gore > ev_bush) { projBush = 0; projGore = 1; }
-  else if (bushProj + goreProj > 0) {
-    projBush = bushProj / (bushProj + goreProj);
-    projGore = goreProj / (bushProj + goreProj);
-  } else { projBush = projGore = 0.5; }
-  let angle;
-  if (projBush === 1) angle = -90;
-  else if (projGore === 1) angle = 90;
-  else angle = -90 + 180 * projGore;
-  document.getElementById('needle-group').setAttribute('transform', `rotate(${angle},250,154)`);
-  document.getElementById('nyt-proj-bush-big').textContent = Math.round(projBush*100) + "%";
-  document.getElementById('nyt-proj-gore-big').textContent = Math.round(projGore*100) + "%";
-  document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
-  document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
-
-  const reporting_pct = Object.values(stateStats).reduce((acc, s) => acc + (s.reporting || 0), 0) / Object.keys(stateStats).length;
-  document.getElementById('reporting').textContent = "Reporting: " + reporting_pct.toFixed(1) + "%";
 }
 
 function refreshElectionData() {
-  Promise.all([
-    new Promise((resolve, reject) => {
-      Papa.parse(STATE_CSV_URL, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          console.log('State CSV fetched successfully. Rows:', results.data.length);
-          populateStateStatsFromCSV(results.data);
-          resolve();
-        },
-        error: function(err) {
-          console.error('Error parsing state CSV:', err);
-          reject(err);
-        }
-      });
-    }),
-    new Promise((resolve, reject) => {
-      fetch(COUNTY_CSV_URL)
-        .then(response => {
-          if (!response.ok) {
-            console.error('County CSV fetch failed. Status:', response.status);
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response.text();
-        })
-        .then(text => {
-          console.log('County CSV raw text (first 200 chars):', text.slice(0, 200));
-          Papa.parse(text, {
-            download: false,
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-              console.log('County CSV parsed. Rows:', results.data.length, 'Errors:', results.errors);
-              populateCountyStatsFromCSV(results.data, results.meta.fields);
-              resolve();
-            },
-            error: function(err) {
-              console.error('Error parsing county CSV:', err);
-              reject(err);
-            }
-          });
-        })
-        .catch(err => {
-          console.error('Error fetching county CSV:', err);
-          reject(err);
-        });
-    })
-  ]).then(() => {
-    updateGeoJSONAndMap();
-  }).catch(err => {
-    console.error('Error during data refresh:', err);
+  Papa.parse(STATE_CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      populateStateStatsFromCSV(results.data);
+      updateGeoJSONAndMap();
+    },
+    error: function(err) {
+      console.error('Error parsing state CSV:', err);
+    }
   });
 }
 
 Promise.all([
   fetch('data/county-geo.json').then(r => r.json()).then(data => {
     countiesGeoJSON = data;
-    console.log('Sample County GEOIDs (first 5):', countiesGeoJSON.features.slice(0, 5).map(f => f.properties.GEOID));
   }),
   fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; populateStateFipsMapFromGeoJSON(statesGeoJSON); }),
 ]).then(() => {
@@ -614,12 +345,7 @@ function setArcSegs() {
   document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 30, 60));
   document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx,svgCy,arcR, 60, 90));
 }
-function checkmarkSvg(color="#fff", size=20) {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="vertical-align:middle;">
-    <circle cx="12" cy="12" r="12" fill="${color}" opacity="0.6"/>
-    <polyline points="7,13 11,17 17,8" fill="none" stroke="#fff" stroke-width="2"/>
-  </svg>`;
-}
+
 function getStateFP(stateName) { if (!stateName) return null; return stateFipsMap[stateName.trim().toLowerCase()] || null; }
 
 function enableStateHover() {
@@ -672,26 +398,6 @@ function initializeMainMap() {
     zoom: 3
   });
   mainMap.on('load', () => {
-    if (!statesGeoJSON || !statesGeoJSON.features) {
-      const stateFeatures = {};
-      countiesGeoJSON.features.forEach(f => {
-        const stateFP = f.properties.STATEFP;
-        if (!stateFeatures[stateFP]) {
-          stateFeatures[stateFP] = {
-            type: "Feature",
-            properties: { STATEFP: stateFP, name: Object.keys(stateFipsMap).find(key => stateFipsMap[key] === stateFP) || `State ${stateFP}` },
-            geometry: { type: "MultiPolygon", coordinates: [] }
-          };
-        }
-        if (f.geometry.type === "Polygon") {
-          stateFeatures[stateFP].geometry.coordinates.push(f.geometry.coordinates);
-        } else if (f.geometry.type === "MultiPolygon") {
-          stateFeatures[stateFP].geometry.coordinates.push(...f.geometry.coordinates);
-        }
-      });
-      statesGeoJSON = { type: "FeatureCollection", features: Object.values(stateFeatures) };
-    }
-
     mainMap.addSource('states', { type: 'geojson', data: statesGeoJSON });
     mainMap.addLayer({
       id: 'states-fill',
@@ -745,24 +451,6 @@ function initializeMainMap() {
 function getStateBounds(stateName) {
   const stateFP = getStateFP(stateName);
   if (!stateFP) return null;
-  if (!statesGeoJSON || !statesGeoJSON.features) {
-    const countyFeatures = countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP);
-    if (!countyFeatures.length) return null;
-    let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
-    countyFeatures.forEach(f => {
-      const coords = f.geometry.type === "Polygon" ? f.geometry.coordinates[0] : f.geometry.coordinates.flat(2);
-      coords.forEach(coord => {
-        if (Array.isArray(coord) && coord.length >= 2) {
-          minLng = Math.min(minLng, coord[0]);
-          maxLng = Math.max(maxLng, coord[0]);
-          minLat = Math.min(minLat, coord[1]);
-          maxLat = Math.max(maxLat, coord[1]);
-        }
-      });
-    });
-    if (minLng === 180 || maxLng === -180 || minLat === 90 || maxLat === -90) return null;
-    return [[minLng, minLat], [maxLng, maxLat]];
-  }
   const stateFeature = statesGeoJSON.features.find(f => {
     const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
     return (f.properties[nameKey] || '').trim().toLowerCase() === stateName.trim().toLowerCase();
@@ -794,19 +482,19 @@ function addCountiesLayer(stateName) {
     ...countiesGeoJSON,
     features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
   };
-  if (Object.keys(countyElectionStats).length === 0) {
-    console.warn(`No county election stats available for ${stateName}.`);
+  if (typeof countyElectionStats !== 'object') {
+    console.warn('countyElectionStats not loaded or invalid!');
+    return;
   }
   filtered.features.forEach(f => {
     const fips = f.properties.GEOID;
     const stats = countyElectionStats[fips];
     if (stats) {
-      const total = stats.bush_votes + stats.gore_votes + stats.other_votes;
-      const margin = total > 0 ? Math.abs(stats.bush_votes - stats.gore_votes) / total * 100 : 0;
+      const total = (stats.bush_votes ?? 0) + (stats.gore_votes ?? 0) + (stats.other_votes ?? 0);
+      const margin = total > 0 ? Math.abs((stats.bush_votes ?? 0) - (stats.gore_votes ?? 0)) / total * 100 : 0;
       f.properties.winner = stats.winner;
       f.properties.margin = margin;
     } else {
-      console.warn(`No stats found for county FIPS: ${fips}, County Name: ${f.properties.NAME}`);
       f.properties.winner = "Tied";
       f.properties.margin = 0;
     }
@@ -857,10 +545,10 @@ function addCountiesLayer(stateName) {
       const stats = countyElectionStats[geoid];
       let html = `<strong>${f.properties.NAME} County</strong>`;
       if (stats) {
-        html += `<br>Bush: ${stats.bush_votes.toLocaleString()}`;
-        html += `<br>Gore: ${stats.gore_votes.toLocaleString()}`;
-        if (stats.other_votes > 0) html += `<br>Other: ${stats.other_votes.toLocaleString()}`;
-        html += `<br>Winner: <b style="color:${stats.winner==='Bush'?'#e74c3c':'#3498db'}">${stats.winner}${(stats.winner==='Bush'||stats.winner==='Gore')?checkmarkSvg(stats.winner==='Bush'?'#e74c3c':'#3498db',18):''}</b>`;
+        html += `<br>Bush: ${stats.bush_votes?.toLocaleString() || 0}`;
+        html += `<br>Gore: ${stats.gore_votes?.toLocaleString() || 0}`;
+        if ((stats.other_votes ?? 0) > 0) html += `<br>Other: ${stats.other_votes?.toLocaleString() || 0}`;
+        html += `<br>Winner: <b style="color:${stats.winner==='Bush'?'#e74c3c':'#3498db'}">${stats.winner}${(stats.winner==='Bush'||stats.winner==='Gore')?' ✓':''}</b>`;
       } else {
         html += `<br>No data available.`;
       }
@@ -877,6 +565,7 @@ function addCountiesLayer(stateName) {
     });
   }
 
+  // Sidebar
   const stateFeature = statesGeoJSON.features.find(f => {
     const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
     return (f.properties[nameKey] || '').trim().toLowerCase() === stateName.trim().toLowerCase();
@@ -893,7 +582,7 @@ function addCountiesLayer(stateName) {
       stateGopVotes += stats.bush_votes || 0;
       stateDemVotes += stats.gore_votes || 0;
       stateOtherVotes += stats.other_votes || 0;
-      stateTotalVotes += stats.bush_votes + stats.gore_votes + stats.other_votes;
+      stateTotalVotes += (stats.bush_votes || 0) + (stats.gore_votes || 0) + (stats.other_votes || 0);
     }
   });
 
