@@ -21,7 +21,7 @@
       display: flex; align-items: center; position: relative;
       width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden;
     }
-    .progress-bar { height: 100%; transition: width: 0.5s ease-in-out; }
+    .progress-bar { height: 100%; transition: width 0.5s ease-in-out; }
     .progress-bar.bush { background: #e74c3c; }
     .progress-bar.gore { background: #3498db; position: absolute; right: 0; }
     .vote-label {
@@ -86,7 +86,7 @@
       width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; position: relative;
     }
     .bar-fill {
-      height: 100%; transition: width: 0.5s ease-in-out;
+      height: 100%; transition: width 0.5s ease-in-out;
     }
     .bar-fill.bush { background: #e74c3c; }
     .bar-fill.gore { background: #3498db; }
@@ -98,7 +98,7 @@
       width: 100%; height: 20px; background: #444; border-radius: 10px; overflow: hidden; margin: 10px 0;
     }
     .reporting-fill {
-      height: 100%; background: #4CAF50; transition: width: 0.5s ease-in-out;
+      height: 100%; background: #4CAF50; transition: width 0.5s ease-in-out;
     }
     @media (max-width:700px) {
       #map { min-height: 300px; }
@@ -221,7 +221,7 @@
       font-weight: 800;
       box-shadow: 0 3px 18px #0008;
       cursor: pointer;
-      transition: background: 0.2s;
+      transition: background 0.2s;
     }
     #box-out-btn:hover {
       background: #303540;
@@ -337,9 +337,7 @@ function populateStateStatsFromCSV(rows) {
     if (!stateName) continue;
     const statusKey = Object.keys(row).find(k => k.toLowerCase().includes('election status')) || 'Election status';
     let rawStatus = (row[statusKey] || 'Uncalled').trim();
-    console.log(`Raw Election Status for ${stateName}: "${rawStatus}"`);
     let status = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
-    console.log(`Normalized Status for ${stateName}: "${status}"`);
     newStateStats[stateName.toLowerCase()] = {
       state: stateName,
       electoral_votes: parseInt(row['Electoral Votes'] || 0),
@@ -358,40 +356,32 @@ function populateStateStatsFromCSV(rows) {
   stateStats = newStateStats;
 }
 
+// ** COUNTY CSV UPDATED LOGIC **
 function populateCountyStatsFromCSV(rows, headers) {
-  console.log('County CSV headers:', headers);
-  console.log('County CSV rows (first 5):', rows.slice(0, 5));
-  if (!rows.length) {
-    console.warn('No rows found in county CSV.');
-    return;
-  }
+  // Looks for columns: CountyFIPS, BushVotes, GoreVotes, OtherVotes, TotalVotes
   const newCountyStats = {};
   for (const row of rows) {
-    if (String(row.year) !== "2000" || !row.county_fips) continue;
-    const fips = String(row.county_fips).padStart(5, "0");
-    const candidate = (row.candidate || "").toLowerCase().trim();
-    if (!newCountyStats[fips]) {
-      newCountyStats[fips] = { bush_votes: 0, gore_votes: 0, other_votes: 0, totalvotes: +row.totalvotes || 0 };
-    }
-    if (candidate.includes("bush")) {
-      newCountyStats[fips].bush_votes += +row.candidatevotes || 0;
-    } else if (candidate.includes("gore")) {
-      newCountyStats[fips].gore_votes += +row.candidatevotes || 0;
-    } else {
-      newCountyStats[fips].other_votes += +row.candidatevotes || 0;
-    }
-  }
-  for (const fips in newCountyStats) {
-    const c = newCountyStats[fips];
-    if (c.bush_votes > c.gore_votes) c.winner = "Bush";
-    else if (c.gore_votes > c.bush_votes) c.winner = "Gore";
-    else c.winner = "Tied";
+    const fips = String(row.CountyFIPS || row.countyfips || row.county_fips || '').padStart(5, "0");
+    if (!fips || fips === "00000") continue;
+    const bushVotes = parseInt(row.BushVotes || row.bushvotes || row.Bush || 0);
+    const goreVotes = parseInt(row.GoreVotes || row.gorevotes || row.Gore || 0);
+    const otherVotes = parseInt(row.OtherVotes || row.othervotes || row.Other || 0);
+    const totalVotes = parseInt(row.TotalVotes || row.totalvotes || 0);
+
+    let winner = "Tied";
+    if (bushVotes > goreVotes) winner = "Bush";
+    else if (goreVotes > bushVotes) winner = "Gore";
+
+    newCountyStats[fips] = {
+      bush_votes: bushVotes,
+      gore_votes: goreVotes,
+      other_votes: otherVotes,
+      totalvotes: totalVotes,
+      winner
+    };
   }
   countyElectionStats = newCountyStats;
-  console.log('County Election Stats size:', Object.keys(countyElectionStats).length);
-  console.log('Sample County Stats:', Object.entries(countyElectionStats).slice(0, 5));
 }
-
 function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
   if (statesGeoJSON?.features?.length > 0) {
     statesGeoJSON.features.forEach(f => {
@@ -406,23 +396,18 @@ function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
 }
 
 function updateGeoJSONAndMap() {
-  const statusCounts = { 'GOP Win': 0, 'DEM Win': 0, 'Uncalled': 0 };
   statesGeoJSON.features.forEach(f => {
     const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
     const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
     const matchedRow = stateStats[geoName];
     if (matchedRow) {
       let status;
-      console.log(`Processing ${matchedRow.state}: CSV Status = ${matchedRow.status}, Winner = ${matchedRow.winner || 'None'}`);
       if (matchedRow.status === 'Called' && matchedRow.winner === 'Bush') {
         status = 'GOP Win';
       } else if (matchedRow.status === 'Called' && matchedRow.winner === 'Gore') {
         status = 'DEM Win';
       } else {
         status = 'Uncalled';
-      }
-      if (status === 'Uncalled' && matchedRow.winner && matchedRow.winner !== '') {
-        console.warn(`Warning: State ${matchedRow.state} is Uncalled but has Winner: ${matchedRow.winner}`);
       }
       f.properties = {
         ...f.properties,
@@ -439,21 +424,11 @@ function updateGeoJSONAndMap() {
         other_candidate: matchedRow.other_candidate,
         reporting: matchedRow.reporting
       };
-      statusCounts[status]++;
-      console.log(`State: ${matchedRow.state}, Status: ${status}, Winner: ${matchedRow.winner || 'None'}, GOP Votes: ${matchedRow.votes_gop}, DEM Votes: ${matchedRow.votes_dem}`);
     }
   });
-  console.log('State status counts after update:', statusCounts);
   if (mainMap && mainMap.getSource('states')) {
     mainMap.getSource('states').setData(statesGeoJSON);
     mainMap.triggerRepaint();
-    if (mainMap.isStyleLoaded()) {
-      const alabamaFeatures = mainMap.queryRenderedFeatures(undefined, { layers: ['states-fill'], filter: ['==', ['get', 'state'], 'Alabama'] });
-      if (alabamaFeatures.length > 0) {
-        const props = alabamaFeatures[0].properties;
-        console.log(`Rendered Alabama: Status: ${props.status}, GOP Votes: ${props.votes_gop}, DEM Votes: ${props.votes_dem}`);
-      }
-    }
   }
   updateUIElements();
   if (currentState) {
@@ -521,12 +496,10 @@ function refreshElectionData() {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
-          console.log('State CSV fetched successfully. Rows:', results.data.length);
           populateStateStatsFromCSV(results.data);
           resolve();
         },
         error: function(err) {
-          console.error('Error parsing state CSV:', err);
           reject(err);
         }
       });
@@ -534,46 +507,34 @@ function refreshElectionData() {
     new Promise((resolve, reject) => {
       fetch(COUNTY_CSV_URL)
         .then(response => {
-          if (!response.ok) {
-            console.error('County CSV fetch failed. Status:', response.status);
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
+          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
           return response.text();
         })
         .then(text => {
-          console.log('County CSV raw text (first 200 chars):', text.slice(0, 200));
           Papa.parse(text, {
             download: false,
             header: true,
             skipEmptyLines: true,
             complete: function(results) {
-              console.log('County CSV parsed. Rows:', results.data.length, 'Errors:', results.errors);
               populateCountyStatsFromCSV(results.data, results.meta.fields);
               resolve();
             },
             error: function(err) {
-              console.error('Error parsing county CSV:', err);
               reject(err);
             }
           });
         })
         .catch(err => {
-          console.error('Error fetching county CSV:', err);
           reject(err);
         });
     })
   ]).then(() => {
     updateGeoJSONAndMap();
-  }).catch(err => {
-    console.error('Error during data refresh:', err);
-  });
+  }).catch(err => {});
 }
 
 Promise.all([
-  fetch('data/county-geo.json').then(r => r.json()).then(data => {
-    countiesGeoJSON = data;
-    console.log('Sample County GEOIDs (first 5):', countiesGeoJSON.features.slice(0, 5).map(f => f.properties.GEOID));
-  }),
+  fetch('data/county-geo.json').then(r => r.json()).then(data => { countiesGeoJSON = data; }),
   fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; populateStateFipsMapFromGeoJSON(statesGeoJSON); }),
 ]).then(() => {
   refreshElectionData();
@@ -741,7 +702,6 @@ function initializeMainMap() {
     });
   });
 }
-
 function getStateBounds(stateName) {
   const stateFP = getStateFP(stateName);
   if (!stateFP) return null;
@@ -794,9 +754,6 @@ function addCountiesLayer(stateName) {
     ...countiesGeoJSON,
     features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
   };
-  if (Object.keys(countyElectionStats).length === 0) {
-    console.warn(`No county election stats available for ${stateName}.`);
-  }
   filtered.features.forEach(f => {
     const fips = f.properties.GEOID;
     const stats = countyElectionStats[fips];
@@ -806,7 +763,6 @@ function addCountiesLayer(stateName) {
       f.properties.winner = stats.winner;
       f.properties.margin = margin;
     } else {
-      console.warn(`No stats found for county FIPS: ${fips}, County Name: ${f.properties.NAME}`);
       f.properties.winner = "Tied";
       f.properties.margin = 0;
     }
