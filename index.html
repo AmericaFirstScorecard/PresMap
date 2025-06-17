@@ -148,7 +148,7 @@
       background: none;
       display: none;
       z-index: 3;
-      pointer: none;
+      pointer-events: none;
     }
     .needle-checkmark.gore { left: auto; right: 36px; }
     .arc-label {
@@ -798,6 +798,9 @@ function addCountiesLayer(stateName) {
     ...countiesGeoJSON,
     features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
   };
+  if (Object.keys(countyElectionStats).length === 0) {
+    // No county stats yet, skip color
+  }
   filtered.features.forEach(f => {
     const fips = f.properties.GEOID;
     const stats = countyElectionStats[fips];
@@ -906,8 +909,8 @@ function addCountiesLayer(stateName) {
     const otherPct = ((stateOtherVotes / stateTotalVotes) * 100).toFixed(1);
     const lead = stateGopVotes > stateDemVotes ? stateGopVotes - stateDemVotes : stateDemVotes - stateGopVotes;
 
-    let candidateHTML = `
-      <div class="candidate-row">
+    candidateStatsDiv.innerHTML = 
+      `<div class="candidate-row">
         <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image-small">
         <div class="candidate-details">
           <span style="color: #e74c3c;">George Bush</span><br>
@@ -929,21 +932,17 @@ function addCountiesLayer(stateName) {
           <div class="bar-fill gore" style="width: ${gorePct}%"></div>
         </div>
       </div>
-    `;
-    if (stateOtherVotes > 0) {
-      candidateHTML += `
-        <div class="candidate-row">
-          <div class="candidate-details">
-            <span style="color: #bbb;">Other</span><br>
-            <span>${otherPct}%</span> <span>${stateOtherVotes.toLocaleString()} votes</span>
-          </div>
-          <div class="bar-graph">
-            <div class="bar-fill other" style="width: ${otherPct}%"></div>
-          </div>
+      <div class="candidate-row">
+        <img src="https://via.placeholder.com/40?text=?" alt="Other" class="candidate-image-small">
+        <div class="candidate-details">
+          <span style="color: #bbb;">Other</span><br>
+          <span>${otherPct}%</span> <span>${stateOtherVotes.toLocaleString()} votes</span>
         </div>
-      `;
-    }
-    candidateStatsDiv.innerHTML = candidateHTML;
+        <div class="bar-graph">
+          <div class="bar-fill other" style="width: ${otherPct}%"></div>
+        </div>
+      </div>
+    `;
     document.getElementById('reporting-fill').style.width = '100%';
     document.getElementById('reporting-status').textContent = "Reporting: 100%";
   } else {
