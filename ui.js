@@ -1,7 +1,8 @@
-import { stateStats, countyElectionStats, stateFipsMap } from './data.js';
+import { stateStats, countyElectionStats, stateFipsMap, statesGeoJSON, countiesGeoJSON } from './data.js';
 import { mainMap, currentState } from './map.js';
 
 export function updateGeoJSONAndMap() {
+  if (!statesGeoJSON) return; // Prevent access if not initialized
   const statusCounts = { 'GOP Win': 0, 'DEM Win': 0, 'Uncalled': 0 };
   statesGeoJSON.features.forEach(f => {
     const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
@@ -42,6 +43,7 @@ export function updateGeoJSONAndMap() {
 }
 
 export function updateUIElements() {
+  if (!statesGeoJSON) return; // Prevent access if not initialized
   let ev_bush = 0, ev_gore = 0;
   let national_bush_votes = 0, national_gore_votes = 0, national_total_votes = 0;
 
@@ -114,6 +116,7 @@ export function updateUIElements() {
 }
 
 export function updateStateSidebar(stateName, filtered) {
+  if (!statesGeoJSON) return; // Prevent access if not initialized
   const stateFeature = statesGeoJSON.features.find(f => {
     const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
     return (f.properties[nameKey] || '').trim().toLowerCase() === stateName.trim().toLowerCase();
