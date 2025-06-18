@@ -314,7 +314,9 @@ let statesGeoJSON = null;
 let stateStats = {};
 let mainMap = null;
 let statePopup = null;
-let stateHoverHandlers = {mousemove: null, mouseleave: null};
+let countyPopup = null;
+let stateHoverHandlers = { mousemove: null, mouseleave: null };
+let countyHoverHandlers = { mousemove: null, mouseleave: null };
 let currentState = null;
 
 const stateNameToFips = {
@@ -653,41 +655,29 @@ function getStateFP(stateName) {
   return stateName ? stateFipsMap[stateName.trim().toLowerCase()] || null : null;
 }
 
-// Debounce function to limit rapid event firing
-function debounce(func, wait) {
-  let timeout;
-  return function(...args) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
-  };
-}
-
 // State hover popup
 function enableStateHover() {
   if (!mainMap || !mainMap.getLayer('states-fill')) {
-    console.warn('Map or states-fill layer not ready for hover');
+    console.warn('Map or states-fill layer not ready for state hover');
     return;
   }
   if (stateHoverHandlers.mousemove) {
-    console.log('Hover handlers already enabled');
+    console.log('State hover handlers already enabled');
     return;
   }
 
-  const showPopup = debounce((e) => {
-    // Remove existing popup to prevent stacking
+  stateHoverHandlers.mousemove = (e) => {
     if (statePopup) {
-      console.log('Removing existing state popup before creating new one');
       statePopup.remove();
       statePopup = null;
     }
-
+    if (!e.features || !e.features[0]) return;
     const p = e.features[0].properties;
     const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
     const total = p.votes_gop + p.votes_dem + p.votes_other;
     const gopPerc = total > 0 ? ((p.votes_gop / total) * 100).toFixed(1) : 0;
     const demPerc = total > 0 ? ((p.votes_dem / total) * 100).toFixed(1) : 0;
-
-    console.log(`Creating popup for state: ${p[nameKey]}`);
+    console.log(`Showing state popup for: ${p[nameKey]}`);
     statePopup = new mapboxgl.Popup({ closeButton: false })
       .setLngLat(e.lngLat)
       .setHTML(`
@@ -698,31 +688,29 @@ function enableStateHover() {
         Status: ${p.status}
       `)
       .addTo(mainMap);
-  }, 50);
+  };
 
-  const hidePopup = () => {
+  stateHoverHandlers.mouseleave = () => {
     if (statePopup) {
-      console.log('Removing state popup on mouseleave');
+      console.log('Removing state popup');
       statePopup.remove();
       statePopup = null;
     }
   };
 
-  stateHoverHandlers.mousemove = showPopup;
-  stateHoverHandlers.mouseleave = hidePopup;
   mainMap.on('mousemove', 'states-fill', stateHoverHandlers.mousemove);
   mainMap.on('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
-  console.log('State hover handlers enabled');
+  console.log('State hover enabled');
 }
 
 function disableStateHover() {
   if (stateHoverHandlers.mousemove) {
     mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
-    console.log('Removed mousemove handler');
+    console.log('Removed state mousemove handler');
   }
   if (stateHoverHandlers.mouseleave) {
     mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
-    console.log('Removed mouseleave handler');
+    console.log('Removed state mouseleave handler');
   }
   stateHoverHandlers.mousemove = null;
   stateHoverHandlers.mouseleave = null;
@@ -794,7 +782,10 @@ function initializeMainMap() {
 // Add counties layer for a specific state
 function addCountiesLayer(stateName) {
   const stateFP = getStateFP(stateName);
-  if (!stateFP) return;
+  if (!stateFP) {
+    console.warn(`No FIPS code found for state: ${stateName}`);
+    return;
+  }
 
   const filtered = {
     type: 'FeatureCollection',
@@ -828,9 +819,23 @@ function addCountiesLayer(stateName) {
     paint: { 'line-color': '#ffffff', 'line-width': 0.5 }
   });
 
+  // Remove any existing county hover handlers
+  if (countyHoverHandlers.mousemove) {
+    mainMap.off('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
+    console.log('Removed previous county mousemove handler');
+  }
+  if (countyHoverHandlers.mouseleave) {
+    mainMap.off('mouseleave', 'counties-fill', countyHoverHandlers.mouseleave);
+    console.log('Removed previous county mouseleave handler');
+  }
+
   // County hover popup
-  let countyPopup = null;
-  mainMap.on('mousemove', 'counties-fill', (e) => {
+  countyHoverHandlers.mousemove = (e) => {
+    if (countyPopup) {
+      countyPopup.remove();
+      countyPopup = null;
+    }
+    if (!e.features || !e.features[0]) return;
     const f = e.features[0];
     const stats = countyElectionStats[f.properties.GEOID] || {
       bush_votes: 0, gore_votes: 0, other_votes: 0, totalvotes: 0, winner: 'Tied'
@@ -838,6 +843,7 @@ function addCountiesLayer(stateName) {
     const total = stats.bush_votes + stats.gore_votes + stats.other_votes;
     const bushPerc = total > 0 ? ((stats.bush_votes / total) * 100).toFixed(1) : 0;
     const gorePerc = total > 0 ? ((stats.gore_votes / total) * 100).toFixed(1) : 0;
+    console.log(`Showing county popup for: ${f.properties.NAME}`);
     countyPopup = new mapboxgl.Popup({ closeButton: false })
       .setLngLat(e.lngLat)
       .setHTML(`
@@ -847,8 +853,19 @@ function addCountiesLayer(stateName) {
         Winner: ${stats.winner}
       `)
       .addTo(mainMap);
-  });
-  mainMap.on('mouseleave', 'counties-fill', () => { if (countyPopup) countyPopup.remove(); });
+  };
+
+  countyHoverHandlers.mouseleave = () => {
+    if (countyPopup) {
+      console.log('Removing county popup');
+      countyPopup.remove();
+      countyPopup = null;
+    }
+  };
+
+  mainMap.on('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
+  mainMap.on('mouseleave', 'counties-fill', countyHoverHandlers.mouseleave);
+  console.log('County hover enabled');
 
   // Update sidebar
   const stateFeature = statesGeoJSON.features.find(f => {
@@ -908,20 +925,40 @@ function getStateBounds(stateName) {
 }
 
 // Exit state view
-document.getElementById('box-out-btn').onclick = () => {
+function exitStateView() {
   if (mainMap.getLayer('counties-fill')) mainMap.removeLayer('counties-fill');
   if (mainMap.getLayer('counties-outline')) mainMap.removeLayer('counties-outline');
   if (mainMap.getSource('counties')) mainMap.removeSource('counties');
+
+  // Remove county hover handlers
+  if (countyHoverHandlers.mousemove) {
+    mainMap.off('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
+    console.log('Removed county mousemove handler');
+  }
+  if (countyHoverHandlers.mouseleave) {
+    mainMap.off('mouseleave', 'counties-fill', countyHoverHandlers.mouseleave);
+    console.log('Removed county mouseleave handler');
+  }
+  countyHoverHandlers.mousemove = null;
+  countyHoverHandlers.mouseleave = null;
+  if (countyPopup) {
+    console.log('Removing county popup');
+    countyPopup.remove();
+    countyPopup = null;
+  }
+
   document.getElementById('state-sidebar').style.display = 'none';
   document.getElementById('header').style.display = 'flex';
   document.getElementById('box-out-btn').style.display = 'none';
   document.getElementById('projection-ticker-wrap').style.display = 'flex';
   mainMap.flyTo({ center: [-98.5795, 39.8283], zoom: 3 });
+  disableStateHover(); // Ensure state hover is disabled before re-enabling
   enableStateHover();
   currentState = null;
-};
+}
 
-document.getElementById('close-sidebar-btn').onclick = document.getElementById('box-out-btn').onclick;
+document.getElementById('box-out-btn').onclick = exitStateView;
+document.getElementById('close-sidebar-btn').onclick = exitStateView;
 </script>
 </body>
 </html>
