@@ -653,6 +653,87 @@ function getStateFP(stateName) {
   return stateName ? stateFipsMap[stateName.trim().toLowerCase()] || null : null;
 }
 
+// Debounce function to limit rapid event firing
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
+// State hover popup
+function enableStateHover() {
+  if (!mainMap || !mainMap.getLayer('states-fill')) {
+    console.warn('Map or states-fill layer not ready for hover');
+    return;
+  }
+  if (stateHoverHandlers.mousemove) {
+    console.log('Hover handlers already enabled');
+    return;
+  }
+
+  const showPopup = debounce((e) => {
+    // Remove existing popup to prevent stacking
+    if (statePopup) {
+      console.log('Removing existing state popup before creating new one');
+      statePopup.remove();
+      statePopup = null;
+    }
+
+    const p = e.features[0].properties;
+    const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
+    const total = p.votes_gop + p.votes_dem + p.votes_other;
+    const gopPerc = total > 0 ? ((p.votes_gop / total) * 100).toFixed(1) : 0;
+    const demPerc = total > 0 ? ((p.votes_dem / total) * 100).toFixed(1) : 0;
+
+    console.log(`Creating popup for state: ${p[nameKey]}`);
+    statePopup = new mapboxgl.Popup({ closeButton: false })
+      .setLngLat(e.lngLat)
+      .setHTML(`
+        <strong>${p[nameKey]}</strong><br/>
+        Electoral Votes: ${p.electoral_votes}<br/>
+        Bush: ${p.votes_gop.toLocaleString()} (${gopPerc}%)<br/>
+        Gore: ${p.votes_dem.toLocaleString()} (${demPerc}%)<br/>
+        Status: ${p.status}
+      `)
+      .addTo(mainMap);
+  }, 50);
+
+  const hidePopup = () => {
+    if (statePopup) {
+      console.log('Removing state popup on mouseleave');
+      statePopup.remove();
+      statePopup = null;
+    }
+  };
+
+  stateHoverHandlers.mousemove = showPopup;
+  stateHoverHandlers.mouseleave = hidePopup;
+  mainMap.on('mousemove', 'states-fill', stateHoverHandlers.mousemove);
+  mainMap.on('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
+  console.log('State hover handlers enabled');
+}
+
+function disableStateHover() {
+  if (stateHoverHandlers.mousemove) {
+    mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
+    console.log('Removed mousemove handler');
+  }
+  if (stateHoverHandlers.mouseleave) {
+    mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
+    console.log('Removed mouseleave handler');
+  }
+  stateHoverHandlers.mousemove = null;
+  stateHoverHandlers.mouseleave = null;
+  if (statePopup) {
+    console.log('Removing state popup on disable');
+    statePopup.remove();
+    statePopup = null;
+  }
+  console.log('State hover disabled');
+}
+
 // Map initialization
 function initializeMainMap() {
   mainMap = new mapboxgl.Map({
@@ -708,40 +789,6 @@ function initializeMainMap() {
       disableStateHover();
     });
   });
-}
-
-// State hover popup
-function enableStateHover() {
-  if (!mainMap || !mainMap.getLayer('states-fill')) return;
-  if (stateHoverHandlers.mousemove) return;
-  stateHoverHandlers.mousemove = (e) => {
-    const p = e.features[0].properties;
-    const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
-    const total = p.votes_gop + p.votes_dem + p.votes_other;
-    const gopPerc = total > 0 ? ((p.votes_gop / total) * 100).toFixed(1) : 0;
-    const demPerc = total > 0 ? ((p.votes_dem / total) * 100).toFixed(1) : 0;
-    statePopup = new mapboxgl.Popup({ closeButton: false })
-      .setLngLat(e.lngLat)
-      .setHTML(`
-        <strong>${p[nameKey]}</strong><br/>
-        Electoral Votes: ${p.electoral_votes}<br/>
-        Bush: ${p.votes_gop.toLocaleString()} (${gopPerc}%)<br/>
-        Gore: ${p.votes_dem.toLocaleString()} (${demPerc}%)<br/>
-        Status: ${p.status}
-      `)
-      .addTo(mainMap);
-  };
-  stateHoverHandlers.mouseleave = () => { if (statePopup) statePopup.remove(); };
-  mainMap.on('mousemove', 'states-fill', stateHoverHandlers.mousemove);
-  mainMap.on('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
-}
-
-function disableStateHover() {
-  if (stateHoverHandlers.mousemove) mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
-  if (stateHoverHandlers.mouseleave) mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
-  stateHoverHandlers.mousemove = null;
-  stateHoverHandlers.mouseleave = null;
-  if (statePopup) statePopup.remove();
 }
 
 // Add counties layer for a specific state
