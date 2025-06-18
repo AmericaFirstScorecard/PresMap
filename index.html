@@ -253,7 +253,7 @@
   </div>
   <div class="candidate-stats">
     <div class="candidate-stat-left" id="bush-pv">Bush: <span id="bush-pop">0</span> Votes</div>
-    <div class="stat-box" id="reporting">Reporting: 0%</div>
+    <div class="stat-box" id="reporting"> Reporting: 0%</div>
     <div class="candidate-stat-right" id="gore-pv">Gore: <span id="gore-pop">0</span> Votes</div>
   </div>
 </div>
@@ -377,10 +377,6 @@ function populateStateStatsFromCSV(rows) {
     newStateStats[stateName.toLowerCase()] = {
       state: stateName,
       electoral_votes: parseInt(row['Electoral Votes'] || 0),
-      votes_gop: parseInt(row['Republican Votes'] || 0),
-      votes_dem: parseInt(row['Democrat Votes'] || 0),
-      votes_other: parseInt(row['Other Votes'] || 0),
-      total_votes: parseInt(row['Total Votes'] || 0),
       winner: (row['Winner'] || '').trim(),
       status: status,
       gop_candidate: (row['Republican Candidate'] || 'Bush').trim(),
@@ -413,9 +409,9 @@ function updateGeoJSONAndMap() {
     const matchedRow = stateStats[geoName];
     if (matchedRow) {
       let status;
-      if (matchedRow.status === 'Called' && matchedRow.winner === 'Bush') {
+      if (matchedRow.status === 'Called' && matchedRow.winner === matchedRow.gop_candidate) {
         status = 'GOP Win';
-      } else if (matchedRow.status === 'Called' && matchedRow.winner === 'Gore') {
+      } else if (matchedRow.status === 'Called' && matchedRow.winner === matchedRow.dem_candidate) {
         status = 'DEM Win';
       } else {
         status = 'Uncalled';
@@ -424,10 +420,10 @@ function updateGeoJSONAndMap() {
         ...f.properties,
         state: matchedRow.state,
         electoral_votes: matchedRow.electoral_votes,
-        votes_gop: Number(matchedRow.votes_gop) || 0,
-        votes_dem: Number(matchedRow.votes_dem) || 0,
-        votes_other: Number(matchedRow.votes_other) || 0,
-        total_votes: Number(matchedRow.total_votes) || 0,
+        votes_gop: 0, // Initialized to 0, updated from county data later
+        votes_dem: 0,
+        votes_other: 0,
+        total_votes: 0,
         winner: matchedRow.winner,
         status: status,
         gop_candidate: matchedRow.gop_candidate,
@@ -474,9 +470,11 @@ function updateUIElements() {
     const ev = f.properties.electoral_votes || 0;
     const status = f.properties.status || 'Uncalled';
     const winner = f.properties.winner || '';
-    if (status === 'GOP Win' && winner === 'Bush') {
+    const gopCandidate = f.properties.gop_candidate || 'Bush';
+    const demCandidate = f.properties.dem_candidate || 'Gore';
+    if (status === 'GOP Win' && winner === gopCandidate) {
       ev_bush += ev;
-    } else if (status === 'DEM Win' && winner === 'Gore') {
+    } else if (status === 'DEM Win' && winner === demCandidate) {
       ev_gore += ev;
     }
     if (stateVoteTotals[stateFP]) {
@@ -486,7 +484,7 @@ function updateUIElements() {
     }
   });
 
-  // Update electoral vote display (unchanged)
+  // Update electoral vote display
   document.getElementById('bush-votes').textContent = ev_bush;
   document.getElementById('gore-votes').textContent = ev_gore;
   const totalEV = ev_bush + ev_gore;
@@ -501,7 +499,19 @@ function updateUIElements() {
   document.getElementById('bush-pop').textContent = national_bush_votes.toLocaleString();
   document.getElementById('gore-pop').textContent = national_gore_votes.toLocaleString();
 
-  // Update projection needle based on electoral votes (unchanged)
+  // Calculate average reporting percentage from state data
+  let totalReporting = 0;
+  let numStates = 0;
+  for (const state in stateStats) {
+    if (stateStats[state].reporting) {
+      totalReporting += stateStats[state].reporting;
+      numStates++;
+    }
+  }
+  const avgReporting = numStates > 0 ? (totalReporting / numStates).toFixed(1) : 0;
+  document.getElementById('reporting').textContent = `Reporting: ${avgReporting}%`;
+
+  // Update projection needle based on electoral votes
   const bushProj = Math.min(ev_bush / 270, 1);
   const goreProj = Math.min(ev_gore / 270, 1);
   let projBush, projGore;
@@ -520,10 +530,6 @@ function updateUIElements() {
   document.getElementById('nyt-proj-gore-big').textContent = Math.round(projGore*100) + "%";
   document.getElementById('needle-check-bush').style.display = (projBush === 1) ? 'block' : 'none';
   document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
-
-  // Update reporting percentage based on county data
-  const reporting_pct = national_total_votes > 0 ? (national_total_votes / national_total_votes * 100).toFixed(1) : 0;
-  document.getElementById('reporting').textContent = "Reporting: " + reporting_pct.toFixed(1) + "%";
 }
 
 function refreshElectionData() {
@@ -898,36 +904,40 @@ function addCountiesLayer(stateName) {
     }
   });
 
+  const stateData = stateStats[stateName.toLowerCase()];
+  const gopName = stateData ? stateData.gop_candidate : 'Bush';
+  const demName = stateData ? stateData.dem_candidate : 'Gore';
+
   document.getElementById('state-sidebar-title').textContent = `President: ${stateName}`;
   document.getElementById('state-electoral-votes').textContent = `${electoralVotes} electoral votes`;
 
   if (stateTotalVotes > 0) {
-    const bushPct = ((stateGopVotes / stateTotalVotes) * 100).toFixed(1);
-    const gorePct = ((stateDemVotes / stateTotalVotes) * 100).toFixed(1);
+    const gopPct = ((stateGopVotes / stateTotalVotes) * 100).toFixed(1);
+    const demPct = ((stateDemVotes / stateTotalVotes) * 100).toFixed(1);
     const otherPct = ((stateOtherVotes / stateTotalVotes) * 100).toFixed(1);
     const lead = stateGopVotes > stateDemVotes ? stateGopVotes - stateDemVotes : stateDemVotes - stateGopVotes;
 
     candidateStatsDiv.innerHTML = 
       `<div class="candidate-row">
-        <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image-small">
+        <img src="images/George-W-Bush.jpg" alt="${gopName}" class="candidate-image-small">
         <div class="candidate-details">
-          <span style="color: #e74c3c;">George Bush</span><br>
-          <span>${bushPct}%</span> <span>${stateGopVotes.toLocaleString()} votes</span>
+          <span style="color: #e74c3c;">${gopName}</span><br>
+          <span>${gopPct}%</span> <span>${stateGopVotes.toLocaleString()} votes</span>
           ${stateGopVotes > stateDemVotes ? `<span>✓ ${lead.toLocaleString()} ahead</span>` : ''}
         </div>
         <div class="bar-graph">
-          <div class="bar-fill bush" style="width: ${bushPct}%"></div>
+          <div class="bar-fill bush" style="width: ${gopPct}%"></div>
         </div>
       </div>
       <div class="candidate-row">
-        <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image-small">
+        <img src="images/Al_Gore.jpg" alt="${demName}" class="candidate-image-small">
         <div class="candidate-details">
-          <span style="color: #3498db;">Al Gore</span><br>
-          <span>${gorePct}%</span> <span>${stateDemVotes.toLocaleString()} votes</span>
+          <span style="color: #3498db;">${demName}</span><br>
+          <span>${demPct}%</span> <span>${stateDemVotes.toLocaleString()} votes</span>
           ${stateDemVotes > stateGopVotes ? `<span>✓ ${lead.toLocaleString()} ahead</span>` : ''}
         </div>
         <div class="bar-graph">
-          <div class="bar-fill gore" style="width: ${gorePct}%"></div>
+          <div class="bar-fill gore" style="width: ${demPct}%"></div>
         </div>
       </div>
       <div class="candidate-row">
@@ -941,11 +951,12 @@ function addCountiesLayer(stateName) {
         </div>
       </div>
     `;
-    document.getElementById('reporting-fill').style.width = '100%';
-    document.getElementById('reporting-status').textContent = "Reporting: 100%";
+    const reporting = stateData ? (stateData.reporting || 0) : 0;
+    document.getElementById('reporting-fill').style.width = `${reporting}%`;
+    document.getElementById('reporting-status').textContent = `Reporting: ${reporting}%`;
   } else {
     candidateStatsDiv.textContent = 'No county data available';
-    document.getElementById('reporting-status').textContent = '';
+    document.getElementById('reporting-status').textContent = 'Reporting: 0%';
     document.getElementById('reporting-fill').style.width = '0%';
   }
   document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' });
