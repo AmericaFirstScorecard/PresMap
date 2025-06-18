@@ -744,7 +744,7 @@ CONNECTICUT,CT,Statewide Writein,Other,OTHER,100,100000,000NA\n`;
       stateHoverHandlers.mousemove = function(e) {
         const p = e.features[0].properties;
         const nameKey = Object.keys(p).find(key => k.toLowerCase().includes('name')) || 'name';
-        const gop = +p.votes_gop 0;
+        const gop = +p.votes_gop;
         const dem = +p.votesDem;
         const total = gop + dem + (+p.votes || 0);
         const gopPerc = total > 0 ? ((gop / total) * 100).toFixed(1) : 0';
