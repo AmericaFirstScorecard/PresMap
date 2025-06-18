@@ -1,13 +1,9 @@
-import { fetchElectionData, populateStateFipsMapFromGeoJSON } from './data.js';
-import { initializeMainMap, addCountiesLayer, removeCountiesLayer, getStateBounds } from './map.js';
-import { updateUIElements, setArcSegs } from './ui.js';
-import { MAPBOX_TOKEN, STATE_CSV_URL, COUNTY_CSV_URL } from './config.js';
+import { fetchElectionData, setGeoJSON, populateStateFipsMapFromGeoJSON } from './data.js';
+import { initializeMainMap, addCountiesLayer, removeCountiesLayer, getStateBounds, disableStateHover } from './map.js';
+import { setArcSegs } from './ui.js';
+import { MAPBOX_TOKEN } from './config.js';
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
-
-let countiesGeoJSON = null;
-let statesGeoJSON = null;
-let currentState = null;
 
 async function init() {
   // Fetch GeoJSON data
@@ -15,14 +11,13 @@ async function init() {
     fetch('data/county-geo.json').then(r => r.json()),
     fetch('data/us-states.geo.json').then(r => r.json())
   ]);
-  countiesGeoJSON = countiesData;
-  statesGeoJSON = statesData;
-  populateStateFipsMapFromGeoJSON(statesGeoJSON);
+  setGeoJSON(statesData, countiesData);
+  populateStateFipsMapFromGeoJSON();
 
   // Initialize UI and map
   setArcSegs();
   await fetchElectionData();
-  initializeMainMap(statesGeoJSON, countiesGeoJSON, handleStateClick);
+  initializeMainMap(handleStateClick);
 
   // Set up periodic data refresh
   setInterval(fetchElectionData, 60000);
@@ -30,7 +25,7 @@ async function init() {
 
 function handleStateClick(stateName, lngLat) {
   currentState = stateName;
-  addCountiesLayer(stateName, countiesGeoJSON);
+  addCountiesLayer(stateName);
   const bounds = getStateBounds(stateName);
   if (bounds) {
     mainMap.fitBounds(bounds, { padding: 40, duration: 1100 });
