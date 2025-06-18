@@ -453,21 +453,26 @@ function updateUIElements() {
   let national_bush_votes = 0, national_gore_votes = 0, national_total_votes = 0;
 
   // Aggregate county votes to state and national totals
+  // Aggregate county votes to state and national totals
   const stateVoteTotals = {};
+  national_bush_votes = 0;
+  national_gore_votes = 0;
+  national_total_votes = 0;
   for (const fips in countyElectionStats) {
-    const stateFP = fips.substring(0, 2); // Extract state FIPS from county FIPS
+    const stateFP = fips.substring(0, 2);
     const stats = countyElectionStats[fips];
     if (!stateVoteTotals[stateFP]) {
-      stateVoteTotals[stateFP] = { bush_votes: 0, gore_votes: 0, total_votes: 0 };
+      stateVoteTotals[stateFP] = { bush_votes: 0, gore_votes: 0, other_votes: 0, total_votes: 0 };
     }
     stateVoteTotals[stateFP].bush_votes += stats.bush_votes || 0;
     stateVoteTotals[stateFP].gore_votes += stats.gore_votes || 0;
-    stateVoteTotals[stateFP].total_votes += stats.totalvotes || 0;
+    stateVoteTotals[stateFP].other_votes += stats.other_votes || 0;
+    stateVoteTotals[stateFP].total_votes += stats.bush_votes + stats.gore_votes + stats.other_votes;
     national_bush_votes += stats.bush_votes || 0;
     national_gore_votes += stats.gore_votes || 0;
-    national_total_votes += stats.totalvotes || 0;
+    national_total_votes += stats.bush_votes + stats.gore_votes + stats.other_votes;
   }
-
+  
   // Update state GeoJSON with aggregated county votes
   statesGeoJSON.features.forEach(f => {
     const stateFP = f.properties.STATEFP;
@@ -479,12 +484,15 @@ function updateUIElements() {
     } else if (status === 'DEM Win' && winner === 'Gore') {
       ev_gore += ev;
     }
+    // Use county sum, not CSV
     if (stateVoteTotals[stateFP]) {
       f.properties.votes_gop = stateVoteTotals[stateFP].bush_votes;
       f.properties.votes_dem = stateVoteTotals[stateFP].gore_votes;
+      f.properties.votes_other = stateVoteTotals[stateFP].other_votes;
       f.properties.total_votes = stateVoteTotals[stateFP].total_votes;
     }
   });
+
 
   // Update electoral vote display (unchanged)
   document.getElementById('bush-votes').textContent = ev_bush;
