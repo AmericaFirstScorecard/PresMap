@@ -3,6 +3,8 @@ import { MAPBOX_TOKEN, STATE_CSV_URL, COUNTY_CSV_URL } from './config.js';
 
 export let countyElectionStats = {};
 export let stateStats = {};
+export let statesGeoJSON = null;
+export let countiesGeoJSON = null;
 export const stateNameToFips = {
   "alabama": "01", "alaska": "02", "arizona": "04", "arkansas": "05", "california": "06",
   "colorado": "08", "connecticut": "09", "delaware": "10", "florida": "12", "georgia": "13",
@@ -17,6 +19,11 @@ export const stateNameToFips = {
   "district of columbia": "11", "puerto rico": "72"
 };
 export const stateFipsMap = { ...stateNameToFips };
+
+export function setGeoJSON(statesData, countiesData) {
+  statesGeoJSON = statesData;
+  countiesGeoJSON = countiesData;
+}
 
 export function populateCountyStatsFromCSV(rows, headers) {
   const newCountyStats = {};
@@ -75,7 +82,7 @@ export function populateStateStatsFromCSV(rows) {
   stateStats = newStateStats;
 }
 
-export function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
+export function populateStateFipsMapFromGeoJSON() {
   if (statesGeoJSON?.features?.length > 0) {
     statesGeoJSON.features.forEach(f => {
       const prop = f.properties || {};
