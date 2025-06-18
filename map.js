@@ -1,4 +1,4 @@
-import { stateFipsMap, stateStats, countyElectionStats } from './data.js';
+import { stateFipsMap, stateStats, countyElectionStats, statesGeoJSON, countiesGeoJSON } from './data.js';
 import { updateStateSidebar } from './ui.js';
 
 export let mainMap = null;
@@ -6,7 +6,7 @@ export let statePopup = null;
 export let stateHoverHandlers = { mousemove: null, mouseleave: null };
 export let currentState = null;
 
-export function initializeMainMap(statesGeoJSON, countiesGeoJSON, handleStateClick) {
+export function initializeMainMap(handleStateClick) {
   mainMap = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/light-v10',
@@ -144,7 +144,7 @@ export function getStateBounds(stateName) {
   return [[minLng, minLat], [maxLng, maxLat]];
 }
 
-export function addCountiesLayer(stateName, countiesGeoJSON) {
+export function addCountiesLayer(stateName) {
   const stateFP = getStateFP(stateName);
   if (!stateFP) return;
   const filtered = {
