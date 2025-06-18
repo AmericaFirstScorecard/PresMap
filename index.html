@@ -530,7 +530,7 @@ function updateUIElements() {
   document.getElementById('needle-check-gore').style.display = (projGore === 1) ? 'block' : 'none';
 
   // Update reporting percentage based on county data
-  const reporting_pct = national_total_votes > 0 ? (national_total_votes / national_total_votes * 100).toFixed(1) : 0;
+  const reporting_pct = national_total_votes > 0 ? 100 : 0;
   document.getElementById('reporting').textContent = "Reporting: " + reporting_pct.toFixed(1) + "%";
 }
 
@@ -939,7 +939,7 @@ function addCountiesLayer(stateName) {
         </div>
       </div>
       <div class="candidate-row">
-        <img src="https://via.placeholder.com/40?text=?" alt="Other" class="candidate-image-small">
+        <img src="images/other.png" alt="Other" class="candidate-image-small">
         <div class="candidate-details">
           <span style="color: #bbb;">Other</span><br>
           <span>${otherPct}%</span> <span>${stateOtherVotes.toLocaleString()} votes</span>
