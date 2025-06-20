@@ -344,7 +344,7 @@ function getColumnKey(row, key) {
 function populateCountyStatsFromCSV(rows) {
   console.log('County CSV rows received:', rows);
   const newCountyStats = {};
-  const processedRows = new Set(); // Track unique FIPS/party combinations
+  const processedRows = new Set();
   let alabamaVoteTotal = 0;
 
   for (const row of rows) {
@@ -400,7 +400,6 @@ function populateCountyStatsFromCSV(rows) {
     }
   }
 
-  // Calculate totals and winners
   let nationalTotal = 0;
   for (const fips in newCountyStats) {
     const stats = newCountyStats[fips];
@@ -457,12 +456,17 @@ function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
     statesGeoJSON.features.forEach(f => {
       const prop = f.properties || {};
       const nameKey = Object.keys(prop).find(k => k.toLowerCase().includes('name')) || 'name';
-      const fipsKey = Object.keys(prop).find(k => k.toLowerCase().includes('statefp') || k.toLowerCase().includes('fips')) || 'id';
+      const fipsKey = Object.keys(prop).find(k => k.toLowerCase().includes('statefp') || k.toLowerCase().includes('fips')) || 'STATEFP';
       const name = (prop[nameKey] || '').trim().toLowerCase();
       const fips = (prop[fipsKey] || '').toString().padStart(2, '0');
-      if (name && fips && fips !== '00') stateFipsMap[name] = fips;
+      if (name && fips && fips !== '00') {
+        stateFipsMap[name] = fips;
+      } else {
+        console.warn(`Invalid state FIPS or name: ${name}, FIPS: ${fips}`);
+      }
     });
   }
+  console.log('State FIPS map:', stateFipsMap);
 }
 
 // Update GeoJSON and Map with election data
@@ -721,7 +725,9 @@ setArcSegs();
 
 // Helper functions
 function getStateFP(stateName) {
-  return stateName ? stateFipsMap[stateName.trim().toLowerCase()] || null : null;
+  const fips = stateName ? stateFipsMap[stateName.trim().toLowerCase()] || null : null;
+  if (!fips) console.warn(`No FIPS found for state: ${stateName}`);
+  return fips;
 }
 
 // State hover popup
@@ -837,13 +843,11 @@ function initializeMainMap() {
       const stateName = p[nameKey];
       if (!stateName) return;
       currentState = stateName;
-      addCountiesLayer(stateName);
-      const bounds = getStateBounds(stateName);
-      if (bounds) mainMap.fitBounds(bounds, { padding: 40, duration: 1100 });
       document.getElementById('header').style.display = 'none';
       document.getElementById('box-out-btn').style.display = 'block';
       document.getElementById('projection-ticker-wrap').style.display = 'none';
       disableStateHover();
+      addCountiesLayer(stateName);
     });
   });
 }
@@ -856,6 +860,7 @@ function addCountiesLayer(stateName) {
     return;
   }
 
+  // Add counties layer
   const filtered = {
     type: 'FeatureCollection',
     features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
@@ -888,7 +893,7 @@ function addCountiesLayer(stateName) {
     paint: { 'line-color': '#ffffff', 'line-width': 0.5 }
   });
 
-  // Remove any existing county hover handlers
+  // County hover popup
   if (countyHoverHandlers.mousemove) {
     mainMap.off('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
     console.log('Removed previous county mousemove handler');
@@ -898,7 +903,6 @@ function addCountiesLayer(stateName) {
     console.log('Removed previous county mouseleave handler');
   }
 
-  // County hover popup
   countyHoverHandlers.mousemove = (e) => {
     if (countyPopup) {
       countyPopup.remove();
@@ -936,40 +940,55 @@ function addCountiesLayer(stateName) {
   mainMap.on('mouseleave', 'counties-fill', countyHoverHandlers.mouseleave);
   console.log('County hover enabled');
 
+  // Zoom to state bounds
+  const bounds = getStateBounds(stateName);
+  if (bounds) {
+    mainMap.fitBounds(bounds, { padding: 40, duration: 1100 });
+  } else {
+    console.warn(`Failed to zoom to ${stateName}: No bounds found`);
+  }
+
   // Update sidebar
-  const stateFeature = statesGeoJSON.features.find(f => {
-    const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
-    return f.properties[nameKey].toLowerCase() === stateName.toLowerCase();
-  });
-  if (stateFeature) {
-    const p = stateFeature.properties;
-    document.getElementById('state-sidebar-title').textContent = `President: ${p.state}`;
-    document.getElementById('state-electoral-votes').textContent = `${p.electoral_votes} electoral votes`;
-    const total = p.votes_gop + p.votes_dem + p.votes_other;
-    const bushPerc = total > 0 ? ((p.votes_gop / total) * 100).toFixed(1) : 0;
-    const gorePerc = total > 0 ? ((p.votes_dem / total) * 100).toFixed(1) : 0;
-    const otherPerc = total > 0 ? ((p.votes_other / total) * 100).toFixed(1) : 0;
-    document.getElementById('candidate-stats').innerHTML = `
-      <div class="candidate-row">
-        <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image-small">
-        <div class="bar-graph"><div class="bar-fill bush" style="width: ${bushPerc}%"></div></div>
-        <div class="candidate-details">Bush: ${p.votes_gop.toLocaleString()} (${bushPerc}%)</div>
-      </div>
-      <div class="candidate-row">
-        <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image-small">
-        <div class="bar-graph"><div class="bar-fill gore" style="width: ${goreEVPerc}%"></div></div>
-        <div class="candidate-details">Gore: ${p.votes_dem.toLocaleString()} (${gorePerc}%)</div>
-      </div>
-      <div class="candidate-row">
-        <img src="https://via.placeholder.com/40?text=?" alt="Other" class="candidate-image-small">
-        <div class="bar-graph"><div class="bar-fill other" style="width: ${otherPerc}%"></div></div>
-        <div class="candidate-details">Other: ${p.votes_other.toLocaleString()} (${otherPerc}%)</div>
-      </div>
-    `;
-    document.getElementById('reporting-fill').style.width = `${p.reporting}%`;
-    document.getElementById('reporting-status').textContent = `Reporting: ${p.reporting}%`;
-    document.getElementById('last-updated').textContent = `Updated: ${new Date().toLocaleTimeString()}`;
-    document.getElementById('state-sidebar').style.display = 'block';
+  try {
+    const stateFeature = statesGeoJSON.features.find(f => {
+      const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
+      return f.properties[nameKey].toLowerCase() === stateName.toLowerCase();
+    });
+    if (stateFeature) {
+      const p = stateFeature.properties;
+      document.getElementById('state-sidebar-title').textContent = `President: ${p.state}`;
+      document.getElementById('state-electoral-votes').textContent = `${p.electoral_votes} electoral votes`;
+      const total = p.votes_gop + p.votes_dem + p.votes_other;
+      const bushPerc = total > 0 ? ((p.votes_gop / total) * 100).toFixed(1) : 0;
+      const gorePerc = total > 0 ? ((p.votes_dem / total) * 100).toFixed(1) : 0;
+      const otherPerc = total > 0 ? ((p.votes_other / total) * 100).toFixed(1) : 0;
+      document.getElementById('candidate-stats').innerHTML = `
+        <div class="candidate-row">
+          <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image-small">
+          <div class="bar-graph"><div class="bar-fill bush" style="width: ${bushPerc}%"></div></div>
+          <div class="candidate-details">Bush: ${p.votes_gop.toLocaleString()} (${bushPerc}%)</div>
+        </div>
+        <div class="candidate-row">
+          <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image-small">
+          <div class="bar-graph"><div class="bar-fill gore" style="width: ${gorePerc}%"></div></div>
+          <div class="candidate-details">Gore: ${p.votes_dem.toLocaleString()} (${gorePerc}%)</div>
+        </div>
+        <div class="candidate-row">
+          <img src="https://via.placeholder.com/40?text=?" alt="Other" class="candidate-image-small">
+          <div class="bar-graph"><div class="bar-fill other" style="width: ${otherPerc}%"></div></div>
+          <div class="candidate-details">Other: ${p.votes_other.toLocaleString()} (${otherPerc}%)</div>
+        </div>
+      `;
+      document.getElementById('reporting-fill').style.width = `${p.reporting}%`;
+      document.getElementById('reporting-status').textContent = `Reporting: ${p.reporting}%`;
+      document.getElementById('last-updated').textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+      document.getElementById('state-sidebar').style.display = 'block';
+      document.getElementById('close-sidebar-btn').style.display = 'block';
+    } else {
+      console.warn(`No state feature found for ${stateName}`);
+    }
+  } catch (err) {
+    console.error(`Error updating sidebar for ${stateName}:`, err);
   }
 }
 
@@ -980,7 +999,10 @@ function getStateBounds(stateName) {
     const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
     return f.properties[nameKey].toLowerCase() === stateName.toLowerCase();
   });
-  if (!stateFeature) return null;
+  if (!stateFeature) {
+    console.warn(`No GeoJSON feature found for state: ${stateName}`);
+    return null;
+  }
 
   const coords = stateFeature.geometry.type === 'Polygon' ? stateFeature.geometry.coordinates[0] : stateFeature.geometry.coordinates.flat(2);
   let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
@@ -999,7 +1021,6 @@ function exitStateView() {
   if (mainMap.getLayer('counties-outline')) mainMap.removeLayer('counties-outline');
   if (mainMap.getSource('counties')) mainMap.removeSource('counties');
 
-  // Remove county hover handlers
   if (countyHoverHandlers.mousemove) {
     mainMap.off('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
     console.log('Removed county mousemove handler');
@@ -1017,6 +1038,7 @@ function exitStateView() {
   }
 
   document.getElementById('state-sidebar').style.display = 'none';
+  document.getElementById('close-sidebar-btn').style.display = 'none';
   document.getElementById('header').style.display = 'flex';
   document.getElementById('box-out-btn').style.display = 'none';
   document.getElementById('projection-ticker-wrap').style.display = 'flex';
