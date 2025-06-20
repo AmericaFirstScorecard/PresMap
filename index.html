@@ -630,6 +630,7 @@
                 const votesKey = getColumnKey(row, 'candidatevotes');
                 const totalVotesKey = getColumnKey(row, 'totalvotes');
                 const candidateKey = getColumnKey(row, 'candidate');
+                const countyNameKey = getColumnKey(row, 'county_name');
 
                 let fips = (row[fipsKey] || '').toString().trim().padStart(5, "0");
                 if (!/^\d{5}$/.test(fips)) {
@@ -654,6 +655,7 @@
                 }
 
                 let stateName = (row[stateKey] || '').trim().toLowerCase();
+                let countyName = (row[countyNameKey] || 'Unknown').trim();
 
                 if (!newCountyStats[fips]) {
                     newCountyStats[fips] = {
@@ -663,7 +665,7 @@
                         other_votes: 0,
                         totalvotes: totalVotes,
                         winner: "Tied",
-                        county_name: row[getColumnKey(row, 'county_name')] || 'Unknown'
+                        county_name: countyName
                     };
                 }
 
@@ -866,7 +868,7 @@
                     other_votes: 0,
                     totalvotes: 0,
                     winner: 'Tied',
-                    county_name: 'Unknown'
+                    county_name: f.properties.NAME || 'Unknown'
                 };
                 f.properties.bush_votes = stats.bush_votes || 0;
                 f.properties.gore_votes = stats.gore_votes || 0;
@@ -988,7 +990,7 @@
                             resolve();
                         }
                     });
-                    }),
+                }),
                 new Promise((resolve) => {
                     Papa.parse(COUNTY_CSV_URL, {
                         download: true,
@@ -1056,7 +1058,7 @@
                     try {
                         return JSON.parse(text);
                     } catch (e) {
-                        console.error('Invalid JSON in data/us-states.geojson:', text.slice(0, 100));
+                        console.error('Invalid JSON in data/us-states.geo.json:', text.slice(0, 100));
                         throw e;
                     }
                 });
@@ -1328,7 +1330,7 @@
                             'Uncalled', [
                                 'case',
                                 ['>', ['get', 'votes_gop'], ['get', 'votes_dem']], '#f4a6a0',
-                                ['>', ['get', 'votes_dem'], ['get', 'votes_gop']], '#a6c8f4'],
+                                ['>', ['get', 'votes_dem'], ['get', 'votes_gop']], '#a6c8f4',
                                 '#cccccc'
                             ],
                             '#ffffff'
@@ -1463,21 +1465,21 @@
                         <div class="candidate-row">
                             <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image-small">
                             <div class="bar-graph"><div class="bar-fill bush" style="width: ${bushPerc}%"></div></div>
-                            <div class="candidate-details">${p.republican_candidate}: ${votes_gop.toLocaleString()} (${bushPerc}%)</div>
+                            <div class="candidate-details">${p.republican_candidate}: ${votesGop.toLocaleString()} (${bushPerc}%)</div>
                         </div>
                         <div class="candidate-row">
-                            <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image-small"></div>
-                            <div class="bar-graph"><div class="bar-fill" style="width: ${gorePerc}%"></div></div>
-                            <div class="candidate-details">${p.democrat_candidate}: ${votes_dem.toLocaleString()} (${gorePerc}%)</div>
+                            <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image-small">
+                            <div class="bar-graph"><div class="bar-fill gore" style="width: ${gorePerc}%"></div></div>
+                            <div class="candidate-details">${p.democrat_candidate}: ${votesDem.toLocaleString()} (${gorePerc}%)</div>
                         </div>
                         <div class="candidate-row">
-                            <img src="https://via.placeholder.com/40?text=O" alt="Other" class="candidate-image-small"></div>
+                            <img src="https://via.placeholder.com/40?text=O" alt="Other" class="candidate-image-small">
                             <div class="bar-graph"><div class="bar-fill other" style="width: ${otherPerc}%"></div></div>
-                            <div class="candidate-details">${p.other_candidate}: ${votes_other.toLocaleString()} (${otherPerc}%)</div>
+                            <div class="candidate-details">${p.other_candidate}: ${votesOther.toLocaleString()} (${otherPerc}%)</div>
                         </div>
                     `;
                     document.getElementById('reporting-fill').style.width = `${p.reporting}%`;
-                    document.getElementById('reporting-status').textContent = `Status: ${p.status} (${p.reporting.toFixed(1)}% reporting)`);
+                    document.getElementById('reporting-status').textContent = `Status: ${p.status} (${p.reporting.toFixed(1)}% reporting)`;
                     document.getElementById('last-updated').textContent = `Last Updated: ${new Date().toLocaleString()}`;
                     document.getElementById('state-sidebar').classList.add('active');
                     document.getElementById('close-sidebar-btn').style.display = 'block';
@@ -1492,30 +1494,54 @@
         // Get state bounds for zooming
         function getStateBounds(stateName) {
             const stateFP = getStateFP(stateName);
-            if (!fp) return null;
+            if (!stateFP) {
+                console.warn(`No FIPS code found for state: ${stateName}`);
+                return null;
+            }
             const stateFeature = statesGeoJSON.features.find(f => {
-                const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name');
+                const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
                 return f.properties[nameKey].toLowerCase() === stateName.toLowerCase();
             });
-            if (!stateFeature) {
-                console.warn(`No GeoJSON feature found for ${stateName}`);
+            if (!stateFeature || !stateFeature.geometry) {
+                console.warn(`No GeoJSON feature or geometry found for ${stateName}`);
                 return null;
             }
-            const coords = stateFeature.geometry.type === 'Polygon' 
-                ? stateFeature.geometry.coordinates[0].toString() 
-                : stateFeature.geometry.coordinates.flat(2);
-            };
+
+            let coords = [];
+            if (stateFeature.geometry.type === 'Polygon') {
+                coords = stateFeature.geometry.coordinates[0];
+            } else if (stateFeature.geometry.type === 'MultiPolygon') {
+                coords = stateFeature.geometry.coordinates.flat(2);
+            } else {
+                console.warn(`Unsupported geometry type for ${stateName}: ${stateFeature.geometry.type}`);
+                return null;
+            }
+
+            if (!coords || coords.length === 0) {
+                console.warn(`No valid coordinates found for ${stateName}`);
+                return null;
+            }
+
             let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
             coords.forEach(coord => {
-                minLng = Math.min(minLng, coord[0]);
-                maxLng = Math.max(maxLng, coord[0]);
-                minLat = Math.min(minLat, coord[1]);
-                maxLat = Math.max(maxLat, maxLat, coord[1]);
+                if (!Array.isArray(coord) || coord.length < 2) {
+                    console.warn(`Invalid coordinate in ${stateName}:`, coord);
+                    return;
+                }
+                const [lng, lat] = coord;
+                if (isFinite(lng) && isFinite(lat)) {
+                    minLng = Math.min(minLng, lng);
+                    maxLng = Math.max(maxLng, lng);
+                    minLat = Math.min(minLat, lat);
+                    maxLat = Math.max(maxLat, lat);
+                }
             });
-            if (!isFinite(minLatLng) || !isFinite(maxLng) || !isFinite(minLat) || !isFinite(maxLat)) {
-                console.warn(`Invalid bounds for for ${stateName}`);
+
+            if (!isFinite(minLng) || !isFinite(maxLng) || !isFinite(minLat) || !isFinite(maxLat)) {
+                console.warn(`Invalid bounds calculated for ${stateName}`);
                 return null;
             }
+
             return [[minLng, minLat], [maxLng, maxLat]];
         }
 
@@ -1613,7 +1639,6 @@
         // Event listeners for buttons
         document.getElementById('box-out-btn').addEventListener('click', () => {
             toggleCountyMode(false);
-            document.getElementById('county-mode-btn').style.display = 'block';
         });
 
         document.getElementById('county-mode-btn').addEventListener('click', () => {
