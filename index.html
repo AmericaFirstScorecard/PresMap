@@ -697,7 +697,7 @@
                     }
                 });
             }
-            console.log('State FIPS map:', stateFipsMap);
+            console.log('State FIPS: ', stateFipsMap);
         }
 
         function updateGeoJSONAndMap() {
@@ -853,7 +853,7 @@
             document.getElementById('gore-pop').textContent = national_gore_votes.toLocaleString();
 
             const avgReporting = numStates > 0 ? (totalReporting / numStates).toFixed(1) : 0;
-            document.getElementById('reporting').textContent = `Reporting ${avgReporting}%`;
+            document.getElementById('reporting').textContent = `Reporting: ${avgReporting}%`;
 
             const bushProj = ev_bush / 270;
             const goreProj = ev_gore / 270;
@@ -1031,7 +1031,7 @@
             document.getElementById('arc-vl-bush').setAttribute('d', arcPath(svgCx, svgCy, arcR, -90, -60));
             document.getElementById('arc-l-bush').setAttribute('d', arcPath(svgCx, svgCy, arcR, -60, -30));
             document.getElementById('arc-le-bush').setAttribute('d', arcPath(svgCx, svgCy, arcR, -30, -10));
-            document.getElementById('arc-toss').setAttribute('d', arcPath(svgCx, svgCy, arcR, -10, 10));
+            document.getElementById('arc-tossup').setAttribute('d', arcPath(svgCx, svgCy, arcR, -10, 10));
             document.getElementById('arc-le-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 10, 30));
             document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 30, 60));
             document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 60, 90));
@@ -1110,12 +1110,17 @@
                 mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
                 console.log('Removed state mousemove handler');
             }
-            if (state === 'Uncalled') {
-                console.log('Removed state mouseleave');
-            } else {
-                stateHoverHandlers.off('mouseleave');
+            if (stateHoverHandlers.mouseleave) {
+                mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
+                console.log('Removed state mouseleave handler');
             }
             stateHoverHandlers.mousemove = null;
+            stateHoverHandlers.mouseleave = null;
+            if (statePopup) {
+                statePopup.remove();
+                statePopup = null;
+            }
+            console.log('State hover disabled');
         }
 
         function enableCountyHover() {
@@ -1153,8 +1158,7 @@
                 })
                 .setLngLat(e.lngLat)
                 .setHTML(`
-                    <div style="background: #fff; color: white; color: #333; padding: 10px; border-radius: 5px; font-size: 12px;">
-                    <div style="background-color: #fff; color: 10px; padding: 10px; border-radius: 5px;">
+                    <div style="background: #fff; color: #333; padding: 10px; border-radius: 5px; font-size: 12px;">
                         <strong>${stats.county_name} County</strong><br/>
                         Bush: ${stats.bush_votes.toLocaleString()} (${bushPerc}%)<br/>
                         Gore: ${stats.gore_votes.toLocaleString()} (${gorePerc}%)<br/>
@@ -1163,7 +1167,6 @@
                 `)
                 .addTo(mainMap);
             };
-        };
 
             countyHoverHandlers.mouseleave = () => {
                 if (countyPopup) {
@@ -1176,7 +1179,7 @@
             mainMap.on('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
             mainMap.on('mouseleave', 'counties-fill', countyHoverHandlers.mouseleave);
             console.log('County hover enabled');
-        };
+        }
 
         function disableCountyHover() {
             if (countyHoverHandlers.mousemove) {
@@ -1208,7 +1211,7 @@
             } catch (err) {
                 console.error('Failed to initialize Mapbox:', err);
                 const mapDiv = document.getElementById('map');
-                mapDiv.innerHTML = `<div style="color: red; padding: red; padding: 20px; text-align: center;">Failed to load map: Invalid Mapbox access token. Please set valid token in mapboxgl.accessToken.</div>`;
+                mapDiv.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">Failed to load map: Invalid Mapbox access token. Please set valid token in mapboxgl.accessToken.</div>`;
                 return;
             }
 
@@ -1428,7 +1431,7 @@
                 }
                 const [lng, lat] = coord;
                 if (isFinite(lng) && isFinite(lat)) {
-                    minLng = Math.min(minLat, lat);
+                    minLng = Math.min(minLng, lng);
                     maxLng = Math.max(maxLng, lng);
                     minLat = Math.min(minLat, lat);
                     maxLat = Math.max(maxLat, lat);
@@ -1444,15 +1447,15 @@
         }
 
         function toggleCountyMode(enabled) {
-            if (enable === isCountyMode) return;
-            isCountyMode = enable;
-            console.log(`Toggling county mode: ${enable}`);
+            if (enabled === isCountyMode) return;
+            isCountyMode = enabled;
+            console.log(`Toggling county mode: ${enabled}`);
 
-            if (enable) {
+            if (enabled) {
                 document.getElementById('county-mode-btn').textContent = 'State Mode';
                 document.getElementById('header').style.display = 'none';
                 document.getElementById('back-to-national-btn').style.display = 'block';
-                document.getElementById('projections-ticker-wrap').style.display = 'none';
+                document.getElementById('projection-ticker-wrap').style.display = 'none';
                 document.getElementById('state-sidebar').classList.remove('active');
 
                 if (mainMap.getSource('counties')) {
@@ -1482,7 +1485,7 @@
                             '#cccccc'
                         ],
                         'fill-opacity': 0.85
-                    };
+                    }
                 });
                 mainMap.addLayer({
                     id: 'counties-outline',
@@ -1491,7 +1494,7 @@
                     paint: {
                         'line-color': '#ffffff',
                         'line-width': 0.5
-                    };
+                    }
                 });
 
                 disableStateHover();
