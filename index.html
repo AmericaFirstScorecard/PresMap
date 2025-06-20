@@ -317,10 +317,6 @@
             dominant-baseline: middle;
             text-anchor: middle;
         }
-        .arc-label-center {
-            font-size: 17px;
-            font-weight: 900;
-        }
         .needle-arrow {
             fill: #fff;
             stroke: #222;
@@ -331,13 +327,6 @@
             stroke: #fff;
             stroke-width: 3.5;
         }
-        .arc-very-likely-bush { stroke: #e74c3c; }
-        .arc-likely-bush { stroke: #f7a49a; }
-        .arc-lean-bush { stroke: #ffe5d2; }
-        .arc-tossup { stroke: #cccccc; }
-        .arc-lean-gore { stroke: #b8d8f8; }
-        .arc-likely-gore { stroke: #74b0e7; }
-        .arc-very-likely-gore { stroke: #3498db; }
         .needle-candidate-labels {
             display: flex;
             justify-content: center;
@@ -379,7 +368,6 @@
             .needle-checkmark { width: 28px; height: 28px; top: 148px; left: 12px; }
             .needle-checkmark.gore { right: 12px; }
             .arc-label { font-size: 12px; }
-            .arc-label-center { font-size: 14px; }
             .needle-candidate-labels { font-size: 1.6rem; gap: 8px; }
             .nyt-prob-row { font-size: 1.4rem; }
             .proj-big-num { font-size: 1.8rem; }
@@ -445,14 +433,6 @@
                 <path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
             </svg>
             <svg id="nyt-needle-svg" width="500" height="270" viewBox="0 0 500 270">
-                <path id="arc-0" class="arc-very-likely-bush" fill="none" stroke-width="20"/>
-                <path id="arc-1" class="arc-likely-bush" fill="none" stroke-width="20"/>
-                <path id="arc-2" class="arc-lean-bush" fill="none" stroke-width="20"/>
-                <path id="arc-3" class="arc-tossup" fill="none" stroke-width="20"/>
-                <path id="arc-4" class="arc-lean-gore" fill="none" stroke-width="20"/>
-                <path id="arc-5" class="arc-likely-gore" fill="none" stroke-width="20"/>
-                <path id="arc-6" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
-                <g id="arc-labels-group"></g>
                 <g id="needle-group">
                     <polygon class="needle-arrow" points="250,64 243,64 243,162 257,162 257,64"/>
                     <circle id="needle-dot" cx="250" cy="154" r="16"/>
@@ -561,10 +541,6 @@
                     };
                 }
 
-                if (fips === '01073') {
-                    console.log(`Jefferson County (pre-override): FIPS=${fips}, Candidate=${candidate}, Party=${party}, Votes=${votes}, Total=${totalVotes}`);
-                }
-
                 if (candidate.includes('bush') || party === "REPUBLICAN") {
                     newCountyStats[fips].bush_votes = votes;
                 } else if (candidate.includes('gore') || party === "DEMOCRAT") {
@@ -598,7 +574,7 @@
                 else stats.winner = "Tied";
             }
 
-            console.log(`County stats processed: ${Object.keys(newCountyStats).length} counties, total votes: ${nationalTotal.toLocaleString()}`);
+            console.log(`County stats: ${Object.keys(newCountyStats).length} counties, total votes: ${nationalTotal.toLocaleString()}`);
             countyElectionStats = newCountyStats;
         }
 
@@ -606,17 +582,17 @@
             console.log('State CSV rows:', rows.length);
             const newStateStats = {};
             for (const row of rows) {
-                const stateKey = getColumnKey(row, 'state');
+                const stateKey = getColumnKey(row, 'State');
                 let stateName = (row[stateKey] || '').toString().trim().toLowerCase();
                 if (!stateName) continue;
 
-                const statusKey = getColumnKey(row, 'election status (called, uncalled)');
-                const winnerKey = getColumnKey(row, 'winner');
-                const evKey = getColumnKey(row, 'electoral votes');
-                const reportingKey = getColumnKey(row, 'reporting %');
-                const repCandidateKey = getColumnKey(row, 'republican candidate');
-                const demCandidateKey = getColumnKey(row, 'democrat candidate');
-                const otherCandidateKey = getColumnKey(row, 'other candidate');
+                const statusKey = getColumnKey(row, 'Election status (called, uncalled)');
+                const winnerKey = getColumnKey(row, 'Winner');
+                const evKey = getColumnKey(row, 'Electoral Votes');
+                const reportingKey = getColumnKey(row, 'Reporting %');
+                const repCandidateKey = getColumnKey(row, 'Republican Candidate');
+                const demCandidateKey = getColumnKey(row, 'Democrat Candidate');
+                const otherCandidateKey = getColumnKey(row, 'Other Candidate');
 
                 let status = (row[statusKey] || 'Uncalled').toString().trim();
                 const statusLower = status.toLowerCase();
@@ -690,9 +666,6 @@
                 stateVoteTotals[stateName].gore_votes += stats.gore_votes || 0;
                 stateVoteTotals[stateName].other_votes += stats.other_votes || 0;
                 stateVoteTotals[stateName].total_votes += stats.totalvotes || 0;
-                if (fips === '01073') {
-                    console.log(`Jefferson County in update: Bush=${stats.bush_votes}, Gore=${stats.gore_votes}, Total=${stats.totalvotes}`);
-                }
             }
 
             statesGeoJSON.features.forEach(f => {
@@ -745,9 +718,6 @@
                 f.properties.total_votes = stats.totalvotes || 0;
                 f.properties.winner = stats.winner || 'Tied';
                 f.properties.county_name = stats.county_name || f.properties.NAME || 'Unknown';
-                if (fips === '01073') {
-                    console.log(`GeoJSON Jefferson County: Bush=${f.properties.bush_votes}, Gore=${f.properties.gore_votes}, Total=${f.properties.total_votes}`);
-                }
             });
 
             if (mainMap && mainMap.getSource('states')) {
@@ -794,11 +764,10 @@
             document.getElementById('bush-ev').textContent = ev_bush;
             document.getElementById('gore-ev').textContent = ev_gore;
             const totalEV = 538;
-            const bushEVPerc = totalEV > 0 ? Math.max(0, Math.min(100, (ev_bush / totalEV * 100).toFixed(1))) : 0;
-            const goreEVPerc = totalEV > 0 ? Math.max(0, Math.min(100, (ev_gore / totalEV * 100).toFixed(1))) : 0;
+            const bushEVPerc = totalEV > 0 ? (ev_bush / totalEV * 100).toFixed(1) : 0;
+            const goreEVPerc = totalEV > 0 ? (ev_gore / totalEV * 100).toFixed(1) : 0;
             document.getElementById('bush-bar').style.width = `${bushEVPerc}%`;
             document.getElementById('gore-bar').style.width = `${goreEVPerc}%`;
-            document.getElementById('gore-bar').style.background = '#3498db';
             document.getElementById('bush-label').textContent = `${bushEVPerc}%`;
             document.getElementById('gore-label').textContent = `${goreEVPerc}%`;
             console.log(`EV Perc: Bush=${bushEVPerc}%, Gore=${goreEVPerc}%`);
@@ -917,15 +886,14 @@
                     });
 
                     enableStateHover();
-
                     mainMap.on('click', 'states-fill', e => {
                         if (isCountyMode) return;
-                        const props = e.features[0].properties;
-                        const nameKey = Object.keys(props).find(k => k.toLowerCase().includes('name')) || 'NAME';
-                        currentState = props[nameKey].toLowerCase();
+                        const p = e.features[0].properties;
+                        const nameKey = Object.keys(p).find(k => k.toLowerCase().includes('name')) || 'NAME';
+                        currentState = p[nameKey].toLowerCase();
                         console.log('Clicked state:', currentState);
                         addCountiesLayer(currentState);
-                        updateSidebar(props);
+                        updateSidebar(p);
                     });
                 });
             } catch (err) {
@@ -935,18 +903,15 @@
         }
 
         function addCountiesLayer(stateName) {
-            const stateFips = stateFipsMap[stateName.toLowerCase()];
-            if (!stateFips || stateFips === '00') {
-                console.warn(`Invalid FIPS for ${stateName}: ${stateFips}`);
+            const stateFP = stateFipsMap[stateName.toLowerCase()];
+            if (!stateFP || stateFP === '00') {
+                console.warn(`No valid FIPS for ${stateName}`);
                 return;
             }
 
             const filtered = {
                 type: 'FeatureCollection',
-                features: countiesGeoJSON.features.filter(f => {
-                    const fips = f.properties.GEOID || f.properties.county_fips || '';
-                    return fips.startsWith(stateFips);
-                })
+                features: countiesGeoJSON.features.filter(f => (f.properties.STATEFP || '').toString().padStart(2, '0') === stateFP)
             };
             console.log(`Filtered ${filtered.features.length} counties for ${stateName}`);
 
@@ -966,7 +931,7 @@
                         'Gore', '#3498db',
                         '#cccccc'
                     ],
-                    'fill-opacity': 0.8
+                    'fill-opacity': 0.85
                 }
             });
             mainMap.addLayer({
@@ -979,8 +944,7 @@
                 }
             });
 
-            stateHoverHandlers.mousemove && mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
-            stateHoverHandlers.mouseleave && mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
+            disableStateHover();
             enableCountyHover();
 
             const bounds = getStateBounds(stateName);
@@ -1177,7 +1141,7 @@
                             'Gore', '#3498db',
                             '#cccccc'
                         ],
-                        'fill-opacity': 0.8
+                        'fill-opacity': 0.85
                     }
                 });
                 mainMap.addLayer({
@@ -1216,35 +1180,6 @@
 
         document.getElementById('close-sidebar-btn').addEventListener('click', () => {
             document.getElementById('state-sidebar').classList.remove('active');
-        });
-
-        const arcSegs = [
-            { label: "Very Likely Bush", id: "arc-0", start: -90, end: -60 },
-            { label: "Likely Bush", id: "arc-1", start: -60, end: -30 },
-            { label: "Lean Bush", id: "arc-2", start: -30, end: -10 },
-            { label: "Tossup", id: "arc-3", start: -10, end: 10 },
-            { label: "Lean Gore", id: "arc-4", start: 10, end: 30 },
-            { label: "Likely Gore", id: "arc-5", start: 30, end: 60 },
-            { label: "Very Likely Gore", id: "arc-6", start: 60, end: 90 }
-        ];
-
-        function arcPath(cx, cy, r, startAngle, endAngle) {
-            const start = { x: cx + r * Math.cos((startAngle - 90) * Math.PI / 180), y: cy + r * Math.sin((startAngle - 90) * Math.PI / 180) };
-            const end = { x: cx + r * Math.cos((endAngle - 90) * Math.PI / 180), y: cy + r * Math.sin((endAngle - 90) * Math.PI / 180) };
-            const arcSweep = endAngle - startAngle <= 180 ? "0" : "1";
-            return `M ${start.x} ${start.y} A ${r} ${r} 0 ${arcSweep} 1 ${end.x} ${end.y}`;
-        }
-
-        arcSegs.forEach(seg => {
-            document.getElementById(seg.id).setAttribute('d', arcPath(250, 154, 110, seg.start, seg.end));
-            const midAngle = (seg.start + seg.end) / 2;
-            const pos = { x: 250 + 130 * Math.cos((midAngle - 90) * Math.PI / 180), y: 154 + 130 * Math.sin((midAngle - 90) * Math.PI / 180) };
-            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', pos.x);
-            text.setAttribute('y', pos.y);
-            text.setAttribute('class', seg.id === 'arc-3' ? 'arc-label arc-label-center' : 'arc-label');
-            text.textContent = seg.label;
-            document.getElementById('arc-labels-group').appendChild(text);
         });
 
         Promise.all([
@@ -1286,6 +1221,7 @@
             console.log('GeoJSON loaded');
             refreshElectionData();
             initializeMainMap();
+            setInterval(refreshElectionData, 60000);
         }).catch(err => {
             console.error('Initial load failed:', err);
             document.getElementById('map').innerHTML = '<div style="color:red;padding:10px">Failed to load map data</div>';
