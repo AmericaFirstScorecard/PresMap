@@ -212,7 +212,7 @@
             background: #4CAF50;
             transition: width 0.6s ease;
         }
-        #county-mode-btn, #back-to-national-btn {
+        #county-mode-btn {
             position: absolute;
             top: 20px;
             right: 32px;
@@ -227,14 +227,9 @@
             box-shadow: 0 3px 12px rgba(0,0,0,0.3);
             cursor: pointer;
             transition: background 0.2s, transform 0.1s;
-            display: none;
-        }
-        #county-mode-btn {
-            top: 20px;
-            right: 120px;
             display: block;
         }
-        #county-mode-btn:hover, #back-to-national-btn:hover {
+        #county-mode-btn:hover {
             background: #3498db;
             transform: scale(1.05);
         }
@@ -429,7 +424,7 @@
             .proj-divider {
                 font-size: 1.2rem;
             }
-            #county-mode-btn, #back-to-national-btn {
+            #county-mode-btn {
                 padding: 10px 20px;
                 font-size: 14px;
                 font-weight: 700;
@@ -469,7 +464,6 @@
         </div>
     </div>
     <button id="county-mode-btn">County Mode</button>
-    <button id="back-to-national-btn">Back to National Map</button>
     <div id="map"></div>
     <div id="state-sidebar">
         <button id="close-sidebar-btn">Close</button>
@@ -561,6 +555,7 @@
             console.log('County CSV rows received:', rows);
             const newCountyStats = {};
             let nationalTotal = 0;
+            const processedRows = new Set(); // Track unique rows to avoid duplicates
 
             for (const row of rows) {
                 const stateKey = getColumnKey(row, 'state');
@@ -576,6 +571,8 @@
                     continue;
                 }
 
+                let stateName = (row[stateKey] || '').trim().toLowerCase();
+                let countyName = (row[countyNameKey] || 'Unknown').trim();
                 let party = (row[partyKey] || "").trim().toUpperCase();
                 let candidate = (row[candidateKey] || "").trim().toLowerCase();
                 let votesRaw = row[votesKey] || "";
@@ -585,8 +582,13 @@
                     votes = 0;
                 }
 
-                let stateName = (row[stateKey] || '').trim().toLowerCase();
-                let countyName = (row[countyNameKey] || 'Unknown').trim();
+                // Create a unique identifier for the row to prevent double-counting
+                const rowId = `${fips}-${candidate}-${party}-${votes}`;
+                if (processedRows.has(rowId)) {
+                    console.warn(`Duplicate row detected for FIPS ${fips}, candidate ${candidate}, votes ${votes}, skipping`);
+                    continue;
+                }
+                processedRows.add(rowId);
 
                 if (!newCountyStats[fips]) {
                     newCountyStats[fips] = {
@@ -595,35 +597,39 @@
                         gore_votes: 0,
                         other_votes: 0,
                         winner: "Tied",
-                        county_name: countyName
+                        county_name: countyName,
+                        totalvotes: 0
                     };
                 }
 
                 if (candidate.includes('bush') || party === "REPUBLICAN") {
-                    newCountyStats[fips].bush_votes += votes;
+                    newCountyStats[fips].bush_votes = votes; // Assign, don't add, to avoid double-counting
                 } else if (candidate.includes('gore') || party === "DEMOCRAT") {
-                    newCountyStats[fips].gore_votes += votes;
+                    newCountyStats[fips].gore_votes = votes;
                 } else {
-                    newCountyStats[fips].other_votes += votes;
+                    newCountyStats[fips].other_votes = votes;
                 }
+
+                // Calculate total votes for the county
+                newCountyStats[fips].totalvotes = newCountyStats[fips].bush_votes + newCountyStats[fips].gore_votes + newCountyStats[fips].other_votes;
+                nationalTotal += votes;
 
                 if (stateName === 'alabama' && fips === '01073') {
-                    console.log(`Jefferson County (FIPS 01073): Bush=${newCountyStats[fips].bush_votes.toLocaleString()}, Gore=${newCountyStats[fips].gore_votes.toLocaleString()}`);
+                    console.log(`Jefferson County (FIPS 01073): Bush=${newCountyStats[fips].bush_votes.toLocaleString()}, Gore=${newCountyStats[fips].gore_votes.toLocaleString()}, Total=${newCountyStats[fips].totalvotes.toLocaleString()}`);
                 }
-            }
 
-            for (const fips in newCountyStats) {
+                // Determine winner
                 const stats = newCountyStats[fips];
-                stats.totalvotes = stats.bush_votes + stats.gore_votes + stats.other_votes;
-                nationalTotal += stats.totalvotes;
                 if (stats.bush_votes > stats.gore_votes) stats.winner = "Bush";
                 else if (stats.gore_votes > stats.bush_votes) stats.winner = "Gore";
                 else stats.winner = "Tied";
             }
 
             console.log(`Parsed countyElectionStats: ${Object.keys(newCountyStats).length} counties, national total votes: ${nationalTotal.toLocaleString()}`);
-            if (nationalTotal > 110000000) {
+            if (nationalTotal > 120000000) {
                 console.warn(`National vote total (${nationalTotal.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
+            } else if (nationalTotal < 90000000) {
+                console.warn(`National vote total (${nationalTotal.toLocaleString()}) is below expected min (~100M for 2000 election)`);
             }
             countyElectionStats = newCountyStats;
         }
@@ -656,7 +662,7 @@
                     }
                 } else if (statusLower !== 'uncalled') {
                     console.warn(`Unexpected status '${status}' for state ${stateName}, setting to Uncalled`);
-                    status = 'Uncalled';
+                        status = 'Uncalled';
                 }
 
                 let reporting = parseFloat(row[reportingKey] || "0");
@@ -722,9 +728,10 @@
             let nationalTotal = 0;
             for (const state in stateVoteTotals) {
                 nationalTotal += stateVoteTotals[state].total_votes;
+                console.log(`State ${state}: Total votes=${stateVoteTotals[state].total_votes.toLocaleString()}, Bush=${stateVoteTotals[state].bush_votes.toLocaleString()}, Gore=${stateVoteTotals[state].gore_votes.toLocaleString()}`);
             }
             console.log(`National total votes: ${nationalTotal.toLocaleString()}`);
-            if (nationalTotal > 110000000) {
+            if (nationalTotal > 120000000) {
                 console.warn(`National vote total (${nationalTotal.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
             }
 
@@ -832,7 +839,7 @@
             });
 
             console.log(`National totals: Bush=${national_bush_votes.toLocaleString()}, Gore=${national_gore_votes.toLocaleString()}, Total=${national_total_votes.toLocaleString()}`);
-            if (national_total_votes > 110000000) {
+            if (national_total_votes > 120000000) {
                 console.warn(`National vote total (${national_total_votes.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
             }
 
@@ -1261,7 +1268,6 @@
                     currentState = stateName;
                     document.getElementById('header').style.display = 'none';
                     document.getElementById('county-mode-btn').style.display = 'none';
-                    document.getElementById('back-to-national-btn').style.display = 'block';
                     document.getElementById('projection-ticker-wrap').style.display = 'none';
                     disableStateHover();
                     addCountiesLayer(stateName);
@@ -1454,7 +1460,7 @@
             if (enabled) {
                 document.getElementById('county-mode-btn').textContent = 'State Mode';
                 document.getElementById('header').style.display = 'none';
-                document.getElementById('back-to-national-btn').style.display = 'block';
+                document.getElementById('county-mode-btn').style.display = 'block';
                 document.getElementById('projection-ticker-wrap').style.display = 'none';
                 document.getElementById('state-sidebar').classList.remove('active');
 
@@ -1509,7 +1515,7 @@
             } else {
                 document.getElementById('county-mode-btn').textContent = 'County Mode';
                 document.getElementById('header').style.display = 'flex';
-                document.getElementById('back-to-national-btn').style.display = 'none';
+                document.getElementById('county-mode-btn').style.display = 'block';
                 document.getElementById('projection-ticker-wrap').style.display = 'flex';
                 document.getElementById('state-sidebar').classList.remove('active');
 
@@ -1549,14 +1555,10 @@
             toggleCountyMode(!isCountyMode);
         });
 
-        document.getElementById('back-to-national-btn').addEventListener('click', () => {
-            toggleCountyMode(false);
-        });
-
         document.getElementById('close-sidebar-btn').addEventListener('click', () => {
             document.getElementById('state-sidebar').classList.remove('active');
             document.getElementById('close-sidebar-btn').style.display = 'none';
-            toggleCountyMode(false); // Reset map view to national
+            toggleCountyMode(false);
         });
     </script>
 </body>
