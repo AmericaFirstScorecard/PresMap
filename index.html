@@ -52,6 +52,7 @@
             overflow: hidden;
         }
         .progress-bar {
+            position: relative;
             height: 100%;
             transition: width 0.6s ease;
         }
@@ -71,6 +72,12 @@
             font-size: 12px;
             font-weight: 700;
             text-shadow: 0 0 2px rgba(0,0,0,0.7);
+        }
+        .progress-bar.bush .vote-label {
+            right: 10px;
+        }
+        .progress-bar.gore .vote-label {
+            left: 10px;
         }
         .threshold-marker {
             position: absolute;
@@ -499,10 +506,12 @@
                     <div class="threshold-label">270 to Win</div>
                     <div class="progress-bar-wrapper">
                         <div class="threshold-marker"></div>
-                        <div class="progress-bar bush" id="bush-bar"></div>
-                        <div class="progress-bar gore" id="gore-bar"></div>
-                        <div class="vote-label" id="bush-label" style="left: 10px;">0%</div>
-                        <div class="vote-label" id="gore-label" style="right: 10px;">0%</div>
+                        <div class="progress-bar bush" id="bush-bar">
+                            <div class="vote-label" id="bush-label">0%</div>
+                        </div>
+                        <div class="progress-bar gore" id="gore-bar">
+                            <div class="vote-label" id="gore-label">0%</div>
+                        </div>
                     </div>
                 </div>
                 <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image">
@@ -906,7 +915,7 @@
 
             statesGeoJSON.features.forEach(f => {
                 const props = f.properties || {};
-                const ev = props.electoral_votes || 0;
+                const ev = props.electoral_votes || µ0;
                 const status = props.status || 'Uncalled';
                 if (status === 'Bush Win') ev_bush += ev;
                 else if (status === 'Gore Win') ev_gore += ev;
@@ -1168,6 +1177,7 @@
                 }
                 if (!e.features || !e.features[0]) return;
                 const p = e.features[0].properties;
+                console.log('State properties on hover:', p); // Debug log to verify properties
                 const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
                 const total = (p.votes_gop || 0) + (p.votes_dem || 0) + (p.votes_other || 0);
                 const gopPerc = total > 0 ? ((p.votes_gop || 0) / total * 100).toFixed(1) : 0;
