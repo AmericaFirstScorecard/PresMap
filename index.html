@@ -68,15 +68,6 @@
             text-shadow: 0 0 2px rgba(0,0,0,0.7);
             width: 100%;
             text-align: center;
-            pointer-events: none;
-        }
-        .progress-bar.bush .vote-label {
-            text-align: left;
-            padding-left: 10px;
-        }
-        .progress-bar.gore .vote-label {
-            text-align: right;
-            padding-right: 10px;
         }
         .threshold-marker {
             position: absolute;
@@ -86,25 +77,12 @@
             background: #fff;
             z-index: 10;
         }
-        .threshold-label {
-            position: absolute;
-            left: calc(270 / 538 * 100% - 30px);
-            color: #fff;
-            font-size: 13px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            text-align: left;
-        }
         .candidate-labels {
             display: flex;
             justify-content: space-between;
             font-size: 15px;
             font-weight: 700;
             margin-bottom: 8px;
-        }
-        .stat-box {
-            font-size: 13px;
-            font-weight: 400;
         }
         .candidate-image {
             width: 80px;
@@ -125,10 +103,6 @@
             width: 100%;
             max-width: 900px;
             font-size: 13px;
-        }
-        .candidate-stat-left, .candidate-stat-right {
-            text-align: center;
-            width: 160px;
         }
         .title {
             font-size: 32px;
@@ -167,15 +141,6 @@
             display: block;
             transform: translateX(0);
         }
-        #state-sidebar h2 {
-            margin: 0 0 12px;
-            font-size: 1.8rem;
-            font-weight: 900;
-        }
-        #state-sidebar p {
-            margin: 8px 0;
-            font-size: 14px;
-        }
         #close-sidebar-btn {
             position: absolute;
             top: 16px;
@@ -193,10 +158,6 @@
         #close-sidebar-btn:hover {
             background: #e74c3c;
             transform: scale(1.05);
-        }
-        .separator {
-            border-bottom: 1px solid #444;
-            margin: 12px 0;
         }
         .candidate-row {
             display: flex;
@@ -251,7 +212,7 @@
             background: #4CAF50;
             transition: width 0.6s ease;
         }
-        #box-out-btn, #county-mode-btn {
+        #box-out-btn, #county-mode-btn, #back-to-national-btn {
             position: absolute;
             top: 20px;
             right: 32px;
@@ -273,7 +234,7 @@
             right: 120px;
             display: block;
         }
-        #box-out-btn:hover, #county-mode-btn:hover {
+        #box-out-btn:hover, #county-mode-btn:hover, #back-to-national-btn:hover {
             background: #3498db;
             transform: scale(1.05);
         }
@@ -358,16 +319,12 @@
             stroke: #222;
             stroke-width: 2.2;
             filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
-            transition: width 0.6s ease;
         }
         .needle-dot {
             fill: #191d22;
             stroke: #fff;
             stroke-width: 3.5;
             filter: drop-shadow(0 1px 8px rgba(0,0,0,0.5));
-        }
-        #needle-group {
-            transition: transform 0.6s ease;
         }
         .arc-very-likely-bush { stroke: #e74c3c; }
         .arc-likely-bush { stroke: #f7a49a; }
@@ -435,10 +392,6 @@
                 align-items: center;
                 gap: 10px;
             }
-            .candidate-stat-left, .candidate-stat-right {
-                width: 100%;
-                font-size: 13px;
-            }
             .needle-svg-wrap {
                 width: 99vw;
             }
@@ -476,7 +429,7 @@
             .proj-divider {
                 font-size: 1.2rem;
             }
-            #box-out-btn, #county-mode-btn {
+            #box-out-btn, #county-mode-btn, #back-to-national-btn {
                 padding: 10px 20px;
                 font-size: 14px;
                 font-weight: 700;
@@ -494,7 +447,7 @@
             </div>
             <div class="progress-bar-container">
                 <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image">
-                <div style="width:100%;">
+                <div style="width:100%; position:relative;">
                     <div class="threshold-label">270 to Win</div>
                     <div class="progress-bar-wrapper">
                         <div class="threshold-marker"></div>
@@ -517,6 +470,7 @@
     </div>
     <button id="box-out-btn">Zoom Out</button>
     <button id="county-mode-btn">County Mode</button>
+    <button id="back-to-national-btn">Back to National Map</button>
     <div id="map"></div>
     <div id="state-sidebar">
         <button id="close-sidebar-btn">Close</button>
@@ -764,18 +718,6 @@
                 return;
             }
 
-            countiesGeoJSON.features.forEach(f => {
-                f.properties = {
-                    ...f.properties,
-                    bush_votes: 0,
-                    gore_votes: 0,
-                    other_votes: 0,
-                    total_votes: 0,
-                    winner: 'Tied',
-                    county_name: f.properties.NAME || 'Unknown'
-                };
-            });
-
             const stateVoteTotals = {};
             for (const fips in countyElectionStats) {
                 const stats = countyElectionStats[fips];
@@ -788,7 +730,15 @@
                 stateVoteTotals[stateName].other_votes += stats.other_votes || 0;
                 stateVoteTotals[stateName].total_votes += stats.totalvotes || 0;
             }
-            console.log('State vote totals:', stateVoteTotals);
+
+            let nationalTotal = 0;
+            for (const state in stateVoteTotals) {
+                nationalTotal += stateVoteTotals[state].total_votes;
+            }
+            console.log(`National total votes: ${nationalTotal.toLocaleString()}`);
+            if (nationalTotal > 110000000) {
+                console.warn(`National vote total (${nationalTotal.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
+            }
 
             statesGeoJSON.features.forEach(f => {
                 const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
@@ -852,9 +802,6 @@
                 f.properties.total_votes = stats.totalvotes || 0;
                 f.properties.winner = stats.winner || 'Tied';
                 f.properties.county_name = stats.county_name || f.properties.NAME || 'Unknown';
-                if (fips === '01073') {
-                    console.log(`County GeoJSON for Jefferson County: Bush=${stats.bush_votes.toLocaleString()}, Gore=${stats.gore_votes.toLocaleString()}, Total=${stats.totalvotes.toLocaleString()}`);
-                }
             });
 
             if (mainMap && mainMap.getSource('states')) {
@@ -1146,12 +1093,14 @@
                 statePopup = new mapboxgl.Popup({ closeButton: false })
                     .setLngLat(e.lngLat)
                     .setHTML(`
-                        <strong>${p[nameKey]}</strong><br/>
-                        <b>Electoral Votes:</b> ${p.electoral_votes || 0}<br/>
-                        <span style="color:#e74c3c">Bush:</span> ${(p.votes_gop || 0).toLocaleString()} (${gopPerc}%)<br/>
-                        <span style="color:#3498db">Gore:</span> ${(p.votes_dem || 0).toLocaleString()} (${demPerc}%)<br/>
-                        <b>Status:</b> ${winnerText}<br/>
-                        <b>Reporting:</b> ${(p.reporting || 0).toFixed(1)}%
+                        <div style="background: #fff; color: #333; padding: 10px; border-radius: 5px; font-size: 12px;">
+                            <strong>${p[nameKey]}</strong><br/>
+                            <b>Electoral Votes:</b> ${p.electoral_votes || 0}<br/>
+                            <span style="color:#e74c3c">Bush:</span> ${(p.votes_gop || 0).toLocaleString()} (${gopPerc}%)<br/>
+                            <span style="color:#3498db">Gore:</span> ${(p.votes_dem || 0).toLocaleString()} (${demPerc}%)<br/>
+                            <b>Status:</b> ${winnerText}<br/>
+                            <b>Reporting:</b> ${(p.reporting || 0).toFixed(1)}%
+                        </div>
                     `)
                     .addTo(mainMap);
             };
@@ -1222,10 +1171,12 @@
                 })
                 .setLngLat(e.lngLat)
                 .setHTML(`
-                    <strong>${stats.county_name} County</strong><br/>
-                    Bush: ${stats.bush_votes.toLocaleString()} (${bushPerc}%)<br/>
-                    Gore: ${stats.gore_votes.toLocaleString()} (${gorePerc}%)<br/>
-                    Winner: ${stats.winner}
+                    <div style="background: #fff; color: #333; padding: 10px; border-radius: 5px; font-size: 12px;">
+                        <strong>${stats.county_name} County</strong><br/>
+                        Bush: ${stats.bush_votes.toLocaleString()} (${bushPerc}%)<br/>
+                        Gore: ${stats.gore_votes.toLocaleString()} (${gorePerc}%)<br/>
+                        Winner: ${stats.winner}
+                    </div>
                 `)
                 .addTo(mainMap);
             };
@@ -1517,6 +1468,7 @@
                 document.getElementById('county-mode-btn').textContent = 'State Mode';
                 document.getElementById('header').style.display = 'none';
                 document.getElementById('box-out-btn').style.display = 'block';
+                document.getElementById('back-to-national-btn').style.display = 'block';
                 document.getElementById('projection-ticker-wrap').style.display = 'none';
                 document.getElementById('state-sidebar').classList.remove('active');
 
@@ -1572,6 +1524,7 @@
                 document.getElementById('county-mode-btn').textContent = 'County Mode';
                 document.getElementById('header').style.display = 'flex';
                 document.getElementById('box-out-btn').style.display = 'none';
+                document.getElementById('back-to-national-btn').style.display = 'none';
                 document.getElementById('projection-ticker-wrap').style.display = 'flex';
                 document.getElementById('state-sidebar').classList.remove('active');
 
@@ -1613,6 +1566,10 @@
 
         document.getElementById('county-mode-btn').addEventListener('click', () => {
             toggleCountyMode(!isCountyMode);
+        });
+
+        document.getElementById('back-to-national-btn').addEventListener('click', () => {
+            toggleCountyMode(false);
         });
 
         document.getElementById('close-sidebar-btn').addEventListener('click', () => {
