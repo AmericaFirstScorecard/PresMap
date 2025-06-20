@@ -570,11 +570,15 @@
     </div>
     <script>
         // ========== USER CONFIG ==============
-        // Replace with your valid Mapbox access token (e.g., pk.eyJ...)
-        // Get a token from https://account.mapbox.com
+        // Mapbox access token
         mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
-        const STATE_CSV_URL = 'https://docs.google.com/spreadsheets/d/1q4zbH9MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
-        const COUNTY_CSV_URL = 'https://docs.google.com/spreadsheets/d/1q6edopYcOeeom30rC3kWsVwvJ8rHcdYH7xB7B7QCQBI/export?format=csv';
+        // CSV URLs for state and county data
+        const STATE_CSV_URL = 'https://docs.google.com/spreadsheets/d/10zbHap425MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
+        const COUNTY_CSV_URL = 'https://docs.google.com/spreadsheets/d/1edopYcOoeeom30K3WsCmzVwvJ8rHcdYH7xB7B7QCQBI/export?format=csv';
+        // Note: If CSV URLs fail, replace with local paths, e.g.:
+        // const STATE_CSV_URL = 'data/state-data.csv';
+        // const COUNTY_CSV_URL = 'data/county-data.csv';
+        // Ensure Google Sheets are shared with "Anyone with the link" (Viewer access)
         // ========== END USER CONFIG ===========
 
         // Global State
@@ -776,13 +780,16 @@
                 return;
             }
 
-            // Reset county GeoJSON properties
+            // Initialize county GeoJSON properties
             countiesGeoJSON.features.forEach(f => {
-                f.properties.bush_votes = 0;
-                f.properties.gore_votes = 0;
-                f.properties.other_votes = 0;
-                f.properties.total_votes = 0;
-                f.properties.winner = 'Tied';
+                f.properties = {
+                    ...f.properties,
+                    bush_votes: 0,
+                    gore_votes: 0,
+                    other_votes: 0,
+                    total_votes: 0,
+                    winner: 'Tied'
+                };
             });
 
             // Aggregate county votes to state totals
@@ -834,10 +841,10 @@
                     ...f.properties,
                     state: stateData.state || geoName,
                     electoral_votes: stateData.electoral_votes || 0,
-                    votes_gop: voteTotals.bush_votes,
-                    votes_dem: voteTotals.gore_votes,
-                    votes_other: voteTotals.other_votes,
-                    total_votes: voteTotals.total_votes,
+                    votes_gop: voteTotals.bush_votes || 0,
+                    votes_dem: voteTotals.gore_votes || 0,
+                    votes_other: voteTotals.other_votes || 0,
+                    total_votes: voteTotals.total_votes || 0,
                     winner: winner,
                     status: status,
                     reporting: stateData.reporting || 0
@@ -854,11 +861,11 @@
                     totalvotes: 0,
                     winner: 'Tied'
                 };
-                f.properties.bush_votes = stats.bush_votes;
-                f.properties.gore_votes = stats.gore_votes;
-                f.properties.other_votes = stats.other_votes;
-                f.properties.total_votes = stats.totalvotes;
-                f.properties.winner = stats.winner;
+                f.properties.bush_votes = stats.bush_votes || 0;
+                f.properties.gore_votes = stats.gore_votes || 0;
+                f.properties.other_votes = stats.other_votes || 0;
+                f.properties.total_votes = stats.totalvotes || 0;
+                f.properties.winner = stats.winner || 'Tied';
                 if (fips === '01073') {
                     console.log(`Jefferson County GeoJSON: Bush=${stats.bush_votes.toLocaleString()}, Gore=${stats.gore_votes.toLocaleString()}, Total=${stats.total_votes.toLocaleString()}`);
                 }
@@ -883,17 +890,18 @@
             let totalReporting = 0, numStates = 0;
 
             statesGeoJSON.features.forEach(f => {
-                const ev = f.properties.electoral_votes || 0;
-                const status = f.properties.status;
+                const props = f.properties || {};
+                const ev = props.electoral_votes || 0;
+                const status = props.status || 'Uncalled';
                 if (status === 'Bush Win') ev_bush += ev;
                 else if (status === 'Gore Win') ev_gore += ev;
 
-                national_bush_votes += f.properties.votes_gop || 0;
-                national_gore_votes += f.properties.votes_dem || 0;
-                national_total_votes += f.properties.total_votes || 0;
+                national_bush_votes += props.votes_gop || 0;
+                national_gore_votes += props.votes_dem || 0;
+                national_total_votes += props.total_votes || 0;
 
-                if (f.properties.reporting) {
-                    totalReporting += f.properties.reporting;
+                if (props.reporting) {
+                    totalReporting += props.reporting;
                     numStates += 1;
                 }
             });
@@ -963,6 +971,7 @@
                         },
                         error: (err) => {
                             console.error('Failed to load state CSV:', err);
+                            alert('Failed to load state election data. Map will display with available GeoJSON data.');
                             resolve();
                         }
                     });
@@ -980,6 +989,7 @@
                         },
                         error: (err) => {
                             console.error('Failed to load county CSV:', err);
+                            alert('Failed to load county election data. Map will display with available GeoJSON data.');
                             resolve();
                         }
                     });
@@ -989,7 +999,7 @@
                 console.log('Election data refreshed successfully');
             }).catch(err => {
                 console.error('Error refreshing election data:', err);
-                alert('Failed to load election data. Map will display with available GeoJSON data.');
+                alert('Failed to refresh election data. Map will display with available GeoJSON data.');
             });
         }
 
@@ -1039,6 +1049,19 @@
             }).then(data => {
                 console.log('us-states.geo.json loaded successfully');
                 statesGeoJSON = data;
+                statesGeoJSON.features.forEach(f => {
+                    f.properties = {
+                        ...f.properties,
+                        votes_gop: 0,
+                        votes_dem: 0,
+                        votes_other: 0,
+                        total_votes: 0,
+                        winner: 'Tied',
+                        status: 'Uncalled',
+                        electoral_votes: 0,
+                        reporting: 0
+                    };
+                });
                 populateStateFipsMapFromGeoJSON(statesGeoJSON);
             }).catch(err => {
                 console.error('Error loading us-states.geo.json:', err);
@@ -1127,9 +1150,9 @@
                 if (!e.features || !e.features[0]) return;
                 const p = e.features[0].properties;
                 const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
-                const total = p.votes_gop + p.votes_dem + p.votes_other;
-                const gopPerc = total > 0 ? ((p.votes_gop / total) * 100).toFixed(1) : 0;
-                const demPerc = total > 0 ? ((p.votes_dem / total) * 100).toFixed(1) : 0;
+                const total = (p.votes_gop || 0) + (p.votes_dem || 0) + (p.votes_other || 0);
+                const gopPerc = total > 0 ? ((p.votes_gop || 0) / total * 100).toFixed(1) : 0;
+                const demPerc = total > 0 ? ((p.votes_dem || 0) / total * 100).toFixed(1) : 0;
                 console.log(`Showing state popup for: ${p[nameKey]}`);
                 statePopup = new mapboxgl.Popup({
                     closeButton: false
@@ -1137,10 +1160,10 @@
                 .setLngLat(e.lngLat)
                 .setHTML(`
                     <strong>${p[nameKey]}</strong><br/><br/>
-                    Electoral Votes: ${p.electoral_votes}<br/>
-                    Bush: ${p.votes_gop.toLocaleString()} (${gopPerc}%)<br/>
-                    Gore: ${p.votes_dem.toLocaleString()} (${demPerc}%)<br/>
-                    Status: ${p.status}
+                    Electoral Votes: ${p.electoral_votes || 0}<br/>
+                    Bush: ${(p.votes_gop || 0).toLocaleString()} (${gopPerc}%)<br/>
+                    Gore: ${(p.votes_dem || 0).toLocaleString()} (${demPerc}%)<br/>
+                    Status: ${p.status || 'Uncalled'}
                 `)
                 .addTo(mainMap);
             };
@@ -1184,7 +1207,7 @@
                 console.warn('Map or counties-fill layer not ready');
                 return;
             }
-            if (countyHoverHandlers.mmousemove) {
+            if (countyHoverHandlers.mousemove) {
                 console.log('County hover already enabled');
                 return;
             }
@@ -1339,7 +1362,7 @@
 
             const filtered = {
                 type: 'FeatureCollection',
-                features: countiesGeoJSON.features.filter(f => f.properties.STATEFP === stateFP)
+                features: countiesGeoJSON.features.filter(f => (f.properties.STATEFP || '').toString() === stateFP)
             };
 
             if (mainMap.getSource('counties')) {
