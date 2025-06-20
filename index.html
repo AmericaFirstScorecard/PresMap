@@ -368,70 +368,23 @@
             margin: 8px;
         }
         @media (max-width: 700px) {
-            #map {
-                height: 55vh;
-                min-height: 300px;
-            }
-            #state-sidebar {
-                width: 100%;
-                border-radius: 0;
-            }
-            .title {
-                font-size: 24px;
-            }
-            .candidate-image {
-                width: 60px;
-                height: 60px;
-            }
-            .candidate-stats {
-                font-size: 12px;
-                flex-direction: column;
-                align-items: center;
-                gap: 10px;
-            }
-            .candidate-stat-left, .candidate-stat-right {
-                width: 100%;
-            }
-            .needle-svg-wrap {
-                width: 99vw;
-            }
-            .needle-img-candidate {
-                width: 48px;
-                height: 48px;
-                top: 125px;
-            }
-            .needle-checkmark {
-                width: 28px;
-                height: 28px;
-                top: 148px;
-                left: 12px;
-            }
-            .needle-checkmark.gore {
-                right: 12px;
-            }
-            .arc-label {
-                font-size: 12px;
-            }
-            .arc-label-center {
-                font-size: 14px;
-            }
-            .needle-candidate-labels {
-                font-size: 1.6rem;
-                gap: 8px;
-            }
-            .nyt-prob-row {
-                font-size: 1.4rem;
-            }
-            .proj-big-num {
-                font-size: 1.8rem;
-            }
-            .proj-divider {
-                font-size: 1.2rem;
-            }
-            #county-mode-btn {
-                padding: 10px 20px;
-                font-size: 14px;
-            }
+            #map { height: 55vh; min-height: 300px; }
+            #state-sidebar { width: 100%; border-radius: 0; }
+            .title { font-size: 24px; }
+            .candidate-image { width: 60px; height: 60px; }
+            .candidate-stats { font-size: 12px; flex-direction: column; align-items: center; gap: 10px; }
+            .candidate-stat-left, .candidate-stat-right { width: 100%; }
+            .needle-svg-wrap { width: 99vw; }
+            .needle-img-candidate { width: 48px; height: 48px; top: 125px; }
+            .needle-checkmark { width: 28px; height: 28px; top: 148px; left: 12px; }
+            .needle-checkmark.gore { right: 12px; }
+            .arc-label { font-size: 12px; }
+            .arc-label-center { font-size: 14px; }
+            .needle-candidate-labels { font-size: 1.6rem; gap: 8px; }
+            .nyt-prob-row { font-size: 1.4rem; }
+            .proj-big-num { font-size: 1.8rem; }
+            .proj-divider { font-size: 1.2rem; }
+            #county-mode-btn { padding: 10px 20px; font-size: 14px; }
         }
     </style>
 </head>
@@ -572,8 +525,8 @@
                     continue;
                 }
 
-                let party = (row[partyKey] || "").trim().toUpperCase();
-                let candidate = (row[candidateKey] || "").trim().toLowerCase();
+                let party = (row[partyKey] || "").toString().trim().toUpperCase();
+                let candidate = (row[candidateKey] || "").toString().trim().toLowerCase();
                 let votes = parseInt((row[votesKey] || "0").replace(/[,]/g, ''), 10);
                 if (isNaN(votes) || votes < 0) {
                     console.warn(`Invalid votes: ${row[votesKey]} for FIPS ${fips}`);
@@ -586,12 +539,12 @@
                     totalVotes = 0;
                 }
 
-                let stateName = (row[stateKey] || '').trim().toLowerCase();
-                let countyName = (row[countyNameKey] || 'Unknown').trim();
+                let stateName = (row[stateKey] || '').toString().trim().toLowerCase();
+                let countyName = (row[countyNameKey] || 'Unknown').toString().trim();
 
-                const entryKey = `${fips}-${candidate}-${party}`;
+                const entryKey = `${fips}-${candidate.toLowerCase().replace(/\s+/g, '')}-${party.toLowerCase().replace(/\s+/g, '')}`;
                 if (seenEntries.has(entryKey)) {
-                    console.warn(`Duplicate entry for FIPS ${fips}, candidate ${candidate}, party ${party}, skipping`);
+                    console.warn(`Duplicate entry for FIPS ${fips}, candidate ${candidate}, party ${party}, votes ${votes}`);
                     continue;
                 }
                 seenEntries.add(entryKey);
@@ -608,16 +561,16 @@
                     };
                 }
 
+                if (fips === '01073') {
+                    console.log(`Jefferson County (pre-override): FIPS=${fips}, Candidate=${candidate}, Party=${party}, Votes=${votes}, Total=${totalVotes}`);
+                }
+
                 if (candidate.includes('bush') || party === "REPUBLICAN") {
                     newCountyStats[fips].bush_votes = votes;
                 } else if (candidate.includes('gore') || party === "DEMOCRAT") {
                     newCountyStats[fips].gore_votes = votes;
                 } else {
-                    newCountyStats[fips].other_votes = votes;
-                }
-
-                if (fips === '01073') {
-                    console.log(`Jefferson County (pre-override): Bush=${newCountyStats[fips].bush_votes}, Gore=${newCountyStats[fips].gore_votes}, Total=${newCountyStats[fips].totalvotes}`);
+                    newCountyStats[fips].other_votes += votes;
                 }
             }
 
@@ -645,7 +598,7 @@
                 else stats.winner = "Tied";
             }
 
-            console.log(`County stats: ${Object.keys(newCountyStats).length} counties, total votes: ${nationalTotal.toLocaleString()}`);
+            console.log(`County stats processed: ${Object.keys(newCountyStats).length} counties, total votes: ${nationalTotal.toLocaleString()}`);
             countyElectionStats = newCountyStats;
         }
 
@@ -653,22 +606,22 @@
             console.log('State CSV rows:', rows.length);
             const newStateStats = {};
             for (const row of rows) {
-                const stateKey = getColumnKey(row, 'State');
-                let stateName = (row[stateKey] || '').trim().toLowerCase();
+                const stateKey = getColumnKey(row, 'state');
+                let stateName = (row[stateKey] || '').toString().trim().toLowerCase();
                 if (!stateName) continue;
 
-                const statusKey = getColumnKey(row, 'Election status (called, uncalled)');
-                const winnerKey = getColumnKey(row, 'Winner');
-                const evKey = getColumnKey(row, 'Electoral Votes');
-                const reportingKey = getColumnKey(row, 'Reporting %');
-                const repCandidateKey = getColumnKey(row, 'Republican Candidate');
-                const demCandidateKey = getColumnKey(row, 'Democrat Candidate');
-                const otherCandidateKey = getColumnKey(row, 'Other Candidate');
+                const statusKey = getColumnKey(row, 'election status (called, uncalled)');
+                const winnerKey = getColumnKey(row, 'winner');
+                const evKey = getColumnKey(row, 'electoral votes');
+                const reportingKey = getColumnKey(row, 'reporting %');
+                const repCandidateKey = getColumnKey(row, 'republican candidate');
+                const demCandidateKey = getColumnKey(row, 'democrat candidate');
+                const otherCandidateKey = getColumnKey(row, 'other candidate');
 
-                let status = (row[statusKey] || 'Uncalled').trim();
+                let status = (row[statusKey] || 'Uncalled').toString().trim();
                 const statusLower = status.toLowerCase();
                 if (statusLower.includes('called')) {
-                    const winner = (row[winnerKey] || '').trim().toLowerCase();
+                    const winner = (row[winnerKey] || '').toString().trim().toLowerCase();
                     if (winner.includes('bush')) status = 'Bush Win';
                     else if (winner.includes('gore')) status = 'Gore Win';
                     else status = 'Uncalled';
@@ -680,7 +633,7 @@
                 newStateStats[stateName] = {
                     state: row[stateKey],
                     electoral_votes: parseInt(row[evKey] || "0", 10),
-                    winner: (row[winnerKey] || '').trim(),
+                    winner: (row[winnerKey] || '').toString().trim(),
                     status: status,
                     reporting: reporting,
                     republican_candidate: row[repCandidateKey] || 'George W. Bush',
@@ -694,15 +647,18 @@
         function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
             statesGeoJSON?.features?.forEach(f => {
                 const prop = f.properties || {};
-                const nameKey = Object.keys(prop).find(k => k.toLowerCase().includes('name')) || 'name';
+                const nameKey = Object.keys(prop).find(k => k.toLowerCase().includes('name')) || 'NAME';
                 const fipsKey = Object.keys(prop).find(k => k.toLowerCase().includes('statefp') || k.toLowerCase().includes('fips')) || 'STATEFP';
-                const name = (prop[nameKey] || '').trim().toLowerCase();
-                const fips = (prop[fipsKey] || '').toString().padStart(2, '0');
-                if (name && stateNameToFips[name]) {
-                    stateFipsMap[name] = fips && /^\d{2}$/.test(fips) ? fips : stateNameToFips[name];
+                const name = (prop[nameKey] || '').toString().trim().toLowerCase();
+                const fips = (prop[fipsKey] || '').toString().trim().padStart(2, '0');
+                if (name && stateNameToFips[name] && /^\d{2}$/.test(fips)) {
+                    stateFipsMap[name] = fips;
+                } else {
+                    stateFipsMap[name] = stateNameToFips[name] || '00';
+                    console.warn(`FIPS mapping issue for ${name}: GeoJSON FIPS=${fips}, using fallback=${stateFipsMap[name]}`);
                 }
             });
-            console.log('State FIPS map:', stateFipsMap);
+            console.log('Updated State FIPS map:', stateFipsMap);
         }
 
         function updateGeoJSONAndMap() {
@@ -740,8 +696,8 @@
             }
 
             statesGeoJSON.features.forEach(f => {
-                const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
-                const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
+                const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'NAME';
+                const geoName = (f.properties[nameKey] || '').toString().trim().toLowerCase();
                 const stateData = stateStats[geoName] || {};
                 const voteTotals = stateVoteTotals[geoName] || { bush_votes: 0, gore_votes: 0, other_votes: 0, total_votes: 0 };
 
@@ -838,10 +794,11 @@
             document.getElementById('bush-ev').textContent = ev_bush;
             document.getElementById('gore-ev').textContent = ev_gore;
             const totalEV = 538;
-            const bushEVPerc = totalEV > 0 ? (ev_bush / totalEV * 100).toFixed(1) : 0;
-            const goreEVPerc = totalEV > 0 ? (ev_gore / totalEV * 100).toFixed(1) : 0;
+            const bushEVPerc = totalEV > 0 ? Math.max(0, Math.min(100, (ev_bush / totalEV * 100).toFixed(1))) : 0;
+            const goreEVPerc = totalEV > 0 ? Math.max(0, Math.min(100, (ev_gore / totalEV * 100).toFixed(1))) : 0;
             document.getElementById('bush-bar').style.width = `${bushEVPerc}%`;
             document.getElementById('gore-bar').style.width = `${goreEVPerc}%`;
+            document.getElementById('gore-bar').style.background = '#3498db';
             document.getElementById('bush-label').textContent = `${bushEVPerc}%`;
             document.getElementById('gore-label').textContent = `${goreEVPerc}%`;
             console.log(`EV Perc: Bush=${bushEVPerc}%, Gore=${goreEVPerc}%`);
@@ -960,13 +917,15 @@
                     });
 
                     enableStateHover();
+
                     mainMap.on('click', 'states-fill', e => {
                         if (isCountyMode) return;
-                        const nameKey = Object.keys(e.features[0].properties).find(k => k.toLowerCase().includes('name')) || 'name';
-                        currentState = e.features[0].properties[nameKey].toLowerCase();
+                        const props = e.features[0].properties;
+                        const nameKey = Object.keys(props).find(k => k.toLowerCase().includes('name')) || 'NAME';
+                        currentState = props[nameKey].toLowerCase();
                         console.log('Clicked state:', currentState);
                         addCountiesLayer(currentState);
-                        toggleStateSidebar(currentState);
+                        updateSidebar(props);
                     });
                 });
             } catch (err) {
@@ -977,25 +936,25 @@
 
         function addCountiesLayer(stateName) {
             const stateFips = stateFipsMap[stateName.toLowerCase()];
-            if (!stateFips) {
-                console.warn(`No FIPS for ${stateName}`);
+            if (!stateFips || stateFips === '00') {
+                console.warn(`Invalid FIPS for ${stateName}: ${stateFips}`);
                 return;
             }
 
-            const filteredCounties = {
+            const filtered = {
                 type: 'FeatureCollection',
                 features: countiesGeoJSON.features.filter(f => {
                     const fips = f.properties.GEOID || f.properties.county_fips || '';
                     return fips.startsWith(stateFips);
                 })
             };
-            console.log(`Filtered ${filteredCounties.features.length} counties for ${stateName}`);
+            console.log(`Filtered ${filtered.features.length} counties for ${stateName}`);
 
             if (mainMap.getLayer('counties-fill')) mainMap.removeLayer('counties-fill');
             if (mainMap.getLayer('counties-line')) mainMap.removeLayer('counties-line');
             if (mainMap.getSource('counties')) mainMap.removeSource('counties');
 
-            mainMap.addSource('counties', { type: 'geojson', data: filteredCounties });
+            mainMap.addSource('counties', { type: 'geojson', data: filtered });
             mainMap.addLayer({
                 id: 'counties-fill',
                 type: 'fill',
@@ -1020,115 +979,192 @@
                 }
             });
 
+            stateHoverHandlers.mousemove && mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
+            stateHoverHandlers.mouseleave && mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
             enableCountyHover();
-            mainMap.fitBounds(turf.bbox(filteredCounties), { padding: 20 });
+
+            const bounds = getStateBounds(stateName);
+            if (bounds) {
+                mainMap.fitBounds(bounds, { padding: 40, duration: 1000 });
+            }
+        }
+
+        function getStateBounds(stateName) {
+            const stateFP = stateFipsMap[stateName.toLowerCase()];
+            if (!stateFP) return null;
+
+            const stateFeature = statesGeoJSON.features.find(f => {
+                const nameKey = Object.keys(f.properties).find(k => k.toLowerCase().includes('name')) || 'NAME';
+                return f.properties[nameKey].toLowerCase() === stateName.toLowerCase();
+            });
+
+            if (!stateFeature?.geometry) return null;
+
+            let coords = [];
+            if (stateFeature.geometry.type === 'Polygon') {
+                coords = stateFeature.geometry.coordinates[0];
+            } else if (stateFeature.geometry.type === 'MultiPolygon') {
+                coords = stateFeature.geometry.coordinates.flat(2);
+            }
+
+            if (!coords.length) return null;
+
+            let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+            coords.forEach(c => {
+                if (Array.isArray(c) && c.length >= 2 && isFinite(c[0]) && isFinite(c[1])) {
+                    minLng = Math.min(minLng, c[0]);
+                    maxLng = Math.max(maxLng, c[0]);
+                    minLat = Math.min(minLat, c[1]);
+                    maxLat = Math.max(maxLat, c[1]);
+                }
+            });
+
+            if (!isFinite(minLng)) return null;
+            return [[minLng, minLat], [maxLng, maxLat]];
         }
 
         function enableStateHover() {
-            if (!mainMap) return;
-            statePopup = new mapboxgl.Popup({
-                closeButton: false,
-                closeOnClick: false
-            });
+            if (!mainMap || !mainMap.getLayer('states-fill')) return;
+            if (stateHoverHandlers.mousemove) return;
 
-            if (stateHoverHandlers.mousemove) mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
-            if (stateHoverHandlers.mouseleave) mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
-
-            stateHoverHandlers.mousemove = (e) => {
-                const props = e.features[0].properties;
-                const total = (props.votes_gop || 0) + (props.votes_dem || 0) + (props.votes_other || 0);
-                const bushPerc = total ? ((props.votes_gop || 0) / total * 100).toFixed(1) : 0;
-                const gorePerc = total ? ((props.votes_dem || 0) / total * 100).toFixed(1) : 0;
-                console.log(`Hover state: ${props.state}`);
-                const html = `
-                    <h3>${props.state || 'Unknown'}</h3>
-                    <p>Bush: ${(props.votes_gop || 0).toLocaleString()} (${bushPerc}%)</p>
-                    <p>Gore: ${(props.votes_dem || 0).toLocaleString()} (${gorePerc}%)</p>
-                    <p>Electoral Votes: ${props.electoral_votes || 0}</p>
-                    <p>Status: ${props.status || 'Uncalled'}</p>
-                `;
-                statePopup.setLngLat(e.lngLat).setHTML(html).addTo(mainMap);
+            stateHoverHandlers.mousemove = e => {
+                if (!e.features?.[0]) return;
+                if (statePopup) statePopup.remove();
+                const p = e.features[0].properties;
+                const nameKey = Object.keys(p).find(k => k.toLowerCase().includes('name')) || 'NAME';
+                const total = (p.votes_gop || 0) + (p.votes_dem || 0) + (p.votes_other || 0);
+                const gopPerc = total > 0 ? ((p.votes_gop || 0) / total * 100).toFixed(1) : 0;
+                const demPerc = total > 0 ? ((p.votes_dem || 0) / total * 100).toFixed(1) : 0;
+                console.log(`State hover: ${p[nameKey] || 'Unknown'}`);
+                statePopup = new mapboxgl.Popup({ closeButton: false })
+                    .setLngLat(e.lngLat)
+                    .setHTML(`
+                        <strong>${p[nameKey] || 'Unknown'}</strong><br>
+                        Bush: ${(p.votes_gop || 0).toLocaleString()} (${gopPerc}%)<br>
+                        Gore: ${(p.votes_dem || 0).toLocaleString()} (${demPerc}%)<br>
+                        EV: ${p.electoral_votes || 0}<br>
+                        Status: ${p.status || 'Uncalled'}
+                    `)
+                    .addTo(mainMap);
             };
 
-            stateHoverHandlers.mouseleave = () => statePopup.remove();
+            stateHoverHandlers.mouseleave = () => {
+                if (statePopup) statePopup.remove();
+            };
+
             mainMap.on('mousemove', 'states-fill', stateHoverHandlers.mousemove);
             mainMap.on('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
         }
 
+        function disableStateHover() {
+            if (stateHoverHandlers.mousemove) {
+                mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
+                stateHoverHandlers.mousemove = null;
+            }
+            if (stateHoverHandlers.mouseleave) {
+                mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
+                stateHoverHandlers.mouseleave = null;
+            }
+            if (statePopup) statePopup.remove();
+        }
+
         function enableCountyHover() {
-            if (!mainMap) return;
-            countyPopup = new mapboxgl.Popup({
-                closeButton: false,
-                closeOnClick: false
-            });
+            if (!mainMap || !mainMap.getLayer('counties-fill')) return;
+            if (countyHoverHandlers.mousemove) return;
 
-            if (countyHoverHandlers.mousemove) mainMap.off('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
-            if (countyHoverHandlers.mouseleave) mainMap.off('mouseleave', 'counties-fill', countyHoverHandlers.mouseleave);
-
-            countyHoverHandlers.mousemove = (e) => {
-                const props = e.features[0].properties;
-                const total = (props.bush_votes || 0) + (props.gore_votes || 0) + (props.other_votes || 0);
-                const bushPerc = total ? ((props.bush_votes || 0) / total * 100).toFixed(1) : 0;
-                const gorePerc = total ? ((props.gore_votes || 0) / total * 100).toFixed(1) : 0;
-                console.log(`Hover county: ${props.county_name}`);
-                const html = `
-                    <h3>${props.county_name || 'Unknown'}</h3>
-                    <p>Bush: ${(props.bush_votes || 0).toLocaleString()} (${bushPerc}%)</p>
-                    <p>Gore: ${(props.gore_votes || 0).toLocaleString()} (${gorePerc}%)</p>
-                `;
-                countyPopup.setLngLat(e.lngLat).setHTML(html).addTo(mainMap);
+            countyHoverHandlers.mousemove = e => {
+                if (!e.features?.[0]) return;
+                if (countyPopup) countyPopup.remove();
+                const p = e.features[0].properties;
+                const fips = p.GEOID || p.county_fips;
+                const stats = countyElectionStats[fips] || {
+                    bush_votes: 0,
+                    gore_votes: 0,
+                    totalvotes: 0,
+                    winner: 'Tied',
+                    county_name: p.NAME || 'Unknown'
+                };
+                const total = stats.totalvotes;
+                const bushPerc = total > 0 ? (stats.bush_votes / total * 100).toFixed(1) : 0;
+                const gorePerc = total > 0 ? (stats.gore_votes / total * 100).toFixed(1) : 0;
+                console.log(`County hover: ${stats.county_name}`);
+                countyPopup = new mapboxgl.Popup({ closeButton: false })
+                    .setLngLat(e.lngLat)
+                    .setHTML(`
+                        <strong>${stats.county_name}</strong><br>
+                        Bush: ${stats.bush_votes.toLocaleString()} (${bushPerc}%)<br>
+                        Gore: ${stats.gore_votes.toLocaleString()} (${gorePerc}%)<br>
+                        Winner: ${stats.winner}
+                    `)
+                    .addTo(mainMap);
             };
 
-            countyHoverHandlers.mouseleave = () => countyPopup.remove();
+            countyHoverHandlers.mouseleave = () => {
+                if (countyPopup) countyPopup.remove();
+            };
+
             mainMap.on('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
             mainMap.on('mouseleave', 'counties-fill', countyHoverHandlers.mouseleave);
         }
 
-        function toggleStateSidebar(stateName) {
-            const sidebar = document.getElementById('state-sidebar');
-            const props = statesGeoJSON.features.find(f => f.properties.state.toLowerCase() === stateName.toLowerCase())?.properties;
-            if (!props) {
-                console.warn(`No properties for state: ${stateName}`);
-                return;
+        function disableCountyHover() {
+            if (countyHoverHandlers.mousemove) {
+                mainMap.off('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
+                countyHoverHandlers.mousemove = null;
             }
-
-            document.getElementById('state-sidebar-title').textContent = props.state;
-            document.getElementById('state-electoral-votes').textContent = `${props.electoral_votes} Electoral Votes`;
-            document.getElementById('candidate-stats').innerHTML = `
-                <div class="candidate-row">
-                    <img src="images/George-W-Bush.jpg" class="candidate-image-small">
-                    <div class="bar-graph"><div class="bar-fill bush" style="width: ${props.total_votes ? (props.votes_gop / props.total_votes * 100) : 0}%"></div></div>
-                    <div class="candidate-details">Bush: ${(props.votes_gop || 0).toLocaleString()} (${((props.votes_gop / props.total_votes) * 100 || 0).toFixed(1)}%)</div>
-                </div>
-                <div class="candidate-row">
-                    <img src="images/Al_Gore.jpg" class="candidate-image-small">
-                    <div class="bar-graph"><div class="bar-fill gore" style="width: ${props.total_votes ? (props.votes_dem / props.total_votes * 100) : 0}%"></div></div>
-                    <div class="candidate-details">Gore: ${(props.votes_dem || 0).toLocaleString()} (${((props.votes_dem / props.total_votes) * 100 || 0).toFixed(1)}%)</div>
-                </div>
-            `;
-            document.getElementById('reporting-fill').style.width = `${props.reporting}%`;
-            document.getElementById('reporting-status').textContent = `Reporting: ${props.reporting}%`;
-            sidebar.classList.add('active');
+            if (countyHoverHandlers.mouseleave) {
+                mainMap.off('mouseleave', 'counties-fill', countyHoverHandlers.mouseleave);
+                countyHoverHandlers.mouseleave = null;
+            }
+            if (countyPopup) countyPopup.remove();
         }
 
-        document.getElementById('close-sidebar-btn').addEventListener('click', () => {
-            document.getElementById('state-sidebar').classList.remove('active');
-        });
+        function updateSidebar(props) {
+            const total = (props.votes_gop || 0) + (props.votes_dem || 0) + (props.votes_other || 0);
+            const bushPerc = total > 0 ? ((props.votes_gop || 0) / total * 100).toFixed(1) : 0;
+            const gorePerc = total > 0 ? ((props.votes_dem || 0) / total * 100).toFixed(1) : 0;
+            const otherPerc = total > 0 ? ((props.votes_other || 0) / total * 100).toFixed(1) : 0;
 
-        document.getElementById('county-mode-btn').addEventListener('click', () => {
-            toggleCountyMode(!isCountyMode);
-        });
+            document.getElementById('state-sidebar-title').textContent = props.state || 'Unknown';
+            document.getElementById('state-electoral-votes').textContent = `${props.electoral_votes || 0} electoral votes`;
+            document.getElementById('candidate-stats').innerHTML = `
+                <div class="candidate-row">
+                    <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image-small">
+                    <div class="bar-graph"><div class="bar-fill bush" style="width: ${bushPerc}%"></div></div>
+                    <div class="candidate-details">${props.republican_candidate || 'Bush'}: ${(props.votes_gop || 0).toLocaleString()} (${bushPerc}%)</div>
+                </div>
+                <div class="candidate-row">
+                    <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image-small">
+                    <div class="bar-graph"><div class="bar-fill gore" style="width: ${gorePerc}%"></div></div>
+                    <div class="candidate-details">${props.democrat_candidate || 'Gore'}: ${(props.votes_dem || 0).toLocaleString()} (${gorePerc}%)</div>
+                </div>
+                <div class="candidate-row">
+                    <img src="https://via.placeholder.com/40" alt="Other" class="candidate-image-small">
+                    <div class="bar-graph"><div class="bar-fill other" style="width: ${otherPerc}%"></div></div>
+                    <div class="candidate-details">${props.other_candidate || 'Other'}: ${(props.votes_other || 0).toLocaleString()} (${otherPerc}%)</div>
+                </div>
+            `;
+            document.getElementById('reporting-fill').style.width = `${props.reporting || 0}%`;
+            document.getElementById('reporting-status').textContent = `Status: ${props.status || 'Uncalled'} (${(props.reporting || 0).toFixed(1)}% reporting)`;
+            document.getElementById('last-updated').textContent = `Last Updated: ${new Date().toLocaleString()}`;
+            document.getElementById('state-sidebar').classList.add('active');
+        }
 
         function toggleCountyMode(enable) {
+            if (enable === isCountyMode) return;
             isCountyMode = enable;
-            console.log(`Toggle county mode: ${enable}`);
+            console.log(`County mode: ${enable}`);
+
             if (enable) {
+                document.getElementById('county-mode-btn').textContent = 'State Mode';
                 document.getElementById('header').style.visibility = 'hidden';
                 document.getElementById('projection-ticker-wrap').style.visibility = 'hidden';
-                document.getElementById('county-mode-btn').textContent = 'State Mode';
+                document.getElementById('state-sidebar').classList.remove('active');
+
                 if (mainMap.getLayer('counties-fill')) mainMap.removeLayer('counties-fill');
                 if (mainMap.getLayer('counties-line')) mainMap.removeLayer('counties-line');
                 if (mainMap.getSource('counties')) mainMap.removeSource('counties');
+
                 mainMap.addSource('counties', { type: 'geojson', data: countiesGeoJSON });
                 mainMap.addLayer({
                     id: 'counties-fill',
@@ -1153,70 +1189,105 @@
                         'line-width': 0.5
                     }
                 });
+
+                disableStateHover();
                 enableCountyHover();
-                mainMap.fitBounds(turf.bbox(countiesGeoJSON), { padding: 20 });
+                mainMap.flyTo({ center: [-98.5795, 39.8283], zoom: 3, duration: 1000 });
             } else {
+                document.getElementById('county-mode-btn').textContent = 'County Mode';
                 document.getElementById('header').style.visibility = 'visible';
                 document.getElementById('projection-ticker-wrap').style.visibility = 'visible';
-                document.getElementById('county-mode-btn').textContent = 'County Mode';
+                document.getElementById('state-sidebar').classList.remove('active');
+
                 if (mainMap.getLayer('counties-fill')) mainMap.removeLayer('counties-fill');
                 if (mainMap.getLayer('counties-line')) mainMap.removeLayer('counties-line');
                 if (mainMap.getSource('counties')) mainMap.removeSource('counties');
+
+                disableCountyHover();
                 enableStateHover();
-                mainMap.fitBounds(turf.bbox(statesGeoJSON), { padding: 20 });
+                mainMap.flyTo({ center: [-98.5795, 39.8283], zoom: 3, duration: 1000 });
+                currentState = null;
             }
         }
 
+        document.getElementById('county-mode-btn').addEventListener('click', () => {
+            toggleCountyMode(!isCountyMode);
+        });
+
+        document.getElementById('close-sidebar-btn').addEventListener('click', () => {
+            document.getElementById('state-sidebar').classList.remove('active');
+        });
+
         const arcSegs = [
-            { label: 'Very Likely Bush', id: 'arc-0', start: -90, end: -60 },
-            { label: 'Likely Bush', id: 'arc-1', start: -60, end: -30 },
-            { label: 'Lean Bush', id: 'arc-2', start: -30, end: -10 },
-            { label: 'Tossup', id: 'arc-3', start: -10, end: 10 },
-            { label: 'Lean Gore', id: 'arc-4', start: 10, end: 30 },
-            { label: 'Likely Gore', id: 'arc-5', start: 30, end: 60 },
-            { label: 'Very Likely Gore', id: 'arc-6', start: 60, end: 90 }
+            { label: "Very Likely Bush", id: "arc-0", start: -90, end: -60 },
+            { label: "Likely Bush", id: "arc-1", start: -60, end: -30 },
+            { label: "Lean Bush", id: "arc-2", start: -30, end: -10 },
+            { label: "Tossup", id: "arc-3", start: -10, end: 10 },
+            { label: "Lean Gore", id: "arc-4", start: 10, end: 30 },
+            { label: "Likely Gore", id: "arc-5", start: 30, end: 60 },
+            { label: "Very Likely Gore", id: "arc-6", start: 60, end: 90 }
         ];
 
-        function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
-            const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
-            return {
-                x: centerX + (radius * Math.cos(angleInRadians)),
-                y: centerY + (radius * Math.sin(angleInRadians))
-            };
-        }
-
-        function describeArc(x, y, radius, startAngle, endAngle) {
-            const start = polarToCartesian(x, y, radius, endAngle);
-            const end = polarToCartesian(x, y, radius, startAngle);
-            const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-            return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+        function arcPath(cx, cy, r, startAngle, endAngle) {
+            const start = { x: cx + r * Math.cos((startAngle - 90) * Math.PI / 180), y: cy + r * Math.sin((startAngle - 90) * Math.PI / 180) };
+            const end = { x: cx + r * Math.cos((endAngle - 90) * Math.PI / 180), y: cy + r * Math.sin((endAngle - 90) * Math.PI / 180) };
+            const arcSweep = endAngle - startAngle <= 180 ? "0" : "1";
+            return `M ${start.x} ${start.y} A ${r} ${r} 0 ${arcSweep} 1 ${end.x} ${end.y}`;
         }
 
         arcSegs.forEach(seg => {
-            const path = describeArc(250, 154, 100, seg.start, seg.end);
-            document.getElementById(seg.id).setAttribute('d', path);
+            document.getElementById(seg.id).setAttribute('d', arcPath(250, 154, 110, seg.start, seg.end));
             const midAngle = (seg.start + seg.end) / 2;
-            const textPos = polarToCartesian(250, 154, 120, midAngle);
+            const pos = { x: 250 + 130 * Math.cos((midAngle - 90) * Math.PI / 180), y: 154 + 130 * Math.sin((midAngle - 90) * Math.PI / 180) };
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', textPos.x);
-            text.setAttribute('y', textPos.y);
-            text.setAttribute('class', seg.id === 'arc-3' ? 'arc-label-center' : 'arc-label');
+            text.setAttribute('x', pos.x);
+            text.setAttribute('y', pos.y);
+            text.setAttribute('class', seg.id === 'arc-3' ? 'arc-label arc-label-center' : 'arc-label');
             text.textContent = seg.label;
             document.getElementById('arc-labels-group').appendChild(text);
         });
 
         Promise.all([
-            fetch('data/county-geo.json').then(r => r.json()).then(data => { countiesGeoJSON = data; }),
+            fetch('data/county-geo.json').then(r => r.json()).then(data => {
+                countiesGeoJSON = data;
+                countiesGeoJSON.features.forEach(f => {
+                    f.properties = {
+                        ...f.properties,
+                        bush_votes: 0,
+                        gore_votes: 0,
+                        other_votes: 0,
+                        total_votes: 0,
+                        winner: 'Tied',
+                        county_name: f.properties.NAME || 'Unknown'
+                    };
+                });
+            }).catch(e => console.error('County GeoJSON load failed:', e)),
             fetch('data/us-states.geo.json').then(r => r.json()).then(data => {
                 statesGeoJSON = data;
+                statesGeoJSON.features.forEach(f => {
+                    f.properties = {
+                        ...f.properties,
+                        votes_gop: 0,
+                        votes_dem: 0,
+                        votes_other: 0,
+                        total_votes: 0,
+                        winner: 'Tied',
+                        status: 'Uncalled',
+                        electoral_votes: 0,
+                        reporting: 0,
+                        republican_candidate: 'George W. Bush',
+                        democrat_candidate: 'Al Gore',
+                        other_candidate: 'Other'
+                    };
+                });
                 populateStateFipsMapFromGeoJSON(statesGeoJSON);
-            })
+            }).catch(e => console.error('States GeoJSON load failed:', e))
         ]).then(() => {
+            console.log('GeoJSON loaded');
             refreshElectionData();
             initializeMainMap();
-            setInterval(refreshElectionData, 60000);
         }).catch(err => {
-            console.error('Initial data load failed:', err);
+            console.error('Initial load failed:', err);
             document.getElementById('map').innerHTML = '<div style="color:red;padding:10px">Failed to load map data</div>';
         });
     </script>
