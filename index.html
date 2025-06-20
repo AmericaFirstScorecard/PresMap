@@ -212,7 +212,7 @@
             background: #4CAF50;
             transition: width 0.6s ease;
         }
-        #box-out-btn, #county-mode-btn, #back-to-national-btn {
+        #county-mode-btn, #back-to-national-btn {
             position: absolute;
             top: 20px;
             right: 32px;
@@ -234,7 +234,7 @@
             right: 120px;
             display: block;
         }
-        #box-out-btn:hover, #county-mode-btn:hover, #back-to-national-btn:hover {
+        #county-mode-btn:hover, #back-to-national-btn:hover {
             background: #3498db;
             transform: scale(1.05);
         }
@@ -429,7 +429,7 @@
             .proj-divider {
                 font-size: 1.2rem;
             }
-            #box-out-btn, #county-mode-btn, #back-to-national-btn {
+            #county-mode-btn, #back-to-national-btn {
                 padding: 10px 20px;
                 font-size: 14px;
                 font-weight: 700;
@@ -468,7 +468,6 @@
             </div>
         </div>
     </div>
-    <button id="box-out-btn">Zoom Out</button>
     <button id="county-mode-btn">County Mode</button>
     <button id="back-to-national-btn">Back to National Map</button>
     <div id="map"></div>
@@ -568,7 +567,6 @@
                 const fipsKey = getColumnKey(row, 'county_fips');
                 const partyKey = getColumnKey(row, 'party');
                 const votesKey = getColumnKey(row, 'candidatevotes');
-                const totalVotesKey = getColumnKey(row, 'totalvotes');
                 const candidateKey = getColumnKey(row, 'candidate');
                 const countyNameKey = getColumnKey(row, 'county_name');
 
@@ -587,13 +585,6 @@
                     votes = 0;
                 }
 
-                let totalVotesRaw = row[totalVotesKey] || "";
-                let totalVotes = parseInt(totalVotesRaw.replace(/[,]/g, ''), 10);
-                if (isNaN(totalVotes) || totalVotes < 0) {
-                    console.warn(`Invalid total votes: ${totalVotesRaw} for FIPS ${fips}, setting to 0`);
-                    totalVotes = 0;
-                }
-
                 let stateName = (row[stateKey] || '').trim().toLowerCase();
                 let countyName = (row[countyNameKey] || 'Unknown').trim();
 
@@ -603,7 +594,6 @@
                         bush_votes: 0,
                         gore_votes: 0,
                         other_votes: 0,
-                        totalvotes: totalVotes,
                         winner: "Tied",
                         county_name: countyName
                     };
@@ -624,9 +614,7 @@
 
             for (const fips in newCountyStats) {
                 const stats = newCountyStats[fips];
-                if (!stats.totalvotes) {
-                    stats.totalvotes = stats.bush_votes + stats.gore_votes + stats.other_votes;
-                }
+                stats.totalvotes = stats.bush_votes + stats.gore_votes + stats.other_votes;
                 nationalTotal += stats.totalvotes;
                 if (stats.bush_votes > stats.gore_votes) stats.winner = "Bush";
                 else if (stats.gore_votes > stats.bush_votes) stats.winner = "Gore";
@@ -1043,7 +1031,7 @@
             document.getElementById('arc-vl-bush').setAttribute('d', arcPath(svgCx, svgCy, arcR, -90, -60));
             document.getElementById('arc-l-bush').setAttribute('d', arcPath(svgCx, svgCy, arcR, -60, -30));
             document.getElementById('arc-le-bush').setAttribute('d', arcPath(svgCx, svgCy, arcR, -30, -10));
-            document.getElementById('arc-tossup').setAttribute('d', arcPath(svgCx, svgCy, arcR, -10, 10));
+            document.getElementById('arc-toss').setAttribute('d', arcPath(svgCx, svgCy, arcR, -10, 10));
             document.getElementById('arc-le-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 10, 30));
             document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 30, 60));
             document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 60, 90));
@@ -1122,18 +1110,12 @@
                 mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
                 console.log('Removed state mousemove handler');
             }
-            if (stateHoverHandlers.mouseleave) {
-                mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
-                console.log('Removed state mouseleave handler');
+            if (state === 'Uncalled') {
+                console.log('Removed state mouseleave');
+            } else {
+                stateHoverHandlers.off('mouseleave');
             }
             stateHoverHandlers.mousemove = null;
-            stateHoverHandlers.mouseleave = null;
-            if (statePopup) {
-                console.log('Removing state popup on disable');
-                statePopup.remove();
-                statePopup = null;
-            }
-            console.log('State hover disabled');
         }
 
         function enableCountyHover() {
@@ -1171,7 +1153,8 @@
                 })
                 .setLngLat(e.lngLat)
                 .setHTML(`
-                    <div style="background: #fff; color: #333; padding: 10px; border-radius: 5px; font-size: 12px;">
+                    <div style="background: #fff; color: white; color: #333; padding: 10px; border-radius: 5px; font-size: 12px;">
+                    <div style="background-color: #fff; color: 10px; padding: 10px; border-radius: 5px;">
                         <strong>${stats.county_name} County</strong><br/>
                         Bush: ${stats.bush_votes.toLocaleString()} (${bushPerc}%)<br/>
                         Gore: ${stats.gore_votes.toLocaleString()} (${gorePerc}%)<br/>
@@ -1180,6 +1163,7 @@
                 `)
                 .addTo(mainMap);
             };
+        };
 
             countyHoverHandlers.mouseleave = () => {
                 if (countyPopup) {
@@ -1222,9 +1206,9 @@
                     zoom: 3
                 });
             } catch (err) {
-                console.error('Failed to initialize Mapbox: ', err);
+                console.error('Failed to initialize Mapbox:', err);
                 const mapDiv = document.getElementById('map');
-                mapDiv.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">Failed to load map: Invalid Mapbox token. Please set a valid token in mapboxgl.accessToken.</div>`;
+                mapDiv.innerHTML = `<div style="color: red; padding: red; padding: 20px; text-align: center;">Failed to load map: Invalid Mapbox access token. Please set valid token in mapboxgl.accessToken.</div>`;
                 return;
             }
 
@@ -1273,8 +1257,8 @@
                     if (!stateName) return;
                     currentState = stateName;
                     document.getElementById('header').style.display = 'none';
-                    document.getElementById('box-out-btn').style.display = 'block';
                     document.getElementById('county-mode-btn').style.display = 'none';
+                    document.getElementById('back-to-national-btn').style.display = 'block';
                     document.getElementById('projection-ticker-wrap').style.display = 'none';
                     disableStateHover();
                     addCountiesLayer(stateName);
@@ -1284,7 +1268,7 @@
                 });
             });
 
-            mainMap.on('error', (err) => {
+            mainMap.on('error', err => {
                 console.error('Mapbox error:', err);
                 const mapDiv = document.getElementById('map');
                 mapDiv.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">Map failed to load: ${err.error.message}. Please check Mapbox token.</div>`;
@@ -1444,7 +1428,7 @@
                 }
                 const [lng, lat] = coord;
                 if (isFinite(lng) && isFinite(lat)) {
-                    minLng = Math.min(minLng, lng);
+                    minLng = Math.min(minLat, lat);
                     maxLng = Math.max(maxLng, lng);
                     minLat = Math.min(minLat, lat);
                     maxLat = Math.max(maxLat, lat);
@@ -1459,7 +1443,7 @@
             return [[minLng, minLat], [maxLng, maxLat]];
         }
 
-        function toggleCountyMode(enable) {
+        function toggleCountyMode(enabled) {
             if (enable === isCountyMode) return;
             isCountyMode = enable;
             console.log(`Toggling county mode: ${enable}`);
@@ -1467,9 +1451,8 @@
             if (enable) {
                 document.getElementById('county-mode-btn').textContent = 'State Mode';
                 document.getElementById('header').style.display = 'none';
-                document.getElementById('box-out-btn').style.display = 'block';
                 document.getElementById('back-to-national-btn').style.display = 'block';
-                document.getElementById('projection-ticker-wrap').style.display = 'none';
+                document.getElementById('projections-ticker-wrap').style.display = 'none';
                 document.getElementById('state-sidebar').classList.remove('active');
 
                 if (mainMap.getSource('counties')) {
@@ -1499,7 +1482,7 @@
                             '#cccccc'
                         ],
                         'fill-opacity': 0.85
-                    }
+                    };
                 });
                 mainMap.addLayer({
                     id: 'counties-outline',
@@ -1508,7 +1491,7 @@
                     paint: {
                         'line-color': '#ffffff',
                         'line-width': 0.5
-                    }
+                    };
                 });
 
                 disableStateHover();
@@ -1523,7 +1506,6 @@
             } else {
                 document.getElementById('county-mode-btn').textContent = 'County Mode';
                 document.getElementById('header').style.display = 'flex';
-                document.getElementById('box-out-btn').style.display = 'none';
                 document.getElementById('back-to-national-btn').style.display = 'none';
                 document.getElementById('projection-ticker-wrap').style.display = 'flex';
                 document.getElementById('state-sidebar').classList.remove('active');
@@ -1560,10 +1542,6 @@
             return fips;
         }
 
-        document.getElementById('box-out-btn').addEventListener('click', () => {
-            toggleCountyMode(false);
-        });
-
         document.getElementById('county-mode-btn').addEventListener('click', () => {
             toggleCountyMode(!isCountyMode);
         });
@@ -1575,6 +1553,7 @@
         document.getElementById('close-sidebar-btn').addEventListener('click', () => {
             document.getElementById('state-sidebar').classList.remove('active');
             document.getElementById('close-sidebar-btn').style.display = 'none';
+            toggleCountyMode(false); // Reset map view to national
         });
     </script>
 </body>
