@@ -4,17 +4,12 @@
     <meta charset="utf-8">
     <title>2000 Live Election Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet">
-    <!-- PapaParse for CSV parsing -->
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    <!-- Favicon to suppress 404 error -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='none'/></svg>">
     <style>
-        /* Global Styles */
         html, body {
             height: 100%;
             margin: 0;
@@ -24,8 +19,6 @@
             color: #fff;
             letter-spacing: 0.2px;
         }
-
-        /* Header Styles */
         #header {
             background: linear-gradient(to bottom, #2a2f38, #222);
             padding: 20px;
@@ -50,19 +43,20 @@
             background: #3a404a;
             border-radius: 12px;
             overflow: hidden;
+            display: flex;
         }
         .progress-bar {
-            position: relative;
             height: 100%;
             transition: width 0.6s ease;
+            position: relative;
         }
         .progress-bar.bush {
             background: linear-gradient(to right, #e74c3c, #c0392b);
+            border-radius: 12px 0 0 12px;
         }
         .progress-bar.gore {
             background: linear-gradient(to right, #3498db, #2980b9);
-            position: absolute;
-            right: 0;
+            border-radius: 0 12px 12px 0;
         }
         .vote-label {
             position: absolute;
@@ -72,12 +66,17 @@
             font-size: 12px;
             font-weight: 700;
             text-shadow: 0 0 2px rgba(0,0,0,0.7);
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
         }
         .progress-bar.bush .vote-label {
-            right: 10px;
+            text-align: left;
+            padding-left: 10px;
         }
         .progress-bar.gore .vote-label {
-            left: 10px;
+            text-align: right;
+            padding-right: 10px;
         }
         .threshold-marker {
             position: absolute;
@@ -137,8 +136,6 @@
             text-shadow: 0 1px 4px rgba(0,0,0,0.2);
             margin-bottom: 12px;
         }
-
-        /* Map Styles */
         #map {
             width: 100vw;
             height: 65vh;
@@ -149,8 +146,6 @@
             border: 1px solid #333;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
-
-        /* Sidebar Styles */
         #state-sidebar {
             display: none;
             position: fixed;
@@ -256,8 +251,6 @@
             background: #4CAF50;
             transition: width 0.6s ease;
         }
-
-        /* Button Styles */
         #box-out-btn, #county-mode-btn {
             position: absolute;
             top: 20px;
@@ -284,8 +277,6 @@
             background: #3498db;
             transform: scale(1.05);
         }
-
-        /* Projection Ticker Styles */
         #projection-ticker-wrap {
             width: 100%;
             background: #191d22;
@@ -367,12 +358,16 @@
             stroke: #222;
             stroke-width: 2.2;
             filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+            transition: width 0.6s ease;
         }
         .needle-dot {
             fill: #191d22;
             stroke: #fff;
             stroke-width: 3.5;
             filter: drop-shadow(0 1px 8px rgba(0,0,0,0.5));
+        }
+        #needle-group {
+            transition: transform 0.6s ease;
         }
         .arc-very-likely-bush { stroke: #e74c3c; }
         .arc-likely-bush { stroke: #f7a49a; }
@@ -418,8 +413,6 @@
             color: #fff;
             margin: 8px;
         }
-
-        /* Responsive Design */
         @media (max-width: 700px) {
             #map {
                 height: 55vh;
@@ -492,7 +485,6 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
     <div id="header">
         <div class="title">2000 Live Election Map</div>
         <div class="progress-container">
@@ -502,7 +494,7 @@
             </div>
             <div class="progress-bar-container">
                 <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image">
-                <div style="width: 100%; position: relative;">
+                <div style="width:100%;">
                     <div class="threshold-label">270 to Win</div>
                     <div class="progress-bar-wrapper">
                         <div class="threshold-marker"></div>
@@ -523,11 +515,9 @@
             </div>
         </div>
     </div>
-    <!-- Map -->
     <button id="box-out-btn">Zoom Out</button>
     <button id="county-mode-btn">County Mode</button>
     <div id="map"></div>
-    <!-- Sidebar -->
     <div id="state-sidebar">
         <button id="close-sidebar-btn">Close</button>
         <h2 id="state-sidebar-title"></h2>
@@ -540,7 +530,6 @@
         <p id="reporting-status"></p>
         <p id="last-updated"></p>
     </div>
-    <!-- Projection Ticker -->
     <div id="projection-ticker-wrap">
         <div class="nyt-projection-title">Chance of Winning <span style="font-weight: 400;">(Projection)</span></div>
         <div class="needle-svg-wrap">
@@ -578,19 +567,10 @@
         </div>
     </div>
     <script>
-        // ========== USER CONFIG ==============
-        // Mapbox access token
         mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
-        // CSV URLs for state and county data
         const STATE_CSV_URL = 'https://docs.google.com/spreadsheets/d/10zbHap425MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
         const COUNTY_CSV_URL = 'https://docs.google.com/spreadsheets/d/1edopYcOoeeom30K3WsCmzVwvJ8rHcdYH7xB7B7QCQBI/export?format=csv';
-        // Note: If CSV URLs fail, replace with local paths, e.g.:
-        // const STATE_CSV_URL = 'data/state-data.csv';
-        // const COUNTY_CSV_URL = 'data/county-data.csv';
-        // Ensure Google Sheets are shared with "Anyone with the link" (Viewer access)
-        // ========== END USER CONFIG ===========
 
-        // Global State
         let countiesGeoJSON = null;
         let countyElectionStats = {};
         let statesGeoJSON = null;
@@ -602,8 +582,8 @@
         let countyHoverHandlers = { mousemove: null, mouseleave: null };
         let currentState = null;
         let isCountyMode = false;
+        let lastRefreshTime = 'Unknown';
 
-        // State FIPS Mapping
         const stateNameToFips = {
             "alabama": "01", "alaska": "02", "arizona": "04", "arkansas": "05", "california": "06",
             "colorado": "08", "connecticut": "09", "delaware": "10", "florida": "12", "georgia": "13",
@@ -619,14 +599,11 @@
         };
         const stateFipsMap = { ...stateNameToFips };
 
-        // Helper function for exact column key matching
         function getColumnKey(row, key) {
             const lowerKey = key.toLowerCase().trim();
             return Object.keys(row).find(k => k.toLowerCase().trim() === lowerKey) || key;
         }
 
-        // ----------- COUNTY CSV PARSER ---------------
-        // Populates county-level election statistics
         function populateCountyStatsFromCSV(rows) {
             console.log('County CSV rows received:', rows);
             const newCountyStats = {};
@@ -678,7 +655,6 @@
                     };
                 }
 
-                // Assign votes based on candidate or party
                 if (candidate.includes('bush') || party === "REPUBLICAN") {
                     newCountyStats[fips].bush_votes += votes;
                 } else if (candidate.includes('gore') || party === "DEMOCRAT") {
@@ -694,7 +670,6 @@
 
             for (const fips in newCountyStats) {
                 const stats = newCountyStats[fips];
-                // Use provided totalvotes from CSV if available, else calculate
                 if (!stats.totalvotes) {
                     stats.totalvotes = stats.bush_votes + stats.gore_votes + stats.other_votes;
                 }
@@ -711,8 +686,6 @@
             countyElectionStats = newCountyStats;
         }
 
-        // ----------- STATE CSV PARSER ---------------
-        // Populates state-level election statistics
         function populateStateStatsFromCSV(rows) {
             console.log('State CSV rows received:', rows);
             const newStateStats = {};
@@ -765,7 +738,6 @@
             stateStats = newStateStats;
         }
 
-        // Populate state FIPS map from GeoJSON
         function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
             if (statesGeoJSON?.features?.length > 0) {
                 statesGeoJSON.features.forEach(f => {
@@ -786,14 +758,12 @@
             console.log('State FIPS map:', stateFipsMap);
         }
 
-        // Update GeoJSON and Map with election data
         function updateGeoJSONAndMap() {
             if (!statesGeoJSON || !countiesGeoJSON) {
                 console.warn('GeoJSON data not loaded yet');
                 return;
             }
 
-            // Initialize county GeoJSON properties
             countiesGeoJSON.features.forEach(f => {
                 f.properties = {
                     ...f.properties,
@@ -806,7 +776,6 @@
                 };
             });
 
-            // Aggregate county votes to state totals
             const stateVoteTotals = {};
             for (const fips in countyElectionStats) {
                 const stats = countyElectionStats[fips];
@@ -821,7 +790,6 @@
             }
             console.log('State vote totals:', stateVoteTotals);
 
-            // Update state GeoJSON
             statesGeoJSON.features.forEach(f => {
                 const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
                 const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
@@ -864,7 +832,6 @@
                 };
             });
 
-            // Update county GeoJSON
             countiesGeoJSON.features.forEach(f => {
                 const fips = f.properties.GEOID || f.properties.county_fips;
                 if (!fips) {
@@ -902,7 +869,6 @@
             updateUI();
         }
 
-        // Update UI elements
         function updateUI() {
             let ev_bush = 0, ev_gore = 0;
             let national_bush_votes = 0, national_gore_votes = 0, national_total_votes = 0;
@@ -915,7 +881,7 @@
 
             statesGeoJSON.features.forEach(f => {
                 const props = f.properties || {};
-                const ev = props.electoral_votes || µ0;
+                const ev = props.electoral_votes || 0;
                 const status = props.status || 'Uncalled';
                 if (status === 'Bush Win') ev_bush += ev;
                 else if (status === 'Gore Win') ev_gore += ev;
@@ -935,26 +901,25 @@
                 console.warn(`National vote total (${national_total_votes.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
             }
 
-            // Electoral votes
             document.getElementById('bush-ev').textContent = ev_bush;
             document.getElementById('gore-ev').textContent = ev_gore;
             const totalEV = 538;
-            const bushEVPerc = totalEV > 0 ? (ev_bush / totalEV * 100).toFixed(1) : 0;
-            const goreEVPerc = totalEV > 0 ? (ev_gore / totalEV * 100).toFixed(1) : 0;
+            const bushEVPerc = totalEV > 0 ? (ev_bush / totalEV * 100) : 0;
+            const goreEVPerc = totalEV > 0 ? (ev_gore / totalEV * 100) : 0;
+
             document.getElementById('bush-bar').style.width = `${bushEVPerc}%`;
             document.getElementById('gore-bar').style.width = `${goreEVPerc}%`;
-            document.getElementById('bush-label').textContent = `${bushEVPerc}%`;
-            document.getElementById('gore-label').textContent = `${goreEVPerc}%`;
+            document.getElementById('bush-bar').style.borderRadius = bushEVPerc > 0 ? '12px 0 0 12px' : '0';
+            document.getElementById('gore-bar').style.borderRadius = goreEVPerc > 0 ? '0 12px 12px 0' : '0';
+            document.getElementById('bush-label').textContent = bushEVPerc.toFixed(1) + '%';
+            document.getElementById('gore-label').textContent = goreEVPerc.toFixed(1) + '%';
 
-            // Popular vote
             document.getElementById('bush-pop').textContent = national_bush_votes.toLocaleString();
             document.getElementById('gore-pop').textContent = national_gore_votes.toLocaleString();
 
-            // Reporting percentage
             const avgReporting = numStates > 0 ? (totalReporting / numStates).toFixed(1) : 0;
             document.getElementById('reporting').textContent = `Reporting ${avgReporting}%`;
 
-            // Projection needle
             const bushProj = ev_bush / 270;
             const goreProj = ev_gore / 270;
             let projBush = 0.5, projGore = 0.5;
@@ -976,7 +941,6 @@
             document.getElementById('needle-check-gore').style.display = projGore === 1 ? 'block' : 'none';
         }
 
-        // Fetch and refresh election data
         function refreshElectionData() {
             countyElectionStats = {};
             stateStats = {};
@@ -1019,6 +983,7 @@
                     });
                 })
             ]).then(() => {
+                lastRefreshTime = new Date().toLocaleString();
                 updateGeoJSONAndMap();
                 console.log('Election data refreshed successfully');
             }).catch(err => {
@@ -1027,7 +992,6 @@
             });
         }
 
-        // Initial data load
         Promise.all([
             fetch('data/county-geo.json').then(r => {
                 console.log(`Fetching data/county-geo.json: Status ${r.status}`);
@@ -1108,7 +1072,6 @@
             mapDiv.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">${errorMessage}</div>`;
         });
 
-        // Arc segments for projection needle
         const arcSegs = [
             { label: "Very Likely Bush Win", start: -90, end: -60 },
             { label: "Likely Bush Win", start: -60, end: -30 },
@@ -1152,14 +1115,6 @@
         }
         setArcSegs();
 
-        // Helper function to get state FIPS
-        function getStateFP(stateName) {
-            const fips = stateName ? stateFipsMap[stateName.trim().toLowerCase()] || null : null;
-            if (!fips) console.warn(`No FIPS found for state: ${stateName}`);
-            return fips;
-        }
-
-        // Enable state hover popups
         function enableStateHover() {
             if (!mainMap || !mainMap.getLayer('states-fill')) {
                 console.warn('Map or states-fill layer not ready');
@@ -1177,29 +1132,32 @@
                 }
                 if (!e.features || !e.features[0]) return;
                 const p = e.features[0].properties;
-                console.log('State properties on hover:', p); // Debug log to verify properties
                 const nameKey = Object.keys(p).find(key => key.toLowerCase().includes('name')) || 'name';
                 const total = (p.votes_gop || 0) + (p.votes_dem || 0) + (p.votes_other || 0);
                 const gopPerc = total > 0 ? ((p.votes_gop || 0) / total * 100).toFixed(1) : 0;
                 const demPerc = total > 0 ? ((p.votes_dem || 0) / total * 100).toFixed(1) : 0;
-                console.log(`Showing state popup for: ${p[nameKey]}`);
-                statePopup = new mapboxgl.Popup({
-                    closeButton: false
-                })
-                .setLngLat(e.lngLat)
-                .setHTML(`
-                    <strong>${p[nameKey]}</strong><br/><br/>
-                    Electoral Votes: ${p.electoral_votes || 0}<br/>
-                    Bush: ${(p.votes_gop || 0).toLocaleString()} (${gopPerc}%)<br/>
-                    Gore: ${(p.votes_dem || 0).toLocaleString()} (${demPerc}%)<br/>
-                    Status: ${p.status || 'Uncalled'}
-                `)
-                .addTo(mainMap);
+                let winnerText = 'Uncalled';
+                if (p.status === 'Bush Win') winnerText = 'Bush';
+                else if (p.status === 'Gore Win') winnerText = 'Gore';
+                else if (p.votes_gop > p.votes_dem) winnerText = 'Bush (leading)';
+                else if (p.votes_dem > p.votes_gop) winnerText = 'Gore (leading)';
+                else winnerText = 'Tied';
+
+                statePopup = new mapboxgl.Popup({ closeButton: false })
+                    .setLngLat(e.lngLat)
+                    .setHTML(`
+                        <strong>${p[nameKey]}</strong><br/>
+                        <b>Electoral Votes:</b> ${p.electoral_votes || 0}<br/>
+                        <span style="color:#e74c3c">Bush:</span> ${(p.votes_gop || 0).toLocaleString()} (${gopPerc}%)<br/>
+                        <span style="color:#3498db">Gore:</span> ${(p.votes_dem || 0).toLocaleString()} (${demPerc}%)<br/>
+                        <b>Status:</b> ${winnerText}<br/>
+                        <b>Reporting:</b> ${(p.reporting || 0).toFixed(1)}%
+                    `)
+                    .addTo(mainMap);
             };
 
             stateHoverHandlers.mouseleave = () => {
                 if (statePopup) {
-                    console.log('Removing state popup');
                     statePopup.remove();
                     statePopup = null;
                 }
@@ -1210,7 +1168,6 @@
             console.log('State hover enabled');
         }
 
-        // Disable state hover popups
         function disableStateHover() {
             if (stateHoverHandlers.mousemove) {
                 mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
@@ -1230,7 +1187,6 @@
             console.log('State hover disabled');
         }
 
-        // Enable county hover popups
         function enableCountyHover() {
             if (!mainMap || !mainMap.getLayer('counties-fill')) {
                 console.warn('Map or counties-fill layer not ready');
@@ -1287,7 +1243,6 @@
             console.log('County hover enabled');
         }
 
-        // Disable county hover popups
         function disableCountyHover() {
             if (countyHoverHandlers.mousemove) {
                 mainMap.off('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
@@ -1307,7 +1262,6 @@
             console.log('County hover disabled');
         }
 
-        // Initialize map
         function initializeMainMap() {
             try {
                 mainMap = new mapboxgl.Map({
@@ -1373,6 +1327,9 @@
                     document.getElementById('projection-ticker-wrap').style.display = 'none';
                     disableStateHover();
                     addCountiesLayer(stateName);
+                    document.getElementById('state-sidebar').classList.add('active');
+                    document.getElementById('close-sidebar-btn').style.display = 'block';
+                    document.getElementById('last-updated').textContent = `Data as of: ${lastRefreshTime}`;
                 });
             });
 
@@ -1383,7 +1340,6 @@
             });
         }
 
-        // Add counties layer for a specific state
         function addCountiesLayer(stateName) {
             const stateFP = getStateFP(stateName);
             if (!stateFP) {
@@ -1490,9 +1446,7 @@
                     `;
                     document.getElementById('reporting-fill').style.width = `${p.reporting}%`;
                     document.getElementById('reporting-status').textContent = `Status: ${p.status} (${p.reporting.toFixed(1)}% reporting)`;
-                    document.getElementById('last-updated').textContent = `Last Updated: ${new Date().toLocaleString()}`;
-                    document.getElementById('state-sidebar').classList.add('active');
-                    document.getElementById('close-sidebar-btn').style.display = 'block';
+                    document.getElementById('last-updated').textContent = `Data as of: ${lastRefreshTime}`;
                 } else {
                     console.warn(`No state feature found for ${stateName}`);
                 }
@@ -1501,7 +1455,6 @@
             }
         }
 
-        // Get state bounds for zooming
         function getStateBounds(stateName) {
             const stateFP = getStateFP(stateName);
             if (!stateFP) {
@@ -1555,7 +1508,6 @@
             return [[minLng, minLat], [maxLng, maxLat]];
         }
 
-        // Toggle county mode
         function toggleCountyMode(enable) {
             if (enable === isCountyMode) return;
             isCountyMode = enable;
@@ -1646,7 +1598,15 @@
             }
         }
 
-        // Event listeners for buttons
+        function getStateFP(stateName) {
+            const normalizedStateName = stateName.toLowerCase().trim();
+            const fips = stateFipsMap[normalizedStateName];
+            if (!fips) {
+                console.warn(`No FIPS code found for state: ${stateName}`);
+            }
+            return fips;
+        }
+
         document.getElementById('box-out-btn').addEventListener('click', () => {
             toggleCountyMode(false);
         });
