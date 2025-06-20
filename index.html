@@ -344,20 +344,37 @@ function getColumnKey(row, key) {
 function populateCountyStatsFromCSV(rows) {
   console.log('County CSV rows received:', rows);
   const newCountyStats = {};
+  const processedRows = new Set(); // Track unique FIPS/party combinations
+  let alabamaVoteTotal = 0;
+
   for (const row of rows) {
     const stateKey = getColumnKey(row, 'state');
     const fipsKey = getColumnKey(row, 'county_fips');
     const partyKey = getColumnKey(row, 'party');
     const votesKey = getColumnKey(row, 'candidatevotes');
-    const totalVotesKey = getColumnKey(row, 'totalvotes');
 
-    let fips = (row[fipsKey] || '').toString().padStart(5, "0");
-    if (!/^\d{5}$/.test(fips)) continue;
+    let fips = (row[fipsKey] || '').toString().trim().padStart(5, "0");
+    if (!/^\d{5}$/.test(fips)) {
+      console.warn(`Invalid FIPS code: ${fips}, skipping row`);
+      continue;
+    }
 
     let party = (row[partyKey] || "").trim().toUpperCase();
-    let votes = parseInt(row[votesKey] || "0", 10);
-    let totalVotes = parseInt(row[totalVotesKey] || "0", 10);
+    let votesRaw = row[votesKey] || "";
+    let votes = parseInt(votesRaw.replace(/[,]/g, ''), 10);
+    if (isNaN(votes) || votes < 0) {
+      console.warn(`Invalid vote count: ${votesRaw} for FIPS ${fips}, party ${party}, setting to 0`);
+      votes = 0;
+    }
+
     let stateName = (row[stateKey] || '').trim().toLowerCase();
+    const rowKey = `${fips}-${party}`;
+
+    if (processedRows.has(rowKey)) {
+      console.warn(`Duplicate row for FIPS ${fips}, party ${party}, skipping`);
+      continue;
+    }
+    processedRows.add(rowKey);
 
     if (!newCountyStats[fips]) {
       newCountyStats[fips] = {
@@ -365,26 +382,46 @@ function populateCountyStatsFromCSV(rows) {
         bush_votes: 0,
         gore_votes: 0,
         other_votes: 0,
-        totalvotes: totalVotes,
-        winner: ""
+        totalvotes: 0,
+        winner: "Tied"
       };
     }
+
     if (party === "REPUBLICAN") {
-      newCountyStats[fips].bush_votes += votes;
+      newCountyStats[fips].bush_votes = votes;
     } else if (party === "DEMOCRAT") {
-      newCountyStats[fips].gore_votes += votes;
+      newCountyStats[fips].gore_votes = votes;
     } else {
-      newCountyStats[fips].other_votes += votes;
+      newCountyStats[fips].other_votes = votes;
+    }
+
+    if (stateName === 'alabama' && fips === '01073') {
+      console.log(`Jefferson County (FIPS 01073): Bush=${votes} (party=${party})`);
     }
   }
+
+  // Calculate totals and winners
+  let nationalTotal = 0;
   for (const fips in newCountyStats) {
     const stats = newCountyStats[fips];
-    stats.totalvotes = stats.bush_votes + stats.gore_votes + stats.other_votes; // Recalculate total
+    stats.totalvotes = stats.bush_votes + stats.gore_votes + stats.other_votes;
+    nationalTotal += stats.totalvotes;
+    if (stats.state.toLowerCase() === 'alabama') {
+      alabamaVoteTotal += stats.totalvotes;
+    }
     if (stats.bush_votes > stats.gore_votes) stats.winner = "Bush";
     else if (stats.gore_votes > stats.bush_votes) stats.winner = "Gore";
     else stats.winner = "Tied";
   }
-  console.log('Parsed countyElectionStats:', newCountyStats);
+
+  console.log(`Parsed countyElectionStats: ${Object.keys(newCountyStats).length} counties, national total votes: ${nationalTotal.toLocaleString()}`);
+  console.log(`Alabama total votes: ${alabamaVoteTotal.toLocaleString()}`);
+  if (nationalTotal > 120000000) {
+    console.warn(`National vote total (${nationalTotal.toLocaleString()}) exceeds expected max (~120M)`);
+  }
+  if (alabamaVoteTotal > 0) {
+    console.warn(`Alabama votes detected (${alabamaVoteTotal.toLocaleString()}) despite deletion`);
+  }
   countyElectionStats = newCountyStats;
 }
 
@@ -420,7 +457,7 @@ function populateStateFipsMapFromGeoJSON(statesGeoJSON) {
     statesGeoJSON.features.forEach(f => {
       const prop = f.properties || {};
       const nameKey = Object.keys(prop).find(k => k.toLowerCase().includes('name')) || 'name';
-      const fipsKey = Object.keys(prop).find(k => k.toLowerCase().includes('statefp') || k.toLowerCase().includes('fips')) || 'STATEFP';
+      const fipsKey = Object.keys(prop).find(k => k.toLowerCase().includes('statefp') || k.toLowerCase().includes('fips')) || 'id';
       const name = (prop[nameKey] || '').trim().toLowerCase();
       const fips = (prop[fipsKey] || '').toString().padStart(2, '0');
       if (name && fips && fips !== '00') stateFipsMap[name] = fips;
@@ -434,6 +471,15 @@ function updateGeoJSONAndMap() {
     console.warn('GeoJSON data not loaded yet');
     return;
   }
+
+  // Reset county GeoJSON properties
+  countiesGeoJSON.features.forEach(f => {
+    f.properties.bush_votes = 0;
+    f.properties.gore_votes = 0;
+    f.properties.other_votes = 0;
+    f.properties.total_votes = 0;
+    f.properties.winner = 'Tied';
+  });
 
   // Aggregate county votes to state totals
   const stateVoteTotals = {};
@@ -479,6 +525,10 @@ function updateGeoJSONAndMap() {
       status: status,
       reporting: stateData ? stateData.reporting : 0
     };
+
+    if (geoName === 'alabama') {
+      console.log(`Alabama GeoJSON: Bush=${f.properties.votes_gop}, Gore=${f.properties.votes_dem}, Total=${f.properties.total_votes}`);
+    }
   });
 
   // Update county GeoJSON properties
@@ -491,12 +541,9 @@ function updateGeoJSONAndMap() {
       f.properties.other_votes = stats.other_votes;
       f.properties.total_votes = stats.totalvotes;
       f.properties.winner = stats.winner;
-    } else {
-      f.properties.bush_votes = 0;
-      f.properties.gore_votes = 0;
-      f.properties.other_votes = 0;
-      f.properties.total_votes = 0;
-      f.properties.winner = 'Tied';
+      if (fips === '01073') {
+        console.log(`Jefferson County GeoJSON: Bush=${stats.bush_votes}, Gore=${stats.gore_votes}, Total=${stats.totalvotes}`);
+      }
     }
   });
 
@@ -532,10 +579,15 @@ function updateUIElements() {
     }
   });
 
+  console.log(`National totals - Bush: ${national_bush_votes.toLocaleString()}, Gore: ${national_gore_votes.toLocaleString()}, Total: ${national_total_votes.toLocaleString()}`);
+  if (national_total_votes > 120000000) {
+    console.warn(`National vote total (${national_total_votes.toLocaleString()}) exceeds expected max (~120M)`);
+  }
+
   // Electoral votes
   document.getElementById('bush-votes').textContent = ev_bush;
   document.getElementById('gore-votes').textContent = ev_gore;
-  const totalEV = ev_bush + ev_gore || 538; // Default to 538 if no votes yet
+  const totalEV = ev_bush + ev_gore || 538;
   const bushEVPerc = (ev_bush / totalEV * 100).toFixed(1);
   const goreEVPerc = (ev_gore / totalEV * 100).toFixed(1);
   document.getElementById('bush-bar').style.width = `${bushEVPerc}%`;
@@ -571,6 +623,10 @@ function updateUIElements() {
 
 // Fetch and parse election data
 function refreshElectionData() {
+  // Reset data structures
+  countyElectionStats = {};
+  stateStats = {};
+
   Promise.all([
     new Promise((resolve, reject) => {
       Papa.parse(STATE_CSV_URL, {
@@ -610,12 +666,25 @@ function refreshElectionData() {
 
 // Initial data load
 Promise.all([
-  fetch('data/county-geo.json').then(r => r.json()).then(data => { countiesGeoJSON = data; }),
-  fetch('data/us-states.geo.json').then(r => r.json()).then(data => { statesGeoJSON = data; populateStateFipsMapFromGeoJSON(statesGeoJSON); })
+  fetch('data/county-geo.json').then(r => r.json()).then(data => {
+    countiesGeoJSON = data;
+    // Initialize county GeoJSON properties
+    countiesGeoJSON.features.forEach(f => {
+      f.properties.bush_votes = 0;
+      f.properties.gore_votes = 0;
+      f.properties.other_votes = 0;
+      f.properties.total_votes = 0;
+      f.properties.winner = 'Tied';
+    });
+  }),
+  fetch('data/us-states.geo.json').then(r => r.json()).then(data => {
+    statesGeoJSON = data;
+    populateStateFipsMapFromGeoJSON(statesGeoJSON);
+  })
 ]).then(() => {
   refreshElectionData();
   initializeMainMap();
-  setInterval(refreshElectionData, 60000); // Refresh every minute
+  setInterval(refreshElectionData, 60000);
 }).catch(err => console.error('Initial data load failed:', err));
 
 // Arc segments for projection needle
@@ -888,7 +957,7 @@ function addCountiesLayer(stateName) {
       </div>
       <div class="candidate-row">
         <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image-small">
-        <div class="bar-graph"><div class="bar-fill gore" style="width: ${gorePerc}%"></div></div>
+        <div class="bar-graph"><div class="bar-fill gore" style="width: ${goreEVPerc}%"></div></div>
         <div class="candidate-details">Gore: ${p.votes_dem.toLocaleString()} (${gorePerc}%)</div>
       </div>
       <div class="candidate-row">
@@ -952,7 +1021,7 @@ function exitStateView() {
   document.getElementById('box-out-btn').style.display = 'none';
   document.getElementById('projection-ticker-wrap').style.display = 'flex';
   mainMap.flyTo({ center: [-98.5795, 39.8283], zoom: 3 });
-  disableStateHover(); // Ensure state hover is disabled before re-enabling
+  disableStateHover();
   enableStateHover();
   currentState = null;
 }
