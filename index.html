@@ -621,14 +621,15 @@
         function populateCountyStatsFromCSV(rows) {
             console.log('County CSV rows received:', rows);
             const newCountyStats = {};
-            const processedRows = new Set();
-            let alabamaVoteTotal = 0;
+            let nationalTotal = 0;
 
             for (const row of rows) {
                 const stateKey = getColumnKey(row, 'state');
                 const fipsKey = getColumnKey(row, 'county_fips');
                 const partyKey = getColumnKey(row, 'party');
                 const votesKey = getColumnKey(row, 'candidatevotes');
+                const totalVotesKey = getColumnKey(row, 'totalvotes');
+                const candidateKey = getColumnKey(row, 'candidate');
 
                 let fips = (row[fipsKey] || '').toString().trim().padStart(5, "0");
                 if (!/^\d{5}$/.test(fips)) {
@@ -637,6 +638,7 @@
                 }
 
                 let party = (row[partyKey] || "").trim().toUpperCase();
+                let candidate = (row[candidateKey] || "").trim().toLowerCase();
                 let votesRaw = row[votesKey] || "";
                 let votes = parseInt(votesRaw.replace(/[,]/g, ''), 10);
                 if (isNaN(votes) || votes < 0) {
@@ -644,18 +646,14 @@
                     votes = 0;
                 }
 
-                let stateName = (row[stateKey] || '').trim().toLowerCase();
-                if (stateName === 'alabama') {
-                    console.log(`Skipping Alabama votes for FIPS ${fips}, party ${party}`);
-                    votes = 0;
+                let totalVotesRaw = row[totalVotesKey] || "";
+                let totalVotes = parseInt(totalVotesRaw.replace(/[,]/g, ''), 10);
+                if (isNaN(totalVotes) || totalVotes < 0) {
+                    console.warn(`Invalid total votes: ${totalVotesRaw} for FIPS ${fips}, setting to 0`);
+                    totalVotes = 0;
                 }
 
-                const rowKey = `${fips}-${party}`;
-                if (processedRows.has(rowKey)) {
-                    console.warn(`Duplicate row for FIPS ${fips}, party ${party}, skipping`);
-                    continue;
-                }
-                processedRows.add(rowKey);
+                let stateName = (row[stateKey] || '').trim().toLowerCase();
 
                 if (!newCountyStats[fips]) {
                     newCountyStats[fips] = {
@@ -663,17 +661,19 @@
                         bush_votes: 0,
                         gore_votes: 0,
                         other_votes: 0,
-                        totalvotes: 0,
-                        winner: "Tied"
+                        totalvotes: totalVotes,
+                        winner: "Tied",
+                        county_name: row[getColumnKey(row, 'county_name')] || 'Unknown'
                     };
                 }
 
-                if (party === "REPUBLICAN") {
-                    newCountyStats[fips].bush_votes = votes;
-                } else if (party === "DEMOCRAT") {
-                    newCountyStats[fips].gore_votes = votes;
+                // Assign votes based on candidate or party
+                if (candidate.includes('bush') || party === "REPUBLICAN") {
+                    newCountyStats[fips].bush_votes += votes;
+                } else if (candidate.includes('gore') || party === "DEMOCRAT") {
+                    newCountyStats[fips].gore_votes += votes;
                 } else {
-                    newCountyStats[fips].other_votes = votes;
+                    newCountyStats[fips].other_votes += votes;
                 }
 
                 if (stateName === 'alabama' && fips === '01073') {
@@ -681,26 +681,21 @@
                 }
             }
 
-            let nationalTotal = 0;
             for (const fips in newCountyStats) {
                 const stats = newCountyStats[fips];
-                stats.totalvotes = stats.bush_votes + stats.gore_votes + stats.other_votes;
-                nationalTotal += stats.totalvotes;
-                if (stats.state.toLowerCase() === 'alabama') {
-                    alabamaVoteTotal += stats.totalvotes;
+                // Use provided totalvotes from CSV if available, else calculate
+                if (!stats.totalvotes) {
+                    stats.totalvotes = stats.bush_votes + stats.gore_votes + stats.other_votes;
                 }
+                nationalTotal += stats.totalvotes;
                 if (stats.bush_votes > stats.gore_votes) stats.winner = "Bush";
                 else if (stats.gore_votes > stats.bush_votes) stats.winner = "Gore";
                 else stats.winner = "Tied";
             }
 
             console.log(`Parsed countyElectionStats: ${Object.keys(newCountyStats).length} counties, national total votes: ${nationalTotal.toLocaleString()}`);
-            console.log(`Total Alabama votes: ${alabamaVoteTotal.toLocaleString()}`);
-            if (nationalTotal > 120000000) {
-                console.warn(`National vote total (${nationalTotal.toLocaleString()}) exceeds expected max (~120M)`);
-            }
-            if (alabamaVoteTotal > 0) {
-                console.warn(`Alabama votes detected (${alabamaVoteTotal.toLocaleString()}) despite deletion`);
+            if (nationalTotal > 110000000) {
+                console.warn(`National vote total (${nationalTotal.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
             }
             countyElectionStats = newCountyStats;
         }
@@ -715,24 +710,22 @@
                 let stateName = (row[stateKey] || '').trim().toLowerCase();
                 if (!stateName) continue;
 
-                const statusKey = getColumnKey(row, 'Election status');
-                const winnerKey = getColumnKey(row, 'winner');
+                const statusKey = getColumnKey(row, 'Election status (called, uncalled)');
+                const winnerKey = getColumnKey(row, 'Winner');
                 const evKey = getColumnKey(row, 'Electoral Votes');
                 const reportingKey = getColumnKey(row, 'Reporting %');
+                const repCandidateKey = getColumnKey(row, 'Republican Candidate');
+                const demCandidateKey = getColumnKey(row, 'Democrat Candidate');
+                const otherCandidateKey = getColumnKey(row, 'Other Candidate');
 
-                // Normalize election status to candidate names
                 let status = (row[statusKey] || 'Uncalled').trim();
                 const statusLower = status.toLowerCase();
-                if (statusLower.includes('gop') || statusLower.includes('republican') || statusLower.includes('bush') || statusLower.includes('called for bush')) {
-                    status = 'Bush Win';
-                } else if (statusLower.includes('dem') || statusLower.includes('democrat') || statusLower.includes('gore') || statusLower.includes('called for gore')) {
-                    status = 'Gore Win';
-                } else if (statusLower.includes('called')) {
+                if (statusLower.includes('called')) {
                     const winner = (row[winnerKey] || '').trim().toLowerCase();
                     if (winner.includes('bush')) status = 'Bush Win';
                     else if (winner.includes('gore')) status = 'Gore Win';
                     else {
-                        console.warn(`Unexpected status 'Called' with winner '${winner}' for state ${stateName}, setting to Uncalled`);
+                        console.warn(`Unexpected winner '${winner}' for state ${stateName}, setting to Uncalled`);
                         status = 'Uncalled';
                     }
                 } else if (statusLower !== 'uncalled') {
@@ -740,12 +733,21 @@
                     status = 'Uncalled';
                 }
 
+                let reporting = parseFloat(row[reportingKey] || "0");
+                if (isNaN(reporting) || reporting < 0 || reporting > 100) {
+                    console.warn(`Invalid reporting percentage: ${row[reportingKey]} for state ${stateName}, setting to 0`);
+                    reporting = 0;
+                }
+
                 newStateStats[stateName] = {
                     state: row[stateKey],
                     electoral_votes: parseInt(row[evKey] || "0", 10),
                     winner: (row[winnerKey] || '').trim(),
                     status: status,
-                    reporting: parseFloat(row[reportingKey] || "0")
+                    reporting: reporting,
+                    republican_candidate: row[repCandidateKey] || 'George W. Bush',
+                    democrat_candidate: row[demCandidateKey] || 'Al Gore',
+                    other_candidate: row[otherCandidateKey] || 'Other'
                 };
             }
             console.log('Parsed stateStats:', newStateStats);
@@ -788,7 +790,8 @@
                     gore_votes: 0,
                     other_votes: 0,
                     total_votes: 0,
-                    winner: 'Tied'
+                    winner: 'Tied',
+                    county_name: f.properties.NAME || 'Unknown'
                 };
             });
 
@@ -807,7 +810,7 @@
             }
             console.log('State vote totals:', stateVoteTotals);
 
-            // Update state GeoJSON properties
+            // Update state GeoJSON
             statesGeoJSON.features.forEach(f => {
                 const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
                 const geoName = (f.properties[nameKey] || '').trim().toLowerCase();
@@ -833,10 +836,6 @@
 
                 console.log(`State ${geoName}: Status=${status}, Winner=${winner}, EV=${stateData.electoral_votes || 0}`);
 
-                if (geoName === 'alabama' && voteTotals.total_votes > 0) {
-                    console.warn(`Alabama GeoJSON: Bush=${voteTotals.bush_votes.toLocaleString()}, Gore=${voteTotals.gore_votes.toLocaleString()}, Total=${voteTotals.total_votes.toLocaleString()}, Status=${status}`);
-                }
-
                 f.properties = {
                     ...f.properties,
                     state: stateData.state || geoName,
@@ -847,27 +846,36 @@
                     total_votes: voteTotals.total_votes || 0,
                     winner: winner,
                     status: status,
-                    reporting: stateData.reporting || 0
+                    reporting: stateData.reporting || 0,
+                    republican_candidate: stateData.republican_candidate || 'George W. Bush',
+                    democrat_candidate: stateData.democrat_candidate || 'Al Gore',
+                    other_candidate: stateData.other_candidate || 'Other'
                 };
             });
 
-            // Update county GeoJSON properties
+            // Update county GeoJSON
             countiesGeoJSON.features.forEach(f => {
-                const fips = f.properties.GEOID;
+                const fips = f.properties.GEOID || f.properties.county_fips;
+                if (!fips) {
+                    console.warn(`Missing GEOID for county feature:`, f.properties);
+                    return;
+                }
                 const stats = countyElectionStats[fips] || {
                     bush_votes: 0,
                     gore_votes: 0,
                     other_votes: 0,
                     totalvotes: 0,
-                    winner: 'Tied'
+                    winner: 'Tied',
+                    county_name: 'Unknown'
                 };
                 f.properties.bush_votes = stats.bush_votes || 0;
                 f.properties.gore_votes = stats.gore_votes || 0;
                 f.properties.other_votes = stats.other_votes || 0;
                 f.properties.total_votes = stats.totalvotes || 0;
                 f.properties.winner = stats.winner || 'Tied';
+                f.properties.county_name = stats.county_name || f.properties.NAME || 'Unknown';
                 if (fips === '01073') {
-                    console.log(`Jefferson County GeoJSON: Bush=${stats.bush_votes.toLocaleString()}, Gore=${stats.gore_votes.toLocaleString()}, Total=${stats.total_votes.toLocaleString()}`);
+                    console.log(`County GeoJSON for Jefferson County: Bush=${stats.bush_votes.toLocaleString()}, Gore=${stats.gore_votes.toLocaleString()}, Total=${stats.totalvotes.toLocaleString()}`);
                 }
             });
 
@@ -883,11 +891,16 @@
             updateUI();
         }
 
-        // Update UI elements (header, bars, needle)
+        // Update UI elements
         function updateUI() {
             let ev_bush = 0, ev_gore = 0;
             let national_bush_votes = 0, national_gore_votes = 0, national_total_votes = 0;
             let totalReporting = 0, numStates = 0;
+
+            if (!statesGeoJSON?.features) {
+                console.warn('statesGeoJSON not initialized for UI update');
+                return;
+            }
 
             statesGeoJSON.features.forEach(f => {
                 const props = f.properties || {};
@@ -907,8 +920,8 @@
             });
 
             console.log(`National totals: Bush=${national_bush_votes.toLocaleString()}, Gore=${national_gore_votes.toLocaleString()}, Total=${national_total_votes.toLocaleString()}`);
-            if (national_total_votes > 120000000) {
-                console.warn(`National vote total (${national_total_votes.toLocaleString()}) exceeds expected max (~120M)`);
+            if (national_total_votes > 110000000) {
+                console.warn(`National vote total (${national_total_votes.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
             }
 
             // Electoral votes
@@ -922,13 +935,13 @@
             document.getElementById('bush-label').textContent = `${bushEVPerc}%`;
             document.getElementById('gore-label').textContent = `${goreEVPerc}%`;
 
-            // Popular vote totals
+            // Popular vote
             document.getElementById('bush-pop').textContent = national_bush_votes.toLocaleString();
             document.getElementById('gore-pop').textContent = national_gore_votes.toLocaleString();
 
             // Reporting percentage
             const avgReporting = numStates > 0 ? (totalReporting / numStates).toFixed(1) : 0;
-            document.getElementById('reporting').textContent = `Reporting: ${avgReporting}%`;
+            document.getElementById('reporting').textContent = `Reporting ${avgReporting}%`;
 
             // Projection needle
             const bushProj = ev_bush / 270;
@@ -975,7 +988,7 @@
                             resolve();
                         }
                     });
-                }),
+                    }),
                 new Promise((resolve) => {
                     Papa.parse(COUNTY_CSV_URL, {
                         download: true,
@@ -1027,7 +1040,8 @@
                         gore_votes: 0,
                         other_votes: 0,
                         total_votes: 0,
-                        winner: 'Tied'
+                        winner: 'Tied',
+                        county_name: f.properties.NAME || 'Unknown'
                     };
                 });
             }).catch(err => {
@@ -1042,7 +1056,7 @@
                     try {
                         return JSON.parse(text);
                     } catch (e) {
-                        console.error('Invalid JSON in data/us-states.geo.json:', text.slice(0, 100));
+                        console.error('Invalid JSON in data/us-states.geojson:', text.slice(0, 100));
                         throw e;
                     }
                 });
@@ -1059,7 +1073,10 @@
                         winner: 'Tied',
                         status: 'Uncalled',
                         electoral_votes: 0,
-                        reporting: 0
+                        reporting: 0,
+                        republican_candidate: 'George W. Bush',
+                        democrat_candidate: 'Al Gore',
+                        other_candidate: 'Other'
                     };
                 });
                 populateStateFipsMapFromGeoJSON(statesGeoJSON);
@@ -1219,23 +1236,25 @@
                 }
                 if (!e.features || !e.features[0]) return;
                 const f = e.features[0];
-                const stats = countyElectionStats[f.properties.GEOID] || {
+                const fips = f.properties.GEOID || f.properties.county_fips;
+                const stats = countyElectionStats[fips] || {
                     bush_votes: 0,
                     gore_votes: 0,
                     other_votes: 0,
                     totalvotes: 0,
-                    winner: 'Tied'
+                    winner: 'Tied',
+                    county_name: f.properties.NAME || 'Unknown'
                 };
-                const total = stats.bush_votes + stats.gore_votes + stats.other_votes;
+                const total = stats.totalvotes;
                 const bushPerc = total > 0 ? ((stats.bush_votes / total) * 100).toFixed(1) : 0;
                 const gorePerc = total > 0 ? ((stats.gore_votes / total) * 100).toFixed(1) : 0;
-                console.log(`Showing county popup for: ${f.properties.NAME}`);
+                console.log(`Showing county popup for: ${stats.county_name}`);
                 countyPopup = new mapboxgl.Popup({
                     closeButton: false
                 })
                 .setLngLat(e.lngLat)
                 .setHTML(`
-                    <strong>${f.properties.NAME || 'Unknown'} County</strong><br/>
+                    <strong>${stats.county_name} County</strong><br/>
                     Bush: ${stats.bush_votes.toLocaleString()} (${bushPerc}%)<br/>
                     Gore: ${stats.gore_votes.toLocaleString()} (${gorePerc}%)<br/>
                     Winner: ${stats.winner}
@@ -1286,7 +1305,7 @@
                     zoom: 3
                 });
             } catch (err) {
-                console.error('Failed to initialize Mapbox map:', err);
+                console.error('Failed to initialize Mapbox: ', err);
                 const mapDiv = document.getElementById('map');
                 mapDiv.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">Failed to load map: Invalid Mapbox token. Please set a valid token in mapboxgl.accessToken.</div>`;
                 return;
@@ -1308,8 +1327,8 @@
                             'Gore Win', '#3498db',
                             'Uncalled', [
                                 'case',
-                                ['>', ['get', 'votes_gop'], ['get', 'votes_dem']], '#f4a6a6',
-                                ['>', ['get', 'votes_dem'], ['get', 'votes_gop']], '#a6c8f4',
+                                ['>', ['get', 'votes_gop'], ['get', 'votes_dem']], '#f4a6a0',
+                                ['>', ['get', 'votes_dem'], ['get', 'votes_gop']], '#a6c8f4'],
                                 '#cccccc'
                             ],
                             '#ffffff'
@@ -1362,8 +1381,12 @@
 
             const filtered = {
                 type: 'FeatureCollection',
-                features: countiesGeoJSON.features.filter(f => (f.properties.STATEFP || '').toString() === stateFP)
+                features: countiesGeoJSON.features.filter(f => (f.properties.STATEFP || '').toString().padStart(2, '0') === stateFP)
             };
+
+            if (filtered.features.length === 0) {
+                console.warn(`No counties found for state FIPS: ${stateFP}`);
+            }
 
             if (mainMap.getSource('counties')) {
                 mainMap.removeSource('counties');
@@ -1440,21 +1463,21 @@
                         <div class="candidate-row">
                             <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image-small">
                             <div class="bar-graph"><div class="bar-fill bush" style="width: ${bushPerc}%"></div></div>
-                            <div class="candidate-details">Bush: ${votesGop.toLocaleString()} (${bushPerc}%)</div>
+                            <div class="candidate-details">${p.republican_candidate}: ${votes_gop.toLocaleString()} (${bushPerc}%)</div>
                         </div>
                         <div class="candidate-row">
-                            <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image-small">
-                            <div class="bar-graph"><div class="bar-fill gore" style="width: ${gorePerc}%"></div></div>
-                            <div class="candidate-details">Gore: ${votesDem.toLocaleString()} (${gorePerc}%)</div>
+                            <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image-small"></div>
+                            <div class="bar-graph"><div class="bar-fill" style="width: ${gorePerc}%"></div></div>
+                            <div class="candidate-details">${p.democrat_candidate}: ${votes_dem.toLocaleString()} (${gorePerc}%)</div>
                         </div>
                         <div class="candidate-row">
-                            <img src="https://via.placeholder.com/40?text=O" alt="Other" class="candidate-image-small">
+                            <img src="https://via.placeholder.com/40?text=O" alt="Other" class="candidate-image-small"></div>
                             <div class="bar-graph"><div class="bar-fill other" style="width: ${otherPerc}%"></div></div>
-                            <div class="candidate-details">Other: ${votesOther.toLocaleString()} (${otherPerc}%)</div>
+                            <div class="candidate-details">${p.other_candidate}: ${votes_other.toLocaleString()} (${otherPerc}%)</div>
                         </div>
                     `;
                     document.getElementById('reporting-fill').style.width = `${p.reporting}%`;
-                    document.getElementById('reporting-status').textContent = `Status: ${p.status} (${p.reporting.toFixed(1)}% reporting)`;
+                    document.getElementById('reporting-status').textContent = `Status: ${p.status} (${p.reporting.toFixed(1)}% reporting)`);
                     document.getElementById('last-updated').textContent = `Last Updated: ${new Date().toLocaleString()}`;
                     document.getElementById('state-sidebar').classList.add('active');
                     document.getElementById('close-sidebar-btn').style.display = 'block';
@@ -1469,27 +1492,28 @@
         // Get state bounds for zooming
         function getStateBounds(stateName) {
             const stateFP = getStateFP(stateName);
-            if (!stateFP) return null;
+            if (!fp) return null;
             const stateFeature = statesGeoJSON.features.find(f => {
-                const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name';
+                const nameKey = Object.keys(f.properties).find(key => key.toLowerCase().includes('name')) || 'name');
                 return f.properties[nameKey].toLowerCase() === stateName.toLowerCase();
             });
             if (!stateFeature) {
-                console.warn(`No GeoJSON feature found for state: ${stateName}`);
+                console.warn(`No GeoJSON feature found for ${stateName}`);
                 return null;
             }
             const coords = stateFeature.geometry.type === 'Polygon' 
-                ? stateFeature.geometry.coordinates[0] 
+                ? stateFeature.geometry.coordinates[0].toString() 
                 : stateFeature.geometry.coordinates.flat(2);
+            };
             let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
             coords.forEach(coord => {
                 minLng = Math.min(minLng, coord[0]);
                 maxLng = Math.max(maxLng, coord[0]);
                 minLat = Math.min(minLat, coord[1]);
-                maxLat = Math.max(maxLat, coord[1]);
+                maxLat = Math.max(maxLat, maxLat, coord[1]);
             });
-            if (!isFinite(minLng) || !isFinite(maxLng) || !isFinite(minLat) || !isFinite(maxLat)) {
-                console.warn(`Invalid bounds for state: ${stateName}`);
+            if (!isFinite(minLatLng) || !isFinite(maxLng) || !isFinite(minLat) || !isFinite(maxLat)) {
+                console.warn(`Invalid bounds for for ${stateName}`);
                 return null;
             }
             return [[minLng, minLat], [maxLng, maxLat]];
@@ -1563,7 +1587,7 @@
                 document.getElementById('projection-ticker-wrap').style.display = 'flex';
                 document.getElementById('state-sidebar').classList.remove('active');
 
-                if (mainMap.getLayer('counties-fill')) {
+           x     if (mainMap.getLayer('counties-fill')) {
                     mainMap.removeLayer('counties-fill');
                 }
                 if (mainMap.getLayer('counties-outline')) {
