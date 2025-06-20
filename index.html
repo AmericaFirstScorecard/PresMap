@@ -342,7 +342,7 @@
             font-size: 15px;
             font-weight: 700;
             fill: #fff;
-            text-shadow: 0x 2px 8px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
             font-family: 'Inter', sans-serif;
             pointer-events: none;
             dominant-baseline: middle;
@@ -569,7 +569,7 @@
     <script>
         // ========== USER CONFIG ==============
         // Replace with your Mapbox access token
-        mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
+        mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
         const STATE_CSV_URL = 'https://docs.google.com/spreadsheets/d/1q4zbH9MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
         const COUNTY_CSV_URL = 'https://docs.google.com/spreadsheets/d/1q6edopYcOeeom30rC3kWsVwvJ8rHcdYH7xB7B7QCQBI/export?format=csv';
         // ========== END USER CONFIG ===========
@@ -977,14 +977,29 @@
                 console.log('Election data refreshed successfully');
             }).catch(err => {
                 console.error('Error refreshing election data:', err);
+                alert(`Failed to load election data: ${err.message}. Please check CSV URLs.`);
             });
         }
 
-        // Initial data load
+        // Initial data load with improved error handling
         Promise.all([
-            fetch('data/county-geo.json').then(r => r.json()).then(data => {
+            fetch('data/county-geo.json').then(r => {
+                console.log(`Fetching data/county-geo.json: Status ${r.status}`);
+                if (!r.ok) {
+                    throw new Error(`Failed to fetch data/county-geo.json: ${r.status} ${r.statusText}`);
+                }
+                return r.text().then(text => {
+                    console.log(`county-geo.json response length: ${text.length} bytes`);
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Invalid JSON in data/county-geo.json:', text.slice(0, 100));
+                        throw e;
+                    }
+                });
+            }).then(data => {
+                console.log('county-geo.json loaded successfully');
                 countiesGeoJSON = data;
-                // Initialize county GeoJSON properties
                 countiesGeoJSON.features.forEach(f => {
                     f.properties = {
                         bush_votes: 0,
@@ -994,16 +1009,44 @@
                         winner: 'Tied'
                     };
                 });
+            }).catch(err => {
+                console.error('Error loading county-geo.json:', err);
+                throw err;
             }),
-            fetch('data/us-states.geojson').then(r => r.json()).then(data => {
+            fetch('data/us-states.geo.json').then(r => {
+                console.log(`Fetching data/us-states.geo.json: Status ${r.status}`);
+                if (!r.ok) {
+                    throw new Error(`Failed to fetch data/us-states.geo.json: ${r.status} ${r.statusText}`);
+                }
+                return r.text().then(text => {
+                    console.log(`us-states.geo.json response length: ${text.length} bytes`);
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Invalid JSON in data/us-states.geo.json:', text.slice(0, 100));
+                        throw e;
+                    }
+                });
+            }).then(data => {
+                console.log('us-states.geo.json loaded successfully');
                 statesGeoJSON = data;
                 populateStateFipsMapFromGeoJSON(statesGeoJSON);
+            }).catch(err => {
+                console.error('Error loading us-states.geo.json:', err);
+                throw err;
             })
         ]).then(() => {
+            console.log('All GeoJSON files loaded successfully');
             refreshElectionData();
             initializeMainMap();
             setInterval(refreshElectionData, 60000);
-        }).catch(err => console.error('Initial data load failed:', err));
+        }).catch(err => {
+            console.error('Initial data load failed:', err);
+            const errorMessage = `Failed to load map data: ${err.message}. Please ensure data/us-states.geo.json and data/county-geo.json are in the correct directory and accessible.`;
+            alert(errorMessage);
+            const mapDiv = document.getElementById('map');
+            mapDiv.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">${errorMessage}</div>`;
+        });
 
         // Arc segments for projection needle
         const arcSegs = [
