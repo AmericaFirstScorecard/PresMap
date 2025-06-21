@@ -523,10 +523,15 @@
         mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
         // Google Sheets URLs for live election data
         // To update data, edit the respective Google Sheets and ensure they are shared with "Anyone with the link can view".
+        // Changes to the spreadsheets should reflect on the map within seconds, as cache-busting parameters are used.
         // State spreadsheet columns: State, Electoral Votes, Election status (called, uncalled), Winner, Reporting %, Republican Candidate, Democrat Candidate, Other Candidate
         // County spreadsheet columns: state, county_fips, county_name, party, candidate, candidatevotes
-        const STATE_CSV_URL = 'https://docs.google.com/spreadsheets/d/10zbHap425MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
-        const COUNTY_CSV_URL = 'https://docs.google.com/spreadsheets/d/1edopYcOoeeom30K3WsCmzVwvJ8rHcdYH7xB7B7QCQBI/export?format=csv';
+        // Maintainer Instructions:
+        // - Ensure Google Sheets are publicly accessible via "Anyone with the link can view" in sharing settings.
+        // - Verify spreadsheet IDs match those below. Updates propagate instantly upon save.
+        // - If data doesn't update, check browser console for errors and clear cache (Ctrl+Shift+R).
+        const STATE_CSV_BASE_URL = 'https://docs.google.com/spreadsheets/d/10zbHap425MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
+        const COUNTY_CSV_BASE_URL = 'https://docs.google.com/spreadsheets/d/1edopYcOoeeom30K3WsCmzVwvJ8rHcdYH7xB7B7QCQBI/export?format=csv';
 
         let countiesGeoJSON = null;
         let countyElectionStats = {};
@@ -571,7 +576,7 @@
         }
 
         function populateCountyStatsFromCSV(rows) {
-            console.log('County CSV rows received:', rows);
+            console.log(`[${new Date().toLocaleString()}] County CSV rows received:`, rows);
             const newCountyStats = {};
             let nationalTotal = 0;
             const processedRows = new Set();
@@ -637,16 +642,11 @@
                 nationalTotal += votes;
 
                 if (stateName === 'alabama' && fips === '01073') {
-                    console.log(`Jefferson County (FIPS 01073): Bush=${newCountyStats[fips].bush_votes.toLocaleString()}, Gore=${newCountyStats[fips].gore_votes.toLocaleString()}, Total=${newCountyStats[fips].totalvotes.toLocaleString()}`);
+                    console.log(`[${new Date().toLocaleString()}] Jefferson County (FIPS 01073): Bush=${newCountyStats[fips].bush_votes.toLocaleString()}, Gore=${newCountyStats[fips].gore_votes.toLocaleString()}, Total=${newCountyStats[fips].totalvotes.toLocaleString()}`);
                 }
-
-                const stats = newCountyStats[fips];
-                if (stats.bush_votes > stats.gore_votes) stats.winner = "Bush";
-                else if (stats.gore_votes > stats.bush_votes) stats.winner = "Gore";
-                else stats.winner = "Tied";
             }
 
-            console.log(`Parsed countyElectionStats: ${Object.keys(newCountyStats).length} counties, national total votes: ${nationalTotal.toLocaleString()}`);
+            console.log(`[${new Date().toLocaleString()}] Parsed countyElectionStats: ${Object.keys(newCountyStats).length} counties, national total votes: ${nationalTotal.toLocaleString()}`);
             if (nationalTotal > 120000000) {
                 console.warn(`National vote total (${nationalTotal.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
             } else if (nationalTotal < 90000000) {
@@ -656,7 +656,7 @@
         }
 
         function populateStateStatsFromCSV(rows) {
-            console.log('State CSV rows received:', rows);
+            console.log(`[${new Date().toLocaleString()}] State CSV rows received:`, rows);
             const newStateStats = {};
             for (const row of rows) {
                 const stateKey = getColumnKey(row, 'State');
@@ -712,7 +712,7 @@
                     other_candidate: row[otherCandidateKey] || 'Other'
                 };
             }
-            console.log('Parsed stateStats:', newStateStats);
+            console.log(`[${new Date().toLocaleString()}] Parsed stateStats:`, newStateStats);
             stateStats = newStateStats;
         }
 
@@ -724,21 +724,21 @@
                     const fipsKey = Object.keys(prop).find(k => k.toLowerCase().includes('statefp') || k.toLowerCase().includes('fips')) || 'STATEFP';
                     const name = (prop[nameKey] || '').trim().toLowerCase();
                     const fips = (prop[fipsKey] || '').toString().padStart(2, '0');
-                    console.log(`GeoJSON state: ${name}, properties:`, prop);
+                    console.log(`[${new Date().toLocaleString()}] GeoJSON state: ${name}, properties:`, prop);
                     if (name && stateNameToFips[name]) {
                         const validFips = (fips && fips !== '00' && /^\d{2}$/.test(fips)) ? fips : stateNameToFips[name];
                         stateFipsMap[name] = validFips;
                     } else {
-                        console.warn(`No FIPS mapping for state: ${name}, GeoJSON FIPS: ${fips}`);
+                        console.warn(`[${new Date().toLocaleString()}] No FIPS mapping for state: ${name}, GeoJSON FIPS: ${fips}`);
                     }
                 });
             }
-            console.log('State FIPS: ', stateFipsMap);
+            console.log(`[${new Date().toLocaleString()}] State FIPS: `, stateFipsMap);
         }
 
         function updateGeoJSONAndMap() {
             if (!statesGeoJSON || !countiesGeoJSON) {
-                console.warn('GeoJSON data not loaded yet');
+                console.warn(`[${new Date().toLocaleString()}] GeoJSON data not loaded yet`);
                 return;
             }
 
@@ -758,11 +758,11 @@
             let nationalTotal = 0;
             for (const state in stateVoteTotals) {
                 nationalTotal += stateVoteTotals[state].total_votes;
-                console.log(`State ${state}: Total votes=${stateVoteTotals[state].total_votes.toLocaleString()}, Bush=${stateVoteTotals[state].bush_votes.toLocaleString()}, Gore=${stateVoteTotals[state].gore_votes.toLocaleString()}`);
+                console.log(`[${new Date().toLocaleString()}] State ${state}: Total votes=${stateVoteTotals[state].total_votes.toLocaleString()}, Bush=${stateVoteTotals[state].bush_votes.toLocaleString()}, Gore=${stateVoteTotals[state].gore_votes.toLocaleString()}`);
             }
-            console.log(`National total votes: ${nationalTotal.toLocaleString()}`);
+            console.log(`[${new Date().toLocaleString()}] National total votes: ${nationalTotal.toLocaleString()}`);
             if (nationalTotal > 120000000) {
-                console.warn(`National vote total (${nationalTotal.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
+                console.warn(`[${new Date().toLocaleString()}] National vote total (${nationalTotal.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
             }
 
             statesGeoJSON.features.forEach(f => {
@@ -773,7 +773,7 @@
 
                 let status = stateData.status || 'Uncalled';
                 if (!['Bush Win', 'Gore Win', 'Uncalled'].includes(status)) {
-                    console.warn(`Invalid status '${status}' for state ${geoName}, setting to Uncalled`);
+                    console.warn(`[${new Date().toLocaleString()}] Invalid status '${status}' for state ${geoName}, setting to Uncalled`);
                     status = 'Uncalled';
                 }
 
@@ -788,7 +788,7 @@
                     winner = 'Gore';
                 }
 
-                console.log(`State ${geoName}: Status=${status}, Winner=${winner}, EV=${stateData.electoral_votes || 0}`);
+                console.log(`[${new Date().toLocaleString()}] State ${geoName}: Status=${status}, Winner=${winner}, EV=${stateData.electoral_votes || 0}`);
 
                 f.properties = {
                     ...f.properties,
@@ -810,7 +810,7 @@
             countiesGeoJSON.features.forEach(f => {
                 const fips = f.properties.GEOID || f.properties.county_fips;
                 if (!fips) {
-                    console.warn(`Missing GEOID for county feature:`, f.properties);
+                    console.warn(`[${new Date().toLocaleString()}] Missing GEOID for county feature:`, f.properties);
                     return;
                 }
                 const stats = countyElectionStats[fips] || {
@@ -847,7 +847,7 @@
             let totalReporting = 0, numStates = 0;
 
             if (!statesGeoJSON?.features) {
-                console.warn('statesGeoJSON not initialized for UI update');
+                console.warn(`[${new Date().toLocaleString()}] statesGeoJSON not initialized for UI update`);
                 return;
             }
 
@@ -868,9 +868,9 @@
                 }
             });
 
-            console.log(`National totals: Bush=${national_bush_votes.toLocaleString()}, Gore=${national_gore_votes.toLocaleString()}, Total=${national_total_votes.toLocaleString()}`);
+            console.log(`[${new Date().toLocaleString()}] National totals: Bush=${national_bush_votes.toLocaleString()}, Gore=${national_gore_votes.toLocaleString()}, Total=${national_total_votes.toLocaleString()}`);
             if (national_total_votes > 120000000) {
-                console.warn(`National vote total (${national_total_votes.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
+                console.warn(`[${new Date().toLocaleString()}] National vote total (${national_total_votes.toLocaleString()}) exceeds expected max (~105M for 2000 election)`);
             }
 
             document.getElementById('bush-ev').textContent = ev_bush;
@@ -914,6 +914,12 @@
         }
 
         function refreshElectionData() {
+            // Append timestamp to URLs to prevent caching
+            const timestamp = Date.now();
+            const STATE_CSV_URL = `${STATE_CSV_BASE_URL}&t=${timestamp}`;
+            const COUNTY_CSV_URL = `${COUNTY_CSV_BASE_URL}&t=${timestamp}`;
+            console.log(`[${new Date().toLocaleString()}] Refreshing election data with URLs:`, { state: STATE_CSV_URL, county: COUNTY_CSV_URL });
+
             countyElectionStats = {};
             stateStats = {};
 
@@ -925,13 +931,13 @@
                         skipEmptyLines: true,
                         transformHeader: header => header.trim().toLowerCase(),
                         complete: (results) => {
-                            console.log('Parsed state headers:', results.meta.fields);
-                            console.log('State CSV data:', results.data);
+                            console.log(`[${new Date().toLocaleString()}] Parsed state headers:`, results.meta.fields);
+                            console.log(`[${new Date().toLocaleString()}] State CSV data rows: ${results.data.length}`);
                             populateStateStatsFromCSV(results.data);
                             resolve();
                         },
                         error: (err) => {
-                            console.error('Failed to load state CSV:', err);
+                            console.error(`[${new Date().toLocaleString()}] Failed to load state CSV:`, err);
                             showMapError('Failed to load state election data. Please ensure the state spreadsheet is shared with "Anyone with the link can view" in Google Sheets settings. Map will display with available GeoJSON data.');
                             resolve();
                         }
@@ -944,13 +950,13 @@
                         skipEmptyLines: true,
                         transformHeader: header => header.trim().toLowerCase(),
                         complete: (results) => {
-                            console.log('Parsed county headers:', results.meta.fields);
-                            console.log('County CSV data:', results.data);
+                            console.log(`[${new Date().toLocaleString()}] Parsed county headers:`, results.meta.fields);
+                            console.log(`[${new Date().toLocaleString()}] County CSV data rows: ${results.data.length}`);
                             populateCountyStatsFromCSV(results.data);
                             resolve();
                         },
                         error: (err) => {
-                            console.error('Failed to load county CSV:', err);
+                            console.error(`[${new Date().toLocaleString()}] Failed to load county CSV:`, err);
                             showMapError('Failed to load county election data. Please ensure the county spreadsheet is shared with "Anyone with the link can view" in Google Sheets settings. Map will display with available GeoJSON data.');
                             resolve();
                         }
@@ -961,28 +967,28 @@
                 document.getElementById('header-last-updated').textContent = `Data as of: ${lastRefreshTime}`;
                 document.getElementById('last-updated').textContent = `Data as of: ${lastRefreshTime}`;
                 updateGeoJSONAndMap();
-                console.log('Election data refreshed successfully at:', lastRefreshTime);
+                console.log(`[${new Date().toLocaleString()}] Election data refreshed successfully`);
             }).catch(err => {
-                console.error('Error refreshing election data:', err);
+                console.error(`[${new Date().toLocaleString()}] Error refreshing election data:`, err);
                 showMapError('Failed to refresh election data. Please check spreadsheet sharing settings or try again later.');
             });
         }
 
         Promise.all([
             fetch('data/county-geo.json').then(r => {
-                console.log(`Fetching data/county-geo.json: Status ${r.status}`);
+                console.log(`[${new Date().toLocaleString()}] Fetching data/county-geo.json: Status ${r.status}`);
                 if (!r.ok) throw new Error(`Failed to fetch data/county-geo.json: ${r.status} ${r.statusText}`);
                 return r.text().then(text => {
-                    console.log(`county-geo.json response length: ${text.length} bytes`);
+                    console.log(`[${new Date().toLocaleString()}] county-geo.json response length: ${text.length} bytes`);
                     try {
                         return JSON.parse(text);
                     } catch (e) {
-                        console.error('Invalid JSON in data/county-geo.json:', text.slice(0, 100));
+                        console.error(`[${new Date().toLocaleString()}] Invalid JSON in data/county-geo.json:`, text.slice(0, 100));
                         throw e;
                     }
                 });
             }).then(data => {
-                console.log('county-geo.json loaded successfully');
+                console.log(`[${new Date().toLocaleString()}] county-geo.json loaded successfully`);
                 countiesGeoJSON = data;
                 countiesGeoJSON.features.forEach(f => {
                     f.properties = {
@@ -996,23 +1002,23 @@
                     };
                 });
             }).catch(err => {
-                console.error('Error loading county-geo.json:', err);
+                console.error(`[${new Date().toLocaleString()}] Error loading county-geo.json:`, err);
                 throw err;
             }),
             fetch('data/us-states.geo.json').then(r => {
-                console.log(`Fetching data/us-states.geo.json: Status ${r.status}`);
+                console.log(`[${new Date().toLocaleString()}] Fetching data/us-states.geo.json: Status ${r.status}`);
                 if (!r.ok) throw new Error(`Failed to fetch data/us-states.geo.json: ${r.status} ${r.statusText}`);
                 return r.text().then(text => {
-                    console.log(`us-states.geo.json response length: ${text.length} bytes`);
+                    console.log(`[${new Date().toLocaleString()}] us-states.geo.json response length: ${text.length} bytes`);
                     try {
                         return JSON.parse(text);
                     } catch (e) {
-                        console.error('Invalid JSON in data/us-states.geo.json:', text.slice(0, 100));
+                        console.error(`[${new Date().toLocaleString()}] Invalid JSON in data/us-states.geo.json:`, text.slice(0, 100));
                         throw e;
                     }
                 });
             }).then(data => {
-                console.log('us-states.geo.json loaded successfully');
+                console.log(`[${new Date().toLocaleString()}] us-states.geo.json loaded successfully`);
                 statesGeoJSON = data;
                 statesGeoJSON.features.forEach(f => {
                     f.properties = {
@@ -1032,16 +1038,15 @@
                 });
                 populateStateFipsMapFromGeoJSON(statesGeoJSON);
             }).catch(err => {
-                console.error('Error loading us-states.geo.json:', err);
+                console.error(`[${new Date().toLocaleString()}] Error loading us-states.geo.json:`, err);
                 throw err;
             })
         ]).then(() => {
-            console.log('All GeoJSON files loaded successfully');
+            console.log(`[${new Date().toLocaleString()}] All GeoJSON files loaded successfully`);
             refreshElectionData();
-            initializeMainMap();
-            setInterval(refreshElectionData, 60000);
+            setInterval(refreshElectionData, 30000); // Refresh every 30 seconds for faster updates
         }).catch(err => {
-            console.error('Initial data load failed:', err);
+            console.error(`[${new Date().toLocaleString()}] Initial data load failed:`, err);
             showMapError(`Failed to load map data: ${err.message}. Please ensure data/us-states.geo.json and data/county-geo.json are in the correct directory and accessible.`);
         });
 
@@ -1090,11 +1095,11 @@
 
         function enableStateHover() {
             if (!mainMap || !mainMap.getLayer('states-fill')) {
-                console.warn('Map or states-fill layer not ready');
+                console.warn(`[${new Date().toLocaleString()}] Map or states-fill layer not ready`);
                 return;
             }
             if (stateHoverHandlers.mousemove) {
-                console.log('State hover already enabled');
+                console.log(`[${new Date().toLocaleString()}] State hover already enabled`);
                 return;
             }
 
@@ -1140,17 +1145,17 @@
 
             mainMap.on('mousemove', 'states-fill', stateHoverHandlers.mousemove);
             mainMap.on('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
-            console.log('State hover enabled');
+            console.log(`[${new Date().toLocaleString()}] State hover enabled`);
         }
 
         function disableStateHover() {
             if (stateHoverHandlers.mousemove) {
                 mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
-                console.log('Removed state mousemove handler');
+                console.log(`[${new Date().toLocaleString()}] Removed state mousemove handler`);
             }
             if (stateHoverHandlers.mouseleave) {
                 mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
-                console.log('Removed state mouseleave handler');
+                console.log(`[${new Date().toLocaleString()}] Removed state mouseleave handler`);
             }
             stateHoverHandlers.mousemove = null;
             stateHoverHandlers.mouseleave = null;
@@ -1158,16 +1163,16 @@
                 statePopup.remove();
                 statePopup = null;
             }
-            console.log('State hover disabled');
+            console.log(`[${new Date().toLocaleString()}] State hover disabled`);
         }
 
         function enableCountyHover() {
             if (!mainMap || !mainMap.getLayer('counties-fill')) {
-                console.warn('Map or counties-fill layer not ready');
+                console.warn(`[${new Date().toLocaleString()}] Map or counties-fill layer not ready`);
                 return;
             }
             if (countyHoverHandlers.mousemove) {
-                console.log('County hover already enabled');
+                console.log(`[${new Date().toLocaleString()}] County hover already enabled`);
                 return;
             }
 
@@ -1190,7 +1195,7 @@
                 const total = stats.totalvotes;
                 const bushPerc = total > 0 ? ((stats.bush_votes / total) * 100).toFixed(1) : 0;
                 const gorePerc = total > 0 ? ((stats.gore_votes / total) * 100).toFixed(1) : 0;
-                console.log(`Showing county popup for: ${stats.county_name}`);
+                console.log(`[${new Date().toLocaleString()}] Showing county popup for: ${stats.county_name}`);
                 countyPopup = new mapboxgl.Popup({
                     closeButton: false
                 })
@@ -1208,7 +1213,7 @@
 
             countyHoverHandlers.mouseleave = () => {
                 if (countyPopup) {
-                    console.log('Removing county popup');
+                    console.log(`[${new Date().toLocaleString()}] Removing county popup`);
                     countyPopup.remove();
                     countyPopup = null;
                 }
@@ -1216,26 +1221,26 @@
 
             mainMap.on('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
             mainMap.on('mouseleave', 'counties-fill', countyHoverHandlers.mouseleave);
-            console.log('County hover enabled');
+            console.log(`[${new Date().toLocaleString()}] County hover enabled`);
         }
 
         function disableCountyHover() {
             if (countyHoverHandlers.mousemove) {
                 mainMap.off('mousemove', 'counties-fill', countyHoverHandlers.mousemove);
-                console.log('Removed county mousemove handler');
+                console.log(`[${new Date().toLocaleString()}] Removed county mousemove handler`);
             }
             if (countyHoverHandlers.mouseleave) {
                 mainMap.off('mouseleave', 'counties-fill', countyHoverHandlers.mouseleave);
-                console.log('Removed county mouseleave handler');
+                console.log(`[${new Date().toLocaleString()}] Removed county mouseleave handler`);
             }
             countyHoverHandlers.mousemove = null;
             countyHoverHandlers.mouseleave = null;
             if (countyPopup) {
-                console.log('Removing county popup');
+                console.log(`[${new Date().toLocaleString()}] Removing county popup`);
                 countyPopup.remove();
                 countyPopup = null;
             }
-            console.log('County hover disabled');
+            console.log(`[${new Date().toLocaleString()}] County hover disabled`);
         }
 
         function initializeMainMap() {
@@ -1247,7 +1252,7 @@
                     zoom: 3
                 });
             } catch (err) {
-                console.error('Failed to initialize Mapbox:', err);
+                console.error(`[${new Date().toLocaleString()}] Failed to initialize Mapbox:`, err);
                 showMapError('Failed to load map: Invalid Mapbox access token. Please set valid token in mapboxgl.accessToken.');
                 return;
             }
@@ -1308,7 +1313,7 @@
             });
 
             mainMap.on('error', err => {
-                console.error('Mapbox error:', err);
+                console.error(`[${new Date().toLocaleString()}] Mapbox error:`, err);
                 showMapError(`Map failed to load: ${err.error.message}. Please check Mapbox token.`);
             });
         }
@@ -1316,7 +1321,7 @@
         function addCountiesLayer(stateName) {
             const stateFP = getStateFP(stateName);
             if (!stateFP) {
-                console.warn(`No FIPS code found for state: ${stateName}`);
+                console.warn(`[${new Date().toLocaleString()}] No FIPS code found for state: ${stateName}`);
                 return;
             }
 
@@ -1326,7 +1331,7 @@
             };
 
             if (filtered.features.length === 0) {
-                console.warn(`No counties found for state FIPS: ${stateFP}`);
+                console.warn(`[${new Date().toLocaleString()}] No counties found for state FIPS: ${stateFP}`);
             }
 
             if (mainMap.getSource('counties')) {
@@ -1378,7 +1383,7 @@
                     duration: 1100
                 });
             } else {
-                console.warn(`Failed to zoom to ${stateName}: No bounds found`);
+                console.warn(`[${new Date().toLocaleString()}] Failed to zoom to ${stateName}: No bounds found`);
             }
 
             try {
@@ -1396,7 +1401,7 @@
                     const gorePerc = total > 0 ? ((votesDem / total) * 100).toFixed(1) : 0;
                     const otherPerc = total > 0 ? ((votesOther / total) * 100).toFixed(1) : 0;
 
-                    console.log(`Sidebar data for ${stateName}: Bush=${votesGop.toLocaleString()}, Gore=${votesDem.toLocaleString()}, Other=${votesOther.toLocaleString()}, Total=${total.toLocaleString()}`);
+                    console.log(`[${new Date().toLocaleString()}] Sidebar data for ${stateName}: Bush=${votesGop.toLocaleString()}, Gore=${votesDem.toLocaleString()}, Other=${votesOther.toLocaleString()}, Total=${total.toLocaleString()}`);
 
                     document.getElementById('state-sidebar-title').textContent = `President: ${p.state}`;
                     document.getElementById('state-electoral-votes').textContent = `${p.electoral_votes} Electoral Votes`;
@@ -1427,7 +1432,7 @@
                     document.getElementById('reporting-fill').style.width = `${p.reporting || 0}%`;
                     document.getElementById('reporting-status').textContent = `${p.status} (${(p.reporting || 0).toFixed(1)}% reporting)`;
                 } else {
-                    console.warn(`No state feature found for ${stateName}`);
+                    console.warn(`[${new Date().toLocaleString()}] No state feature found for ${stateName}`);
                     document.getElementById('state-sidebar-title').textContent = `President: ${stateName}`;
                     document.getElementById('state-electoral-votes').textContent = '0 Electoral Votes';
                     document.getElementById('candidate-stats').innerHTML = '<p>No data available</p>';
@@ -1435,7 +1440,7 @@
                     document.getElementById('reporting-status').textContent = 'Uncalled (0% reporting)';
                 }
             } catch (err) {
-                console.error(`Error updating sidebar for ${stateName}:`, err);
+                console.error(`[${new Date().toLocaleString()}] Error updating sidebar for ${stateName}:`, err);
             }
         }
 
@@ -1443,7 +1448,7 @@
             const normalized = stateName.toLowerCase().trim();
             const fips = stateFipsMap[normalized];
             if (!fips) {
-                console.warn(`No FIPS code found for state: ${stateName}`);
+                console.warn(`[${new Date().toLocaleString()}] No FIPS code found for state: ${stateName}`);
             }
             return fips;
         }
@@ -1465,7 +1470,7 @@
             return [[bounds[0], bounds[1]], [bounds[2], bounds[3]]];
         }
 
-        function toggleCountyMode(force) {
+        function toggleCountyMode(enable) {
             isCountyMode = enable;
             document.getElementById('county-mode-btn').textContent = enable ? 'State Mode' : 'County Mode';
             if (enable) {
@@ -1507,8 +1512,6 @@
                     padding: 40,
                     duration: 1100
                 });
-                document.getElementById('state-sidebar').classList.remove('active');
-                currentState = null;
             } else {
                 if (mainMap.getLayer('counties-fill')) {
                     mainMap.removeLayer('counties-fill');
@@ -1525,12 +1528,8 @@
                     padding: 40,
                     duration: 1100
                 });
-                document.getElementById('state-sidebar').classList.remove('active');
-                currentState = null;
             }
-            document.getElementById('header').style.display = 'block';
-            document.getElementById('county-mode-btn').style.display = 'block';
-            document.getElementById('projection-ticker-wrap').style.display = 'flex';
+            console.log(`[${new Date().toLocaleString()}] Toggled to ${enable ? 'County' : 'State'} mode`);
         }
 
         document.getElementById('county-mode-btn').addEventListener('click', () => {
@@ -1539,7 +1538,7 @@
 
         document.getElementById('close-sidebar-btn').addEventListener('click', () => {
             document.getElementById('state-sidebar').classList.remove('active');
-            document.getElementById('header').style.display = 'block';
+            document.getElementById('header').style.display = 'flex';
             document.getElementById('county-mode-btn').style.display = 'block';
             document.getElementById('projection-ticker-wrap').style.display = 'flex';
             if (mainMap.getLayer('counties-fill')) {
@@ -1558,7 +1557,10 @@
                 duration: 1100
             });
             currentState = null;
+            console.log(`[${new Date().toLocaleString()}] Closed state sidebar`);
         });
+
+        initializeMainMap();
     </script>
 </body>
 </html>
