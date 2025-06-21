@@ -36,49 +36,73 @@
             flex-direction: column;
             gap: 15px;
         }
-        
-        .progress-bar-wrapper {
+        .progress-bar-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 20px;
+        }
+        .progress-bar-outer {
+            width: 100%;
             position: relative;
+        }
+        .progress-bar-wrapper {
+            display: flex;
             width: 100%;
             height: 24px;
             background: #3a404a;
             border-radius: 12px;
             overflow: hidden;
-            display: flex;
-            flex-direction: row;
+            position: relative;
         }
-        
         .progress-bar {
             height: 100%;
             position: relative;
             display: flex;
             align-items: center;
-            justify-content: center;
             transition: width 0.6s ease;
-            /* Remove float or absolute styles */
         }
         .progress-bar.bush {
             background: linear-gradient(to right, #e74c3c, #c0392b);
             border-radius: 12px 0 0 12px;
-            /* Red on left */
             order: 0;
         }
         .progress-bar.gore {
             background: linear-gradient(to right, #3498db, #2980b9);
             border-radius: 0 12px 12px 0;
-            /* Blue on right */
             order: 1;
         }
         .vote-label {
             position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 50%;
+            transform: translateY(-50%);
             color: #fff;
             font-size: 13px;
             font-weight: 700;
             text-shadow: 0 0 2px rgba(0,0,0,0.7);
-            white-space: nowrap;
             z-index: 2;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        .vote-label.left {
+            left: 12px;
+            text-align: left;
+        }
+        .vote-label.right {
+            right: 12px;
+            text-align: right;
+        }
+        .threshold-label {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 15px;
+            font-weight: 800;
+            color: #fff;
+            z-index: 5;
+            text-shadow: 0 0 5px #222;
+            pointer-events: none;
         }
         .threshold-marker {
             position: absolute;
@@ -101,12 +125,6 @@
             border-radius: 50%;
             object-fit: cover;
             box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
-        .progress-bar-container {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            gap: 20px;
         }
         .candidate-stats {
             display: flex;
@@ -262,125 +280,7 @@
             min-height: 450px;
             border-top: 2px solid #303540;
         }
-        .nyt-projection-title {
-            color: #fff;
-            font-size: 2.6rem;
-            font-weight: 900;
-            letter-spacing: 0.5px;
-            margin-bottom: 24px;
-            text-align: center;
-            text-shadow: 0 2px 16px #000;
-        }
-        .needle-svg-wrap {
-            width: 520px;
-            max-width: 99vw;
-            margin: 0 auto;
-            position: relative;
-        }
-        .needle-img-candidate {
-            position: absolute;
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            object-fit: cover;
-            box-shadow: 0 3px 24px rgba(0,0,0,0.5);
-            background: #fff;
-            z-index: 2;
-        }
-        .needle-img-bush {
-            left: 10px;
-            top: 172px;
-        }
-        .needle-img-gore {
-            right: 10px;
-            top: 172px;
-        }
-        .needle-checkmark {
-            position: absolute;
-            width: 36px;
-            height: 36px;
-            top: 220px;
-            left: 38px;
-            background: none;
-            display: none;
-            z-index: 3;
-            filter: drop-shadow(0 0 4px #fff);
-        }
-        .needle-checkmark.gore {
-            left: auto;
-            right: 38px;
-        }
-        .arc-label {
-            font-size: 15px;
-            font-weight: 700;
-            fill: #fff;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-            font-family: 'Inter', sans-serif;
-            pointer-events: none;
-            dominant-baseline: middle;
-            text-anchor: middle;
-        }
-        .arc-label-center {
-            font-size: 17px;
-            font-weight: 900;
-            fill: #fff;
-        }
-        .needle-arrow {
-            fill: #fff;
-            stroke: #222;
-            stroke-width: 2.2;
-            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
-        }
-        .needle-dot {
-            fill: #191d22;
-            stroke: #fff;
-            stroke-width: 3.5;
-            filter: drop-shadow(0 1px 8px rgba(0,0,0,0.5));
-        }
-        .arc-very-likely-bush { stroke: #e74c3c; }
-        .arc-likely-bush { stroke: #f7a49a; }
-        .arc-lean-bush { stroke: #ffe5d2; }
-        .arc-tossup { stroke: #cccccc; }
-        .arc-lean-gore { stroke: #b8d8f8; }
-        .arc-likely-gore { stroke: #74b0e7; }
-        .arc-very-likely-gore { stroke: #3498db; }
-        .needle-candidate-labels {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-            font-size: 2.2rem;
-            font-weight: 800;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            gap: 48px;
-        }
-        .needle-bush-label { color: #e74c3c; }
-        .needle-gore-label { color: #3498db; }
-        .nyt-prob-row {
-            margin-top: 28px;
-            text-align: center;
-            font-size: 1.8rem;
-            font-weight: 900;
-            letter-spacing: 0.3px;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 16px;
-        }
-        .proj-big-num {
-            font-size: 2.3rem;
-            font-weight: 900;
-            margin: 0 8px;
-        }
-        .proj-big-num.bush { color: #e74c3c; }
-        .proj-big-num.gore { color: #3498db; }
-        .proj-divider {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #fff;
-            margin: 8px;
-        }
+        /* ...keep rest of your styles, including media queries... */
         @media (max-width: 700px) {
             #map {
                 height: 55vh;
@@ -403,47 +303,8 @@
                 align-items: center;
                 gap: 10px;
             }
-            .needle-svg-wrap {
-                width: 99vw;
-            }
-            .needle-img-candidate {
-                width: 48px;
-                height: 48px;
-                top: 125px;
-            }
-            .needle-checkmark {
-                width: 28px;
-                height: 28px;
-                top: 148px;
-                left: 12px;
-            }
-            .needle-checkmark.gore {
-                right: 12px;
-            }
-            .arc-label {
-                font-size: 12px;
-            }
-            .arc-label-center {
-                font-size: 14px;
-            }
-            .needle-candidate-labels {
-                font-size: 1.6rem;
-                gap: 8px;
-            }
-            .nyt-prob-row {
-                font-size: 1.4rem;
-                font-weight: bold;
-            }
-            .proj-big-num {
-                font-size: 1.8rem;
-            }
-            .proj-divider {
-                font-size: 1.2rem;
-            }
-            #county-mode-btn {
-                padding: 10px 20px;
-                font-size: 14px;
-                font-weight: 700;
+            .progress-bar-wrapper {
+                height: 18px;
             }
         }
     </style>
