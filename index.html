@@ -952,8 +952,11 @@
             document.getElementById('arc-le-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 10, 30));
             document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 30, 60));
             document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 60, 90));
-
+        
+            // FIX: Clear the label group to avoid breaking the DOM or duplicating labels
             const labelGroup = document.getElementById('arc-labels-group');
+            labelGroup.innerHTML = '';
+        
             arcSegs.forEach(seg => {
                 const midAngle = (seg.start + seg.end) / 2;
                 const pos = polar(svgCx, svgCy, arcR + 20, midAngle);
