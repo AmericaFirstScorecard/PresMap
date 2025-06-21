@@ -20,145 +20,137 @@
             letter-spacing: 0.2px;
         }
         #header {
-          background: linear-gradient(to bottom, #2a2f38, #222);
-          padding: 20px;
-          z-index: 1000;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 20px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            background: linear-gradient(to bottom, #2a2f38, #222);
+            padding: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
-        
         .progress-container {
-          width: 100%;
-          max-width: 900px;
-          display: flex;
-          flex-direction: column;
-          gap: 15px;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
-        
         .candidate-labels {
-          display: flex;
-          justify-content: space-between;
-          font-size: 15px;
-          font-weight: 700;
-          margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 8px;
         }
-        
         .progress-bar-container {
-          display: flex;
-          align-items: center;
-          width: 100%;
-          gap: 20px;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 20px;
         }
-        
         .candidate-image {
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          object-fit: cover;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
-        
         .progress-bar-outer {
-          width: 100%;
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
+            width: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        
         .threshold-label {
-          margin-bottom: 4px;
-          font-size: 15px;
-          font-weight: 800;
-          color: #fff;
-          z-index: 5;
-          text-shadow: 0 0 5px #222;
-          pointer-events: none;
-          text-align: center;
-          width: 100%;
+            margin-bottom: 4px;
+            font-size: 15px;
+            font-weight: 800;
+            color: #fff;
+            z-index: 5;
+            text-shadow: 0 0 5px #222;
+            pointer-events: none;
+            text-align: center;
+            width: 100%;
         }
-        
         .progress-bar-wrapper {
-          display: flex;
-          width: 100%;
-          height: 24px;
-          background: #3a404a;
-          border-radius: 12px;
-          overflow: hidden;
-          position: relative;
+            display: flex;
+            width: 100%;
+            height: 24px;
+            background: #3a404a;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
         }
-        
         .progress-bar {
-          height: 100%;
-          position: relative;
-          display: flex;
-          align-items: center;
-          transition: width 0.6s ease;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            transition: width 0.6s ease;
         }
         .progress-bar.bush {
-          background: linear-gradient(to right, #e74c3c, #c0392b);
-          border-radius: 12px 0 0 12px;
-          order: 0;
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+            border-radius: 12px 0 0 12px;
+            order: 0;
         }
         .progress-bar.gore {
-          background: linear-gradient(to right, #3498db, #2980b9);
-          border-radius: 0 12px 12px 0;
-          order: 1;
+            background: linear-gradient(to right, #3498db, #2980b9);
+            border-radius: 0 12px 12px 0;
+            order: 1;
         }
         .vote-label {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #fff;
-          font-size: 13px;
-          font-weight: 700;
-          text-shadow: 0 0 2px rgba(0,0,0,0.7);
-          z-index: 2;
-          white-space: nowrap;
-          pointer-events: none;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            text-shadow: 0 0 2px rgba(0,0,0,0.7);
+            z-index: 2;
+            white-space: nowrap;
+            pointer-events: none;
         }
         .vote-label.left {
-          left: 12px;
-          text-align: left;
+            left: 12px;
+            text-align: left;
         }
         .vote-label.right {
-          right: 12px;
-          text-align: right;
+            right: 12px;
+            text-align: right;
         }
         .threshold-marker {
-          position: absolute;
-          left: calc(270 / 538 * 100%);
-          width: 2px;
-          height: 100%;
-          background: #fff;
-          z-index: 10;
+            position: absolute;
+            left: calc(270 / 538 * 100%);
+            width: 2px;
+            height: 100%;
+            background: #fff;
+            z-index: 10;
         }
         .candidate-stats {
-          display: flex;
-          justify-content: space-between;
-          width: 100%;
-          max-width: 900px;
-          font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 900px;
+            font-size: 13px;
         }
         .title {
-          font-size: 32px;
-          font-weight: 900;
-          text-shadow: 0 1px 4px rgba(0,0,0,0.2);
-          margin-bottom: 12px;
+            font-size: 32px;
+            font-weight: 900;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            margin-bottom: 12px;
         }
         .last-updated {
-          font-size: 12px;
-          color: #bbb;
-          text-align: center;
+            font-size: 12px;
+            color: #bbb;
+            text-align: center;
         }
         @media (max-width: 700px) {
-          .title { font-size: 24px; }
-          .candidate-image { width: 60px; height: 60px; }
-          .candidate-stats { font-size: 12px; flex-direction: column; align-items: center; gap: 10px; }
-          .progress-bar-wrapper { height: 18px; }
+            .title { font-size: 24px; }
+            .candidate-image { width: 60px; height: 60px; }
+            .candidate-stats { font-size: 12px; flex-direction: column; align-items: center; gap: 10px; }
+            .progress-bar-wrapper { height: 18px; }
         }
         #map {
             width: 100vw;
@@ -283,7 +275,7 @@
             background: #3498db;
             transform: scale(1.05);
         }
-        /* ---- Election Gauge ("projection-ticker-wrap") improved styling ---- */
+        /* ---- Upgraded Election Gauge ("projection-ticker-wrap") ---- */
         #projection-ticker-wrap {
             width: 100%;
             background: #191d22;
@@ -297,7 +289,6 @@
             min-height: 390px;
             border-top: 2px solid #303540;
         }
-        
         .nyt-projection-title {
             font-size: 22px;
             font-weight: 700;
@@ -307,7 +298,6 @@
             text-align: center;
             text-shadow: 0 0 8px #222;
         }
-        
         .needle-svg-wrap {
             display: flex;
             flex-direction: column;
@@ -315,42 +305,53 @@
             position: relative;
             width: 100%;
             max-width: 540px;
+            min-height: 270px;
         }
-        
-        .needle-img-candidate {
+        .needle-candidate-wrap {
             position: absolute;
-            top: 66px;
+            top: 60px;
+            width: 48px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 20;
+        }
+        .needle-candidate-wrap.bush {
+            left: 12px;
+        }
+        .needle-candidate-wrap.gore {
+            right: 12px;
+        }
+        .needle-img-candidate {
             width: 48px;
             height: 48px;
             border-radius: 50%;
             border: 2.5px solid #fff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
             background: #191d22;
             object-fit: cover;
-            z-index: 10;
-            transition: box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
-        .needle-img-bush {
-            left: 25px;
-        }
-        .needle-img-gore {
-            right: 25px;
-        }
-        
         .needle-checkmark {
-            position: absolute;
-            top: 85px;
-            left: 36px;
-            width: 32px;
-            height: 32px;
+            margin-top: 3px;
+            width: 28px;
+            height: 28px;
             display: none;
             z-index: 20;
         }
         .needle-checkmark.gore {
-            left: unset;
-            right: 36px;
+            /* nothing, just different color */
         }
-        
+        .arc {
+            stroke-linecap: round;
+        }
+        .arc-vl-bush { stroke: #c0392b; }
+        .arc-l-bush { stroke: #e74c3c; }
+        .arc-le-bush { stroke: #f7a69a; }
+        .arc-tossup { stroke: #bbbbbb; }
+        .arc-le-gore { stroke: #97bbed; }
+        .arc-l-gore { stroke: #3498db; }
+        .arc-vl-gore { stroke: #215180; }
         #nyt-needle-svg {
             display: block;
             margin: 0 auto;
@@ -360,8 +361,8 @@
             background: none;
             z-index: 5;
             overflow: visible;
+            position: relative;
         }
-        
         .arc-label {
             font-size: 13px;
             fill: #bbb;
@@ -376,19 +377,16 @@
             fill: #fff;
             font-size: 16px;
         }
-        
         .needle-arrow {
             fill: #777;
             stroke: #222;
             stroke-width: 1;
         }
-        
         #needle-dot {
             fill: #fff;
             stroke: #888;
             stroke-width: 3;
         }
-        
         .needle-candidate-labels {
             display: flex;
             flex-direction: row;
@@ -402,8 +400,7 @@
             width: 100%;
             max-width: 370px;
         }
-        .needle-bush-label,
-        .needle-gore-label {
+        .needle-bush-label, .needle-gore-label {
             font-size: 17px;
             font-weight: 900;
             padding: 0 6px;
@@ -426,52 +423,51 @@
             padding: 0 10px;
             opacity: 0.7;
         }
-        
         @media (max-width: 700px) {
             #projection-ticker-wrap { min-height: 310px; padding: 28px 0 18px 0; }
             .nyt-projection-title { font-size: 16px; margin-bottom: 10px; }
-            .needle-svg-wrap { max-width: 99vw; }
-            .needle-img-candidate { top: 48px; width: 36px; height: 36px; left: 7px; right: 7px; }
-            .needle-img-bush { left: 7px; }
-            .needle-img-gore { right: 7px; }
-            .needle-checkmark, .needle-checkmark.gore { width: 22px; height: 22px; top: 65px; left: 14px; right: 14px;}
-            #nyt-needle-svg { max-width: 99vw; height: 132px; }
-            .needle-candidate-labels { font-size: 12px; max-width: 98vw; gap: 3px; }
-            .proj-big-num { font-size: 16px; min-width: 28px;}
+            .needle-candidate-wrap { width: 32px; height: 60px; top: 34px; }
+            .needle-candidate-wrap.bush { left: 2px; }
+            .needle-candidate-wrap.gore { right: 2px; }
+            .needle-img-candidate { width: 32px; height: 32px; }
+            .needle-checkmark { width: 17px; height: 17px; }
+            #nyt-needle-svg { max-width: 99vw; height: 120px; }
+            .needle-candidate-labels { font-size: 13px; max-width: 98vw; gap: 2px; }
+            .proj-big-num { font-size: 14px; min-width: 22px; }
         }
     </style>
 </head>
 <body>
     <div id="header">
-      <div class="title">2000 Live Election Map</div>
-      <div class="progress-container">
-        <div class="candidate-labels">
-          <span>Bush: <span id="bush-ev">0</span> EV</span>
-          <span>Gore: <span id="gore-ev">0</span> EV</span>
-        </div>
-        <div class="progress-bar-container">
-          <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image">
-          <div class="progress-bar-outer">
-            <div class="threshold-label">270 to Win</div>
-            <div class="progress-bar-wrapper">
-              <div class="threshold-marker"></div>
-              <div class="progress-bar bush" id="bush-bar">
-                <div class="vote-label left" id="bush-label">0%</div>
-              </div>
-              <div class="progress-bar gore" id="gore-bar">
-                <div class="vote-label right" id="gore-label">0%</div>
-              </div>
+        <div class="title">2000 Live Election Map</div>
+        <div class="progress-container">
+            <div class="candidate-labels">
+                <span>Bush: <span id="bush-ev">0</span> EV</span>
+                <span>Gore: <span id="gore-ev">0</span> EV</span>
             </div>
-          </div>
-          <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image">
+            <div class="progress-bar-container">
+                <img src="images/George-W-Bush.jpg" alt="Bush" class="candidate-image">
+                <div class="progress-bar-outer">
+                    <div class="threshold-label">270 to Win</div>
+                    <div class="progress-bar-wrapper">
+                        <div class="threshold-marker"></div>
+                        <div class="progress-bar bush" id="bush-bar">
+                            <div class="vote-label left" id="bush-label">0%</div>
+                        </div>
+                        <div class="progress-bar gore" id="gore-bar">
+                            <div class="vote-label right" id="gore-label">0%</div>
+                        </div>
+                    </div>
+                </div>
+                <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image">
+            </div>
+            <div class="candidate-stats">
+                <div class="candidate-stat-left">Bush: <span id="bush-pop">0</span> Votes</div>
+                <div class="stat-box" id="reporting">Reporting: 0%</div>
+                <div class="candidate-stat-right">Gore: <span id="gore-pop">0</span> Votes</div>
+            </div>
+            <div class="last-updated" id="header-last-updated">Data as of: Unknown</div>
         </div>
-        <div class="candidate-stats">
-          <div class="candidate-stat-left">Bush: <span id="bush-pop">0</span> Votes</div>
-          <div class="stat-box" id="reporting">Reporting: 0%</div>
-          <div class="candidate-stat-right">Gore: <span id="gore-pop">0</span> Votes</div>
-        </div>
-        <div class="last-updated" id="header-last-updated">Data as of: Unknown</div>
-      </div>
     </div>
     <button id="county-mode-btn">County Mode</button>
     <div id="map"></div>
@@ -490,24 +486,28 @@
     <div id="projection-ticker-wrap">
         <div class="nyt-projection-title">Chance of Winning <span style="font-weight: 400;">(Projection)</span></div>
         <div class="needle-svg-wrap">
-            <img src="images/George-W-Bush.jpg" class="needle-img-candidate needle-img-bush" id="needle-img-bush" alt="Bush">
-            <img src="images/Al_Gore.jpg" class="needle-img-candidate needle-img-gore" id="needle-img-gore" alt="Gore">
-            <svg class="needle-checkmark" id="needle-check-bush" viewBox="0 0 53 53">
-                <circle cx="26.5" cy="26.5" r="25" fill="#e74c3c"/>
-                <path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
-            </svg>
-            <svg class="needle-checkmark gore" id="needle-check-gore" viewBox="0 0 53 53">
-                <circle cx="26.5" cy="26.5" r="25" fill="#3498db"/>
-                <path d="M16 27.5l7 7 14-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
-            </svg>
+            <div class="needle-candidate-wrap bush">
+                <img src="images/George-W-Bush.jpg" class="needle-img-candidate" id="needle-img-bush" alt="Bush">
+                <svg class="needle-checkmark" id="needle-check-bush" viewBox="0 0 28 28">
+                    <circle cx="14" cy="14" r="13" fill="#e74c3c"/>
+                    <path d="M8 14.5l4 4 7-7" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="needle-candidate-wrap gore">
+                <img src="images/Al_Gore.jpg" class="needle-img-candidate" id="needle-img-gore" alt="Gore">
+                <svg class="needle-checkmark gore" id="needle-check-gore" viewBox="0 0 28 28">
+                    <circle cx="14" cy="14" r="13" fill="#3498db"/>
+                    <path d="M8 14.5l4 4 7-7" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+            </div>
             <svg id="nyt-needle-svg" width="500" height="270" viewBox="0 0 500 270">
-                <path id="arc-vl-bush" class="arc-very-likely-bush" fill="none" stroke-width="20"/>
-                <path id="arc-l-bush" class="arc-likely-bush" fill="none" stroke-width="20"/>
-                <path id="arc-le-bush" class="arc-lean-bush" fill="none" stroke-width="20"/>
-                <path id="arc-tossup" class="arc-tossup" fill="none" stroke-width="20"/>
-                <path id="arc-le-gore" class="arc-lean-gore" fill="none" stroke-width="20"/>
-                <path id="arc-l-gore" class="arc-likely-gore" fill="none" stroke-width="20"/>
-                <path id="arc-vl-gore" class="arc-very-likely-gore" fill="none" stroke-width="20"/>
+                <path id="arc-vl-bush" class="arc arc-vl-bush" fill="none" stroke-width="20"/>
+                <path id="arc-l-bush" class="arc arc-l-bush" fill="none" stroke-width="20"/>
+                <path id="arc-le-bush" class="arc arc-le-bush" fill="none" stroke-width="20"/>
+                <path id="arc-tossup" class="arc arc-tossup" fill="none" stroke-width="20"/>
+                <path id="arc-le-gore" class="arc arc-le-gore" fill="none" stroke-width="20"/>
+                <path id="arc-l-gore" class="arc arc-l-gore" fill="none" stroke-width="20"/>
+                <path id="arc-vl-gore" class="arc arc-vl-gore" fill="none" stroke-width="20"/>
                 <g id="arc-labels-group"></g>
                 <g id="needle-group">
                     <polygon class="needle-arrow" points="250,64 243,64 243,162 257,162 257,64"/>
@@ -525,15 +525,6 @@
     </div>
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
-        // Google Sheets URLs for live election data
-        // To update data, edit the respective Google Sheets and ensure they are shared with "Anyone with the link can view".
-        // Changes to the spreadsheets should reflect on the map within seconds, as cache-busting parameters are used.
-        // State spreadsheet columns: State, Electoral Votes, Election status (called, uncalled), Winner, Reporting %, Republican Candidate, Democrat Candidate, Other Candidate
-        // County spreadsheet columns: state, county_fips, county_name, party, candidate, candidatevotes
-        // Maintainer Instructions:
-        // - Ensure Google Sheets are publicly accessible via "Anyone with the link can view" in sharing settings.
-        // - Verify spreadsheet IDs match those below. Updates propagate instantly upon save.
-        // - If data doesn't update, check browser console for errors and clear cache (Ctrl+Shift+R).
         const STATE_CSV_BASE_URL = 'https://docs.google.com/spreadsheets/d/10zbHap425MtnS4jgsELt__DhtEQbXI8GlnD-6vkB4yg/export?format=csv';
         const COUNTY_CSV_BASE_URL = 'https://docs.google.com/spreadsheets/d/1edopYcOoeeom30K3WsCmzVwvJ8rHcdYH7xB7B7QCQBI/export?format=csv';
 
@@ -889,7 +880,6 @@
             document.getElementById('bush-label').textContent = bushEVPerc.toFixed(1) + '%';
             document.getElementById('gore-label').textContent = goreEVPerc.toFixed(1) + '%';
 
-
             document.getElementById('bush-pop').textContent = national_bush_votes.toLocaleString();
             document.getElementById('gore-pop').textContent = national_gore_votes.toLocaleString();
 
@@ -918,7 +908,6 @@
         }
 
         function refreshElectionData() {
-            // Append timestamp to URLs to prevent caching
             const timestamp = Date.now();
             const STATE_CSV_URL = `${STATE_CSV_BASE_URL}&t=${timestamp}`;
             const COUNTY_CSV_URL = `${COUNTY_CSV_BASE_URL}&t=${timestamp}`;
@@ -1048,7 +1037,7 @@
         ]).then(() => {
             console.log(`[${new Date().toLocaleString()}] All GeoJSON files loaded successfully`);
             refreshElectionData();
-            setInterval(refreshElectionData, 30000); // Refresh every 30 seconds for faster updates
+            setInterval(refreshElectionData, 30000);
         }).catch(err => {
             console.error(`[${new Date().toLocaleString()}] Initial data load failed:`, err);
             showMapError(`Failed to load map data: ${err.message}. Please ensure data/us-states.geo.json and data/county-geo.json are in the correct directory and accessible.`);
@@ -1082,11 +1071,8 @@
             document.getElementById('arc-le-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 10, 30));
             document.getElementById('arc-l-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 30, 60));
             document.getElementById('arc-vl-gore').setAttribute('d', arcPath(svgCx, svgCy, arcR, 60, 90));
-        
-            // FIX: Clear the label group to avoid breaking the DOM or duplicating labels
             const labelGroup = document.getElementById('arc-labels-group');
             labelGroup.innerHTML = '';
-        
             arcSegs.forEach(seg => {
                 const midAngle = (seg.start + seg.end) / 2;
                 const pos = polar(svgCx, svgCy, arcR + 20, midAngle);
@@ -1158,6 +1144,7 @@
         function disableStateHover() {
             if (stateHoverHandlers.mousemove) {
                 mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
+ Sy
                 console.log(`[${new Date().toLocaleString()}] Removed state mousemove handler`);
             }
             if (stateHoverHandlers.mouseleave) {
@@ -1185,6 +1172,7 @@
 
             countyHoverHandlers.mousemove = e => {
                 if (countyPopup) {
+                    console.log(`[${new Date().toLocaleString()}] Removing county popup`);
                     countyPopup.remove();
                     countyPopup = null;
                 }
@@ -1333,46 +1321,30 @@
         }
 
         function addCountiesLayer(stateName) {
-        const stateFP = getStateFP(stateName);
-        if (!stateFP) {
-            console.warn(`[${new Date().toLocaleString()}] No FIPS code found for state: ${stateName}`);
-            return;
-        }
+            const stateFP = getStateFP(stateName);
+            if (!stateFP) {
+                console.warn(`[${new Date().toLocaleString()}] No FIPS code found for state: ${stateName}`);
+                return;
+            }
     
-        const filtered = {
-            type: 'FeatureCollection',
-            features: countiesGeoJSON.features.filter(f => (f.properties.STATEFP || '').toString().padStart(2, '0') === stateFP)
-        };
+            const filtered = {
+                type: 'FeatureCollection',
+                features: countiesGeoJSON.features.filter(f => (f.properties.STATEFP || '').toString().padStart(2, '0') === stateFP)
+            };
     
-        if (filtered.features.length === 0) {
-            console.warn(`[${new Date().toLocaleString()}] No counties found for state FIPS: ${stateFP}`);
-        }
+            if (filtered.features.length === 0) {
+                console.warn(`[${new Date().toLocaleString()}] No counties found for state FIPS: ${stateFP}`);
+            }
     
-        // *** FIX STARTS HERE ***
-        if (mainMap.getSource('counties')) {
-            if (mainMap.getLayer('counties-fill')) mainMap.removeLayer('counties-fill');
-            if (mainMap.getLayer('counties-outline')) mainMap.removeLayer('counties-outline');
-            mainMap.removeSource('counties');
-        }
-        mainMap.addSource('counties', {
-            type: 'geojson',
-            data: filtered
-        });
-
             if (mainMap.getSource('counties')) {
+                if (mainMap.getLayer('counties-fill')) mainMap.removeLayer('counties-fill');
+                if (mainMap.getLayer('counties-outline')) mainMap.removeLayer('counties-outline');
                 mainMap.removeSource('counties');
             }
             mainMap.addSource('counties', {
                 type: 'geojson',
                 data: filtered
             });
-
-            if (mainMap.getLayer('counties-fill')) {
-                mainMap.removeLayer('counties-fill');
-            }
-            if (mainMap.getLayer('counties-outline')) {
-                mainMap.removeLayer('counties-outline');
-            }
 
             mainMap.addLayer({
                 id: 'counties-fill',
