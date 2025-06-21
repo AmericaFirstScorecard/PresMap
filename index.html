@@ -36,6 +36,7 @@
             flex-direction: column;
             gap: 15px;
         }
+        
         .progress-bar-wrapper {
             position: relative;
             width: 100%;
@@ -44,30 +45,40 @@
             border-radius: 12px;
             overflow: hidden;
             display: flex;
+            flex-direction: row;
         }
+        
         .progress-bar {
             height: 100%;
-            transition: width 0.6s ease;
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: width 0.6s ease;
+            /* Remove float or absolute styles */
         }
         .progress-bar.bush {
             background: linear-gradient(to right, #e74c3c, #c0392b);
             border-radius: 12px 0 0 12px;
+            /* Red on left */
+            order: 0;
         }
         .progress-bar.gore {
             background: linear-gradient(to right, #3498db, #2980b9);
             border-radius: 0 12px 12px 0;
+            /* Blue on right */
+            order: 1;
         }
         .vote-label {
             position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
+            left: 50%;
+            transform: translateX(-50%);
             color: #fff;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 700;
             text-shadow: 0 0 2px rgba(0,0,0,0.7);
-            width: 100%;
-            text-align: center;
+            white-space: nowrap;
+            z-index: 2;
         }
         .threshold-marker {
             position: absolute;
@@ -878,13 +889,13 @@
             const totalEV = 538;
             const bushEVPerc = totalEV > 0 ? (ev_bush / totalEV * 100) : 0;
             const goreEVPerc = totalEV > 0 ? (ev_gore / totalEV * 100) : 0;
-
+            
             document.getElementById('bush-bar').style.width = `${bushEVPerc}%`;
             document.getElementById('gore-bar').style.width = `${goreEVPerc}%`;
-            document.getElementById('bush-bar').style.borderRadius = bushEVPerc > 0 ? '12px 0 0 12px' : '0';
-            document.getElementById('gore-bar').style.borderRadius = goreEVPerc > 0 ? '0 12px 12px 0' : '0';
+            
             document.getElementById('bush-label').textContent = bushEVPerc.toFixed(1) + '%';
             document.getElementById('gore-label').textContent = goreEVPerc.toFixed(1) + '%';
+
 
             document.getElementById('bush-pop').textContent = national_bush_votes.toLocaleString();
             document.getElementById('gore-pop').textContent = national_gore_votes.toLocaleString();
@@ -1243,6 +1254,13 @@
             console.log(`[${new Date().toLocaleString()}] County hover disabled`);
         }
 
+        function hideElectionTicker() {
+            document.getElementById('projection-ticker-wrap').style.display = 'none';
+        }
+        function showElectionTicker() {
+            document.getElementById('projection-ticker-wrap').style.display = 'flex';
+        }
+
         function initializeMainMap() {
             try {
                 mainMap = new mapboxgl.Map({
@@ -1303,7 +1321,7 @@
                     currentState = stateName;
                     document.getElementById('header').style.display = 'none';
                     document.getElementById('county-mode-btn').style.display = 'none';
-                    document.getElementById('projection-ticker-wrap').style.display = 'none';
+                    hideElectionTicker();
                     disableStateHover();
                     addCountiesLayer(stateName);
                     document.getElementById('state-sidebar').classList.add('active');
@@ -1551,7 +1569,7 @@
             document.getElementById('state-sidebar').classList.remove('active');
             document.getElementById('header').style.display = 'flex';
             document.getElementById('county-mode-btn').style.display = 'block';
-            document.getElementById('projection-ticker-wrap').style.display = 'flex';
+            showElectionTicker();
             if (mainMap.getLayer('counties-fill')) {
                 mainMap.removeLayer('counties-fill');
             }
