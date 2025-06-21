@@ -275,7 +275,6 @@
             background: #3498db;
             transform: scale(1.05);
         }
-        /* ---- Upgraded Election Gauge ("projection-ticker-wrap") ---- */
         #projection-ticker-wrap {
             width: 100%;
             background: #191d22;
@@ -340,12 +339,12 @@
             z-index: 20;
         }
         .needle-checkmark.gore {
-            /* nothing, just different color */
         }
         .arc {
             stroke-linecap: round;
         }
         .arc-vl-bush { stroke: #c0392b; }
+ WHEN I COPY THIS CODE AND TRY TO RUN IT IN MY BROWSER I GET AN ERROR SAYING "Uncaught TypeError: Cannot read properties of undefined (reading 'forEach')" AND THE MAP DOES NOT LOAD. CAN YOU FIX THAT AND GIVE ME THE NEW FINAL index.html FILE?
         .arc-l-bush { stroke: #e74c3c; }
         .arc-le-bush { stroke: #f7a69a; }
         .arc-tossup { stroke: #bbbbbb; }
@@ -1144,7 +1143,7 @@
         function disableStateHover() {
             if (stateHoverHandlers.mousemove) {
                 mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
-                console.log(`[${new體驗 Date().toLocaleString()}] Removed state mousemove handler`);
+                console.log(`[${new Date().toLocaleString()}] Removed state mousemove handler`);
             }
             if (stateHoverHandlers.mouseleave) {
                 mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
