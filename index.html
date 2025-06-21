@@ -626,11 +626,11 @@
                 }
 
                 if (candidate.includes('bush') || party === "REPUBLICAN") {
-                    newCountyStats[fips].bush_votes = votes;
+                    newCountyStats[fips].bush_votes += votes;
                 } else if (candidate.includes('gore') || party === "DEMOCRAT") {
-                    newCountyStats[fips].gore_votes = votes;
+                    newCountyStats[fips].gore_votes += votes;
                 } else {
-                    newCountyStats[fips].other_votes = votes;
+                    newCountyStats[fips].other_votes += votes;
                 }
 
                 newCountyStats[fips].totalvotes = newCountyStats[fips].bush_votes + newCountyStats[fips].gore_votes + newCountyStats[fips].other_votes;
@@ -1144,8 +1144,7 @@
         function disableStateHover() {
             if (stateHoverHandlers.mousemove) {
                 mainMap.off('mousemove', 'states-fill', stateHoverHandlers.mousemove);
- Sy
-                console.log(`[${new Date().toLocaleString()}] Removed state mousemove handler`);
+                console.log(`[${new體驗 Date().toLocaleString()}] Removed state mousemove handler`);
             }
             if (stateHoverHandlers.mouseleave) {
                 mainMap.off('mouseleave', 'states-fill', stateHoverHandlers.mouseleave);
