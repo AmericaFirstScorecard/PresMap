@@ -1319,20 +1319,31 @@
         }
 
         function addCountiesLayer(stateName) {
-            const stateFP = getStateFP(stateName);
-            if (!stateFP) {
-                console.warn(`[${new Date().toLocaleString()}] No FIPS code found for state: ${stateName}`);
-                return;
-            }
-
-            const filtered = {
-                type: 'FeatureCollection',
-                features: countiesGeoJSON.features.filter(f => (f.properties.STATEFP || '').toString().padStart(2, '0') === stateFP)
-            };
-
-            if (filtered.features.length === 0) {
-                console.warn(`[${new Date().toLocaleString()}] No counties found for state FIPS: ${stateFP}`);
-            }
+        const stateFP = getStateFP(stateName);
+        if (!stateFP) {
+            console.warn(`[${new Date().toLocaleString()}] No FIPS code found for state: ${stateName}`);
+            return;
+        }
+    
+        const filtered = {
+            type: 'FeatureCollection',
+            features: countiesGeoJSON.features.filter(f => (f.properties.STATEFP || '').toString().padStart(2, '0') === stateFP)
+        };
+    
+        if (filtered.features.length === 0) {
+            console.warn(`[${new Date().toLocaleString()}] No counties found for state FIPS: ${stateFP}`);
+        }
+    
+        // *** FIX STARTS HERE ***
+        if (mainMap.getSource('counties')) {
+            if (mainMap.getLayer('counties-fill')) mainMap.removeLayer('counties-fill');
+            if (mainMap.getLayer('counties-outline')) mainMap.removeLayer('counties-outline');
+            mainMap.removeSource('counties');
+        }
+        mainMap.addSource('counties', {
+            type: 'geojson',
+            data: filtered
+        });
 
             if (mainMap.getSource('counties')) {
                 mainMap.removeSource('counties');
