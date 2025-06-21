@@ -20,131 +20,145 @@
             letter-spacing: 0.2px;
         }
         #header {
-            background: linear-gradient(to bottom, #2a2f38, #222);
-            padding: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          background: linear-gradient(to bottom, #2a2f38, #222);
+          padding: 20px;
+          z-index: 1000;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
+        
         .progress-container {
-            width: 100%;
-            max-width: 900px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+          width: 100%;
+          max-width: 900px;
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
         }
+        
         .candidate-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 15px;
-            font-weight: 700;
-            margin-bottom: 8px;
+          display: flex;
+          justify-content: space-between;
+          font-size: 15px;
+          font-weight: 700;
+          margin-bottom: 8px;
         }
+        
         .progress-bar-container {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            gap: 20px;
+          display: flex;
+          align-items: center;
+          width: 100%;
+          gap: 20px;
         }
+        
         .candidate-image {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          object-fit: cover;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
+        
         .progress-bar-outer {
-            width: 100%;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+          width: 100%;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
+        
         .threshold-label {
-            margin-bottom: 4px;
-            font-size: 15px;
-            font-weight: 800;
-            color: #fff;
-            z-index: 5;
-            text-shadow: 0 0 5px #222;
-            pointer-events: none;
-            text-align: center;
-            width: 100%;
+          margin-bottom: 4px;
+          font-size: 15px;
+          font-weight: 800;
+          color: #fff;
+          z-index: 5;
+          text-shadow: 0 0 5px #222;
+          pointer-events: none;
+          text-align: center;
+          width: 100%;
         }
+        
         .progress-bar-wrapper {
-            display: flex;
-            width: 100%;
-            height: 24px;
-            background: #3a404a;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
+          display: flex;
+          width: 100%;
+          height: 24px;
+          background: #3a404a;
+          border-radius: 12px;
+          overflow: hidden;
+          position: relative;
         }
+        
         .progress-bar {
-            height: 100%;
-            position: relative;
-            display: flex;
-            align-items: center;
-            transition: width 0.6s ease;
+          height: 100%;
+          position: relative;
+          display: flex;
+          align-items: center;
+          transition: width 0.6s ease;
         }
         .progress-bar.bush {
-            background: linear-gradient(to right, #e74c3c, #c0392b);
-            border-radius: 12px 0 0 12px;
-            order: 0;
+          background: linear-gradient(to right, #e74c3c, #c0392b);
+          border-radius: 12px 0 0 12px;
+          order: 0;
         }
         .progress-bar.gore {
-            background: linear-gradient(to right, #3498db, #2980b9);
-            border-radius: 0 12px 12px 0;
-            order: 1;
+          background: linear-gradient(to right, #3498db, #2980b9);
+          border-radius: 0 12px 12px 0;
+          order: 1;
         }
         .vote-label {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #fff;
-            font-size: 13px;
-            font-weight: 700;
-            text-shadow: 0 0 2px rgba(0,0,0,0.7);
-            z-index: 2;
-            white-space: nowrap;
-            pointer-events: none;
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #fff;
+          font-size: 13px;
+          font-weight: 700;
+          text-shadow: 0 0 2px rgba(0,0,0,0.7);
+          z-index: 2;
+          white-space: nowrap;
+          pointer-events: none;
         }
         .vote-label.left {
-            left: 12px;
-            text-align: left;
+          left: 12px;
+          text-align: left;
         }
         .vote-label.right {
-            right: 12px;
-            text-align: right;
+          right: 12px;
+          text-align: right;
         }
         .threshold-marker {
-            position: absolute;
-            left: calc(270 / 538 * 100%);
-            width: 2px;
-            height: 100%;
-            background: #fff;
-            z-index: 10;
+          position: absolute;
+          left: calc(270 / 538 * 100%);
+          width: 2px;
+          height: 100%;
+          background: #fff;
+          z-index: 10;
         }
         .candidate-stats {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 900px;
-            font-size: 13px;
+          display: flex;
+          justify-content: space-between;
+          width: 100%;
+          max-width: 900px;
+          font-size: 13px;
         }
         .title {
-            font-size: 32px;
-            font-weight: 900;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.2);
-            margin-bottom: 12px;
+          font-size: 32px;
+          font-weight: 900;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.2);
+          margin-bottom: 12px;
         }
         .last-updated {
-            font-size: 12px;
-            color: #bbb;
-            text-align: center;
+          font-size: 12px;
+          color: #bbb;
+          text-align: center;
+        }
+        @media (max-width: 700px) {
+          .title { font-size: 24px; }
+          .candidate-image { width: 60px; height: 60px; }
+          .candidate-stats { font-size: 12px; flex-direction: column; align-items: center; gap: 10px; }
+          .progress-bar-wrapper { height: 18px; }
         }
         #map {
             width: 100vw;
