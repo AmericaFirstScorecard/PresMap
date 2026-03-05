@@ -74,7 +74,6 @@
       </div>
       <div class="actions"><button class="btn" id="admin-open">Admin Panel</button></div>
     </div>
-
     <section class="hero">
       <h1 class="title" id="page-title">Election Night Live Returns</h1>
       <div class="score-row">
@@ -175,21 +174,14 @@ const appState={
 };
 let map, statePopup, countyPopup, statesGeo, countiesGeo;
 
-const GORE_2000_STATES = new Set(['California','Connecticut','Delaware','District of Columbia','Hawaii','Illinois','Iowa','Maine','Maryland','Massachusetts','Michigan','Minnesota','New Jersey','New Mexico','New York','Oregon','Pennsylvania','Rhode Island','Vermont','Washington','Wisconsin']);
+function seeded(n){let x=Math.sin(n)*10000;return x-Math.floor(x);} 
 function ensureCountySeed(feature){
   const fips=(feature.properties.GEOID||'').toString().padStart(5,'0');
   if(!fips) return;
   if(!appState.counties[fips]){
-    const stateName = nameByFP[(feature.properties.STATEFP||'').toString().padStart(2,'0')] || '';
-    const goreWin = GORE_2000_STATES.has(stateName);
-    appState.counties[fips]={
-      a: goreWin ? 850 : 1200,
-      b: goreWin ? 1200 : 850,
-      o: 45,
-      reporting: 78,
-      name:feature.properties.NAME||'Unknown',
-      statefp:(feature.properties.STATEFP||'').toString().padStart(2,'0')
-    };
+    const r=seeded(Number(fips));
+    const a=Math.round(800+r*4200), b=Math.round(760+(1-r)*3900), o=Math.round(30+r*400), rep=Math.round((35+r*65)*10)/10;
+    appState.counties[fips]={a,b,o,reporting:rep,name:feature.properties.NAME||'Unknown',statefp:(feature.properties.STATEFP||'').toString().padStart(2,'0')};
   }
 }
 function loadLocal(){
@@ -259,7 +251,7 @@ function applyUI(){
   drawGauge(pA,pB,odds.expEVA,odds.expEVB);
   const t=Date.now(); appState.oddsHistory.push({t,pA,pB}); appState.oddsHistory=appState.oddsHistory.slice(-150); drawOddsChart();
 
-  if(map&&map.getSource('states')) { enrichStatesGeo(); map.getSource('states').setData(statesGeo); }
+  if(map&&map.getSource('states')) map.getSource('states').setData(statesGeo);
   if(appState.selectedState) renderSidebar(appState.selectedState);
 }
 
@@ -279,10 +271,6 @@ function stateColorExpr(){
 function initMap(){
   map = new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/dark-v11',center:[-96.5,38.8],zoom:3});
   map.on('load',()=>{
-    const style = map.getStyle();
-    (style.layers || []).forEach(l=>{
-      if(l.type === 'symbol' && map.getLayer(l.id)) map.removeLayer(l.id);
-    });
     enrichStatesGeo();
     map.addSource('states',{type:'geojson',data:statesGeo});
     map.addLayer({id:'states-fill',type:'fill',source:'states',paint:{'fill-color':stateColorExpr(),'fill-opacity':0.87}});
@@ -298,72 +286,37 @@ function initMap(){
 
     map.on('click','states-fill',e=>{
       const p=e.features?.[0]?.properties; if(!p) return;
-      appState.selectedState=p.state_name; enterCountyView(p.state_name);
+      appState.selectedState=p.state_name; enterStateCountyView(p.state_name);
     });
 
     applyUI();
   });
 }
 
-function getFeatureBBox(fc){
-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  function walk(coords){
-    if(!Array.isArray(coords)) return;
-    if(typeof coords[0] === 'number' && typeof coords[1] === 'number'){
-      const x=coords[0], y=coords[1];
-      if(x<minX) minX=x; if(x>maxX) maxX=x; if(y<minY) minY=y; if(y>maxY) maxY=y;
-      return;
-    }
-    coords.forEach(walk);
-  }
-  (fc.features||[]).forEach(f=>walk(f.geometry?.coordinates));
-  if(!Number.isFinite(minX)) return [[-125.0011,24.9493],[-66.9326,49.5904]];
-  return [[minX,minY],[maxX,maxY]];
-}
-
-function enterCountyView(stateName=null){
-  appState.isCountyView=true;
-  document.getElementById('county-toggle').textContent='State View';
-  appState.selectedState = stateName || appState.selectedState;
-
-  let features = countiesGeo.features;
-  if(stateName){
-    const fp=Object.keys(nameByFP).find(k=>nameByFP[k]===stateName);
-    if(fp) features = countiesGeo.features.filter(f=>(f.properties.STATEFP||'').toString().padStart(2,'0')===fp);
-  }
-  const filtered={type:'FeatureCollection',features:[...features]};
+function enterStateCountyView(stateName){
+  const fp=Object.keys(nameByFP).find(k=>nameByFP[k]===stateName); if(!fp) return;
+  appState.isCountyView=true; document.getElementById('county-toggle').textContent='State View';
+  const filtered={type:'FeatureCollection',features:countiesGeo.features.filter(f=>(f.properties.STATEFP||'').toString().padStart(2,'0')===fp)};
   filtered.features.forEach(f=>{const d=appState.counties[(f.properties.GEOID||'').toString().padStart(5,'0')]||{a:0,b:0}; f.properties.winner=d.a>d.b?'A':d.b>d.a?'B':'T';});
-
   if(map.getLayer('counties-fill')){map.removeLayer('counties-fill'); map.removeLayer('counties-line'); map.removeSource('counties');}
   map.addSource('counties',{type:'geojson',data:filtered});
   map.addLayer({id:'counties-fill',type:'fill',source:'counties',paint:{'fill-color':['match',['get','winner'],'A','#e4555d','B','#4ea1ff','#aab6cd'],'fill-opacity':0.86}});
   map.addLayer({id:'counties-line',type:'line',source:'counties',paint:{'line-color':'#fff','line-opacity':0.2,'line-width':0.35}});
-  map.fitBounds(getFeatureBBox(filtered),{padding:35,duration:700});
-
-  map.off('mousemove','counties-fill',countyHover);
-  map.off('mouseleave','counties-fill',clearCountyHover);
-  map.off('click','counties-fill',countyClick);
+  map.fitBounds(turfBbox(filtered),{padding:35,duration:800});
   map.on('mousemove','counties-fill',countyHover);
   map.on('mouseleave','counties-fill',clearCountyHover);
   map.on('click','counties-fill',countyClick);
-
-  if(stateName) renderSidebar(stateName);
-  else {
-    document.getElementById('detail-title').textContent='County Editor Mode';
-    document.getElementById('detail-sub').textContent='County view active. Click a county to edit values in Admin Panel.';
-    renderNationalSidebar();
-  }
+  renderSidebar(stateName);
 }
+function turfBbox(fc){let minX=999,minY=999,maxX=-999,maxY=-999; fc.features.forEach(f=>{const coords=(f.geometry.type==='Polygon'?f.geometry.coordinates:[].concat(...f.geometry.coordinates)); coords.flat(2).forEach((v,i,a)=>{if(i%2===0){const x=v,y=a[i+1]; if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;}})}); return [[minX,minY],[maxX,maxY]];}
+function countyHover(e){const f=e.features?.[0]; if(!f) return; const fips=(f.properties.GEOID||'').toString().padStart(5,'0'); const c=appState.counties[fips]; if(!c) return; const html=`<div style="font:12px Inter"><strong>${c.name} County</strong><br>${appState.candA.name}: ${c.a.toLocaleString()}<br>${appState.candB.name}: ${c.b.toLocaleString()}<br>Reporting: ${c.reporting.toFixed(1)}%</div>`; if(!countyPopup) countyPopup=new mapboxgl.Popup({closeButton:false,closeOnClick:false}); countyPopup.setLngLat(e.lngLat).setHTML(html).addTo(map);}
+function clearCountyHover(){if(countyPopup) countyPopup.remove(); countyPopup=null;}
+function countyClick(e){const f=e.features?.[0]; if(!f) return; const fips=(f.properties.GEOID||'').toString().padStart(5,'0'); appState.selectedCounty=fips; const c=appState.counties[fips]; if(!c) return; document.getElementById('selected-county-name').textContent=`${c.name} County (${fips})`; document.getElementById('edit-fips').value=fips; document.getElementById('edit-a-votes').value=c.a; document.getElementById('edit-b-votes').value=c.b; document.getElementById('edit-other-votes').value=c.o; document.getElementById('edit-reporting').value=c.reporting; if(!appState.adminUnlocked){document.getElementById('selected-county-name').textContent+=' — unlock admin to edit';}}
 
 function exitCountyView(){
-  appState.isCountyView=false;
-  appState.selectedCounty=null;
-  document.getElementById('county-toggle').textContent='County View';
-  ['counties-fill','counties-line'].forEach(l=>{if(map.getLayer(l)) map.removeLayer(l)});
-  if(map.getSource('counties')) map.removeSource('counties');
-  map.off('mousemove','counties-fill',countyHover);
-  map.off('mouseleave','counties-fill',clearCountyHover);
-  map.off('click','counties-fill',countyClick);
+  appState.isCountyView=false; appState.selectedState=null; document.getElementById('county-toggle').textContent='County View';
+  ['counties-fill','counties-line'].forEach(l=>{if(map.getLayer(l)) map.removeLayer(l)}); if(map.getSource('counties')) map.removeSource('counties');
+  map.off('mousemove','counties-fill',countyHover); map.off('mouseleave','counties-fill',clearCountyHover); map.off('click','counties-fill',countyClick);
   map.fitBounds([[-125.0011,24.9493],[-66.9326,49.5904]],{padding:35,duration:700});
   renderNationalSidebar();
 }
@@ -424,16 +377,16 @@ function buildBiasList(){
 }
 
 function wireUI(){
-  document.getElementById('county-toggle').onclick=()=> appState.isCountyView?exitCountyView(): enterCountyView(appState.selectedState || null);
+  document.getElementById('county-toggle').onclick=()=> appState.isCountyView?exitCountyView(): (appState.selectedState?enterStateCountyView(appState.selectedState):alert('Click a state first to open county view.'));
   document.getElementById('tab-dashboard').onclick=()=>{document.getElementById('dashboard-view').style.display='grid';document.getElementById('projection-panel').style.display='block';document.getElementById('odds-view').style.display='none';document.getElementById('tab-dashboard').classList.add('active');document.getElementById('tab-odds').classList.remove('active');};
   document.getElementById('tab-odds').onclick=()=>{document.getElementById('dashboard-view').style.display='none';document.getElementById('projection-panel').style.display='none';document.getElementById('odds-view').style.display='block';document.getElementById('tab-odds').classList.add('active');document.getElementById('tab-dashboard').classList.remove('active');drawOddsChart();};
 
   document.getElementById('admin-open').onclick=()=>document.getElementById('admin-modal').style.display='flex';
   document.getElementById('admin-close').onclick=()=>document.getElementById('admin-modal').style.display='none';
-  document.getElementById('admin-login').onclick=()=>{const ok=document.getElementById('admin-pass').value===ADMIN_PASSWORD; appState.adminUnlocked=ok; document.getElementById('admin-auth-msg').textContent=ok?'Unlocked. County editing enabled.':'Invalid password.'; document.getElementById('admin-controls').style.display=ok?'block':'none'; if(ok){ buildBiasList(); enterCountyView(appState.selectedState || null); }};
+  document.getElementById('admin-login').onclick=()=>{const ok=document.getElementById('admin-pass').value===ADMIN_PASSWORD; appState.adminUnlocked=ok; document.getElementById('admin-auth-msg').textContent=ok?'Unlocked.':'Invalid password.'; document.getElementById('admin-controls').style.display=ok?'block':'none'; if(ok) buildBiasList();};
 
   document.getElementById('save-candidates').onclick=()=>{if(!appState.adminUnlocked) return; appState.candA.name=document.getElementById('set-a-name').value.trim()||appState.candA.name; appState.candB.name=document.getElementById('set-b-name').value.trim()||appState.candB.name; appState.candA.image=document.getElementById('set-a-img').value.trim()||appState.candA.image; appState.candB.image=document.getElementById('set-b-img').value.trim()||appState.candB.image; applyUI(); saveLocal();};
-  document.getElementById('save-county').onclick=()=>{if(!appState.adminUnlocked||!appState.selectedCounty) return; const c=appState.counties[appState.selectedCounty]; if(!c) return; c.a=Math.max(0,Number(document.getElementById('edit-a-votes').value||0)); c.b=Math.max(0,Number(document.getElementById('edit-b-votes').value||0)); c.o=Math.max(0,Number(document.getElementById('edit-other-votes').value||0)); c.reporting=Math.max(0,Math.min(100,Number(document.getElementById('edit-reporting').value||0))); applyUI(); if(appState.isCountyView) enterCountyView(appState.selectedState || null); saveLocal();};
+  document.getElementById('save-county').onclick=()=>{if(!appState.adminUnlocked||!appState.selectedCounty) return; const c=appState.counties[appState.selectedCounty]; if(!c) return; c.a=Math.max(0,Number(document.getElementById('edit-a-votes').value||0)); c.b=Math.max(0,Number(document.getElementById('edit-b-votes').value||0)); c.o=Math.max(0,Number(document.getElementById('edit-other-votes').value||0)); c.reporting=Math.max(0,Math.min(100,Number(document.getElementById('edit-reporting').value||0))); applyUI(); if(appState.selectedState) enterStateCountyView(appState.selectedState); saveLocal();};
 }
 
 Promise.all([fetch('data/us-states.geo.json').then(r=>r.json()),fetch('data/county-geo.json').then(r=>r.json())]).then(([s,c])=>{
