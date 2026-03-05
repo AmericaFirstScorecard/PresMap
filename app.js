@@ -1,6 +1,6 @@
 mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
 const ADMIN_PASSWORD = 'TGEPSWDKEY1301';
-const STORAGE_KEY = 'election-control-center-v1';
+const STORAGE_KEY = 'election-control-center-v2';
 
 const evByState = {"Alabama":9,"Alaska":3,"Arizona":11,"Arkansas":6,"California":54,"Colorado":10,"Connecticut":7,"Delaware":3,"District of Columbia":3,"Florida":30,"Georgia":16,"Hawaii":4,"Idaho":4,"Illinois":19,"Indiana":11,"Iowa":6,"Kansas":6,"Kentucky":8,"Louisiana":8,"Maine":4,"Maryland":10,"Massachusetts":11,"Michigan":15,"Minnesota":10,"Mississippi":6,"Missouri":10,"Montana":4,"Nebraska":5,"Nevada":6,"New Hampshire":4,"New Jersey":14,"New Mexico":5,"New York":28,"North Carolina":16,"North Dakota":3,"Ohio":17,"Oklahoma":7,"Oregon":8,"Pennsylvania":19,"Rhode Island":4,"South Carolina":9,"South Dakota":3,"Tennessee":11,"Texas":40,"Utah":6,"Vermont":3,"Virginia":13,"Washington":12,"West Virginia":4,"Wisconsin":10,"Wyoming":3};
 const nameByFP={"01":"Alabama","02":"Alaska","04":"Arizona","05":"Arkansas","06":"California","08":"Colorado","09":"Connecticut","10":"Delaware","11":"District of Columbia","12":"Florida","13":"Georgia","15":"Hawaii","16":"Idaho","17":"Illinois","18":"Indiana","19":"Iowa","20":"Kansas","21":"Kentucky","22":"Louisiana","23":"Maine","24":"Maryland","25":"Massachusetts","26":"Michigan","27":"Minnesota","28":"Mississippi","29":"Missouri","30":"Montana","31":"Nebraska","32":"Nevada","33":"New Hampshire","34":"New Jersey","35":"New Mexico","36":"New York","37":"North Carolina","38":"North Dakota","39":"Ohio","40":"Oklahoma","41":"Oregon","42":"Pennsylvania","44":"Rhode Island","45":"South Carolina","46":"South Dakota","47":"Tennessee","48":"Texas","49":"Utah","50":"Vermont","51":"Virginia","53":"Washington","54":"West Virginia","55":"Wisconsin","56":"Wyoming"};
@@ -15,18 +15,15 @@ const appState={
 };
 let map, statePopup, countyPopup, statesGeo, countiesGeo;
 
-const GORE_2000_STATES = new Set(['California','Connecticut','Delaware','District of Columbia','Hawaii','Illinois','Iowa','Maine','Maryland','Massachusetts','Michigan','Minnesota','New Jersey','New Mexico','New York','Oregon','Pennsylvania','Rhode Island','Vermont','Washington','Wisconsin']);
 function ensureCountySeed(feature){
   const fips=(feature.properties.GEOID||'').toString().padStart(5,'0');
   if(!fips) return;
   if(!appState.counties[fips]){
-    const stateName = nameByFP[(feature.properties.STATEFP||'').toString().padStart(2,'0')] || '';
-    const goreWin = GORE_2000_STATES.has(stateName);
     appState.counties[fips]={
-      a: goreWin ? 850 : 1200,
-      b: goreWin ? 1200 : 850,
-      o: 45,
-      reporting: 78,
+      a: 0,
+      b: 0,
+      o: 0,
+      reporting: 0,
       name:feature.properties.NAME||'Unknown',
       statefp:(feature.properties.STATEFP||'').toString().padStart(2,'0')
     };
@@ -56,13 +53,15 @@ function computeOdds(){
   Object.entries(appState.states).forEach(([name,s])=>{
     natA+=s.a; natB+=s.b; natT+=s.total;
   });
-  const nationalLean = natT ? ((natB-natA)/natT*100) : 0; // + favors B
+  if(!natT){
+    return {pBWin:0.5, pAWin:0.5, expEVB:269, expEVA:269, calledA:0, calledB:0};
+  }
+  const nationalLean = (natB-natA)/natT*100; // + favors B
   Object.entries(appState.states).forEach(([name,s])=>{
     const bias=Number(appState.stateBias[name]||0); // + favors B
     const marginForB = -s.margin;
     const report = s.reporting;
-    const uncertainty = (100-report)/100;
-    const score = (marginForB*0.42) + ((report-50)*0.045) + (nationalLean*0.36) + (bias*0.12) - (uncertainty*1.2);
+    const score = (marginForB*0.42) + ((report-50)*0.025) + (nationalLean*0.36) + (bias*0.12);
     let pB = logistic(score);
     if(report>=99 && Math.abs(s.margin)>=2){ pB = s.margin<0?1:0; }
     expEVB += pB*s.ev;
@@ -270,7 +269,8 @@ function wireUI(){
 
   document.getElementById('admin-open').onclick=()=>document.getElementById('admin-modal').style.display='flex';
   document.getElementById('admin-close').onclick=()=>document.getElementById('admin-modal').style.display='none';
-  document.getElementById('admin-login').onclick=()=>{const ok=document.getElementById('admin-pass').value===ADMIN_PASSWORD; appState.adminUnlocked=ok; document.getElementById('admin-auth-msg').textContent=ok?'Unlocked. County editing enabled.':'Invalid password.'; document.getElementById('admin-controls').style.display=ok?'block':'none'; if(ok){ buildBiasList(); enterCountyView(appState.selectedState || null); }};
+  document.getElementById('admin-login').onclick=()=>{const ok=document.getElementById('admin-pass').value===ADMIN_PASSWORD; appState.adminUnlocked=ok; document.getElementById('admin-auth-msg').textContent=ok?'Unlocked. Use the Map button to edit counties.':'Invalid password.'; document.getElementById('admin-controls').style.display=ok?'block':'none'; if(ok){ buildBiasList(); }};
+  document.getElementById('admin-map-mode').onclick=()=>{ if(!appState.adminUnlocked) return; document.getElementById('admin-modal').style.display='none'; enterCountyView(appState.selectedState || null); document.getElementById('detail-title').textContent='Map Edit Mode'; document.getElementById('detail-sub').textContent='Click counties to edit values in Admin Panel.'; };
 
   document.getElementById('save-candidates').onclick=()=>{if(!appState.adminUnlocked) return; appState.candA.name=document.getElementById('set-a-name').value.trim()||appState.candA.name; appState.candB.name=document.getElementById('set-b-name').value.trim()||appState.candB.name; appState.candA.image=document.getElementById('set-a-img').value.trim()||appState.candA.image; appState.candB.image=document.getElementById('set-b-img').value.trim()||appState.candB.image; applyUI(); saveLocal();};
   document.getElementById('save-county').onclick=()=>{if(!appState.adminUnlocked||!appState.selectedCounty) return; const c=appState.counties[appState.selectedCounty]; if(!c) return; c.a=Math.max(0,Number(document.getElementById('edit-a-votes').value||0)); c.b=Math.max(0,Number(document.getElementById('edit-b-votes').value||0)); c.o=Math.max(0,Number(document.getElementById('edit-other-votes').value||0)); c.reporting=Math.max(0,Math.min(100,Number(document.getElementById('edit-reporting').value||0))); applyUI(); if(appState.isCountyView) enterCountyView(appState.selectedState || null); saveLocal();};
