@@ -163,15 +163,15 @@
         .last-updated { font-size: 0.76rem; color: var(--muted); text-align: center; }
 
         #county-mode-btn {
-            position: absolute; top: 32px; right: 34px; z-index: 1100;
-            border: 1px solid rgba(255,255,255,0.25);
-            background: linear-gradient(120deg, rgba(79, 104, 255, 0.95), rgba(77, 164, 255, 0.9));
-            color: #fff; padding: 11px 20px; border-radius: 999px;
-            font-size: 0.9rem; font-weight: 800; letter-spacing: .01em;
-            box-shadow: 0 14px 24px rgba(33, 83, 162, 0.35);
-            cursor: pointer; transition: transform .2s ease, box-shadow .2s ease;
+            position: fixed; top: 20px; right: 20px; z-index: 1200;
+            border: 1px solid rgba(255,255,255,0.28);
+            background: linear-gradient(120deg, #3348c6, #2d7be0);
+            color: #fff; padding: 10px 14px; border-radius: 12px;
+            font-size: 0.8rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+            box-shadow: 0 12px 22px rgba(15, 42, 96, 0.42);
+            cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
         }
-        #county-mode-btn:hover { transform: translateY(-1px); box-shadow: 0 18px 30px rgba(33, 83, 162, 0.5); }
+        #county-mode-btn:hover { transform: translateY(-1px); box-shadow: 0 16px 28px rgba(15, 42, 96, 0.58); filter: brightness(1.06); }
 
         #map {
             margin: 16px auto 0;
@@ -186,19 +186,9 @@
             box-shadow: 0 22px 45px rgba(0,0,0,0.45);
         }
 
-        .map-caption {
-            width: min(1160px, calc(100% - 24px));
-            margin: 8px auto 0;
-            text-align: right;
-            color: #97a8cb;
-            font-size: 0.78rem;
-            letter-spacing: .03em;
-            text-transform: uppercase;
-        }
-
         #state-sidebar {
             display: none; position: fixed; top: 10px; right: 10px; width: min(360px, calc(100vw - 20px)); height: calc(100% - 20px);
-            background: rgba(8, 14, 28, 0.95); border: 1px solid rgba(255,255,255,0.14); color: #fff; padding: 24px; z-index: 1200;
+            background: rgba(8, 14, 28, 0.95); border: 1px solid rgba(255,255,255,0.14); color: #fff; padding: 24px; z-index: 1300;
             overflow-y: auto; box-shadow: -10px 0 34px rgba(0,0,0,0.45); border-radius: 20px; transform: translateX(110%); transition: transform 0.28s ease;
         }
         #state-sidebar.active { display: block; transform: translateX(0); }
@@ -303,14 +293,8 @@
                     <div class="threshold-label">270 to Win</div>
                     <div class="progress-bar-wrapper">
                         <div class="threshold-marker"></div>
-                        <div class="progress-bar bush" id="bush-bar">
-                            <div class="vote-label left" id="bush-label-pct">0%</div>
-                            <div class="vote-label left" style="top: calc(50% + 14px);" id="bush-label-ev">0 EV</div>
-                        </div>
-                        <div class="progress-bar gore" id="gore-bar">
-                            <div class="vote-label right" id="gore-label-pct">0%</div>
-                            <div class="vote-label right" style="top: calc(50% + 14px);" id="gore-label-ev">0 EV</div>
-                        </div>
+                        <div class="progress-bar bush" id="bush-bar"></div>
+                        <div class="progress-bar gore" id="gore-bar"></div>
                     </div>
                 </div>
                 <img src="images/Al_Gore.jpg" alt="Gore" class="candidate-image" />
@@ -324,7 +308,7 @@
         </div>
     </div>
 
-    <button id="county-mode-btn">County Mode</button>
+    <button id="county-mode-btn">County View</button>
     <div id="map"></div>
     <div class="map-caption">Interactive map • Click any state to open the race breakdown panel</div>
 
@@ -518,10 +502,6 @@
             const totalEV = 538; const bushEVPerc = totalEV ? (ev_bush/totalEV*100) : 0; const goreEVPerc = totalEV ? (ev_gore/totalEV*100) : 0;
             document.getElementById('bush-ev').textContent = ev_bush; document.getElementById('gore-ev').textContent = ev_gore;
             document.getElementById('bush-bar').style.width = `${bushEVPerc}%`; document.getElementById('gore-bar').style.width = `${goreEVPerc}%`;
-            document.getElementById('bush-label-pct').textContent = bushEVPerc.toFixed(1) + '%';
-            document.getElementById('gore-label-pct').textContent = goreEVPerc.toFixed(1) + '%';
-            document.getElementById('bush-label-ev').textContent = `${ev_bush} EV`;
-            document.getElementById('gore-label-ev').textContent = `${ev_gore} EV`;
 
             document.getElementById('bush-pop').textContent = fmt(national_gop);
             document.getElementById('gore-pop').textContent = fmt(national_dem);
@@ -663,8 +643,6 @@
             if (countyPopup) { countyPopup.remove(); countyPopup = null; }
         }
 
-        function hideElectionTicker(){ document.getElementById('projection-ticker-wrap').style.display = 'none'; }
-        function showElectionTicker(){ document.getElementById('projection-ticker-wrap').style.display = 'flex'; }
 
         function initializeMainMap(){
             try {
@@ -680,7 +658,7 @@
                 enableStateHover();
                 mainMap.on('click','states-fill', e=>{
                     if (isCountyMode) return; const p = e.features[0].properties || {}; const nameKey = Object.keys(p).find(k=>k.toLowerCase().includes('name'))||'name'; const stateName = p[nameKey]; if (!stateName) return; addCountiesLayer(stateName);
-                    document.getElementById('header').style.display = 'none'; document.getElementById('county-mode-btn').style.display = 'none'; hideElectionTicker(); disableStateHover(); document.getElementById('state-sidebar').classList.add('active'); document.getElementById('close-sidebar-btn').style.display = 'block'; document.getElementById('last-updated').textContent = `Data as of: ${lastRefreshTime}`; currentState = stateName;
+                    disableStateHover(); document.getElementById('state-sidebar').classList.add('active'); document.getElementById('last-updated').textContent = `Data as of: ${lastRefreshTime}`; currentState = stateName;
                 });
             });
             mainMap.on('error', err => showMapError(`Map failed to load: ${err?.error?.message || err}`));
@@ -733,7 +711,7 @@
         }
 
         function toggleCountyMode(enable){
-            isCountyMode = !!enable; document.getElementById('county-mode-btn').textContent = enable ? 'State Mode' : 'County Mode';
+            isCountyMode = !!enable; document.getElementById('county-mode-btn').textContent = enable ? 'State View' : 'County View';
             if (enable){
                 if (mainMap.getSource('counties')) mainMap.removeSource('counties');
                 mainMap.addSource('counties',{ type:'geojson', data: countiesGeoJSON });
@@ -754,12 +732,16 @@
 
         document.getElementById('county-mode-btn').addEventListener('click', ()=> toggleCountyMode(!isCountyMode));
         document.getElementById('close-sidebar-btn').addEventListener('click', ()=>{
-            document.getElementById('state-sidebar').classList.remove('active'); document.getElementById('header').style.display = 'flex'; document.getElementById('county-mode-btn').style.display = 'block'; showElectionTicker();
-            if (mainMap.getLayer('counties-fill')) mainMap.removeLayer('counties-fill');
-            if (mainMap.getLayer('counties-outline')) mainMap.removeLayer('counties-outline');
-            if (mainMap.getSource('counties')) mainMap.removeSource('counties');
-            disableCountyHover(); enableStateHover();
-            mainMap.fitBounds([[-125.0011,24.9493],[-66.9326,49.5904]],{ padding:40, duration:1100 }); currentState = null;
+            document.getElementById('state-sidebar').classList.remove('active');
+            if (!isCountyMode) {
+                if (mainMap.getLayer('counties-fill')) mainMap.removeLayer('counties-fill');
+                if (mainMap.getLayer('counties-outline')) mainMap.removeLayer('counties-outline');
+                if (mainMap.getSource('counties')) mainMap.removeSource('counties');
+                disableCountyHover();
+                enableStateHover();
+                mainMap.fitBounds([[-125.0011,24.9493],[-66.9326,49.5904]],{ padding:40, duration:1100 });
+            }
+            currentState = null;
         });
 
         // ====== BOOT ======
