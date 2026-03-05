@@ -14,84 +14,203 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
 
     <style>
-        html, body { height: 100%; margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background: #1a1f26; color: #fff; letter-spacing: 0.2px; }
-        #header { background: linear-gradient(to bottom, #2a2f38, #222); padding: 20px; z-index: 1000; display: flex; flex-direction: column; align-items: center; gap: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-        .progress-container { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 15px; }
-        .candidate-labels { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
-        .progress-bar-container { display: flex; align-items: center; width: 100%; gap: 20px; }
-        .candidate-image { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        :root {
+            --bg: #070b14;
+            --panel: rgba(12, 18, 33, 0.76);
+            --panel-border: rgba(255, 255, 255, 0.14);
+            --text: #e8eefc;
+            --muted: #9daac5;
+            --bush: #ff5a5f;
+            --bush-dark: #cc2f39;
+            --gore: #4ea1ff;
+            --gore-dark: #296dcb;
+            --accent: #7f8eff;
+        }
+
+        * { box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', Arial, sans-serif;
+            letter-spacing: 0.2px;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 20% -5%, rgba(78, 161, 255, 0.28), transparent 35%),
+                radial-gradient(circle at 80% 0%, rgba(255, 90, 95, 0.2), transparent 30%),
+                linear-gradient(180deg, #080d18 0%, #05070f 55%, #04050a 100%);
+        }
+
+        #header {
+            position: relative;
+            z-index: 5;
+            margin: 18px auto 0;
+            width: min(1160px, calc(100% - 24px));
+            border-radius: 24px;
+            border: 1px solid var(--panel-border);
+            background: linear-gradient(140deg, rgba(17, 24, 43, 0.84), rgba(8, 13, 24, 0.9));
+            backdrop-filter: blur(12px);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            box-shadow: 0 28px 50px rgba(0, 0, 0, 0.35);
+        }
+
+        .title {
+            font-size: clamp(1.7rem, 2.8vw, 2.8rem);
+            font-weight: 900;
+            text-align: center;
+            margin: 0;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            margin: -10px 0 6px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+
+        .progress-container { width: 100%; display: flex; flex-direction: column; gap: 14px; }
+        .candidate-labels { display: flex; justify-content: space-between; font-size: 1rem; font-weight: 700; color: #c9d7f6; }
+        .progress-bar-container { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px; }
+        .candidate-image {
+            width: 84px; height: 84px; border-radius: 50%; object-fit: cover;
+            border: 3px solid rgba(255,255,255,0.42);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.35);
+        }
         .progress-bar-outer { width: 100%; position: relative; display: flex; flex-direction: column; align-items: center; }
-        .threshold-label { margin-bottom: 4px; font-size: 15px; font-weight: 800; color: #fff; z-index: 5; text-shadow: 0 0 5px #222; pointer-events: none; text-align: center; width: 100%; }
-        .progress-bar-wrapper { display: flex; width: 100%; height: 24px; background: #3a404a; border-radius: 12px; overflow: hidden; position: relative; }
-        .progress-bar { height: 100%; position: relative; display: flex; align-items: center; transition: width 0.6s ease; }
-        .progress-bar.bush { background: linear-gradient(to right, #e74c3c, #c0392b); border-radius: 12px 0 0 12px; order: 0; }
-        .progress-bar.gore { background: linear-gradient(to right, #3498db, #2980b9); border-radius: 0 12px 12px 0; order: 1; }
-        .vote-label { position: absolute; top: 50%; transform: translateY(-50%); color: #fff; font-size: 13px; font-weight: 700; text-shadow: 0 0 2px rgba(0,0,0,0.7); z-index: 2; white-space: nowrap; pointer-events: none; }
-        .vote-label.left { left: 12px; text-align: left; }
-        .vote-label.right { right: 12px; text-align: right; }
-        .threshold-marker { position: absolute; left: calc(270 / 538 * 100%); width: 2px; height: 100%; background: #fff; z-index: 10; }
-        .candidate-stats { display: flex; justify-content: space-between; width: 100%; max-width: 900px; font-size: 13px; }
-        .title { font-size: 32px; font-weight: 900; text-shadow: 0 1px 4px rgba(0,0,0,0.2); margin-bottom: 12px; }
-        .last-updated { font-size: 12px; color: #bbb; text-align: center; }
-        @media (max-width: 700px) { .title { font-size: 24px; } .candidate-image { width: 60px; height: 60px; } .candidate-stats { font-size: 12px; flex-direction: column; align-items: center; gap: 10px; } .progress-bar-wrapper { height: 18px; } }
-        #map { width: 100vw; height: 65vh; min-height: 400px; max-height: 75vh; z-index: 1; background: #2a2f38; border: 1px solid #333; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-        #state-sidebar { display: none; position: fixed; top: 0; right: 0; width: 340px; height: 100%; background: #222; color: #fff; padding: 24px; z-index: 1000; overflow-y: auto; box-shadow: -4px 0 12px rgba(0,0,0,0.4); border-radius: 8px 0 0 8px; transform: translateX(100%); transition: transform 0.3s ease; }
+        .threshold-label { margin-bottom: 6px; font-size: 0.88rem; font-weight: 800; color: #d8e3fb; text-shadow: 0 2px 8px rgba(0,0,0,0.45); }
+        .progress-bar-wrapper {
+            display: flex; width: 100%; height: 32px;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 999px; overflow: hidden; position: relative;
+        }
+        .progress-bar { height: 100%; position: relative; display: flex; align-items: center; transition: width 0.55s ease; }
+        .progress-bar.bush { background: linear-gradient(90deg, var(--bush), var(--bush-dark)); border-radius: 999px 0 0 999px; }
+        .progress-bar.gore { background: linear-gradient(90deg, var(--gore-dark), var(--gore)); border-radius: 0 999px 999px 0; }
+        .vote-label { position: absolute; top: 44%; transform: translateY(-50%); color: #fff; font-size: 0.78rem; font-weight: 800; text-shadow: 0 2px 5px rgba(0,0,0,0.6); white-space: nowrap; pointer-events: none; }
+        .vote-label.left { left: 14px; }
+        .vote-label.right { right: 14px; text-align: right; }
+        .threshold-marker { position: absolute; left: calc(270 / 538 * 100%); width: 2px; height: 100%; background: rgba(255,255,255,0.9); z-index: 10; }
+
+        .candidate-stats {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            width: 100%;
+            align-items: center;
+            font-size: 0.92rem;
+            color: #d4e0fb;
+        }
+        .candidate-stat-right { text-align: right; }
+        .stat-box { padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); font-weight: 700; }
+        .last-updated { font-size: 0.76rem; color: var(--muted); text-align: center; }
+
+        #county-mode-btn {
+            position: absolute; top: 32px; right: 34px; z-index: 1100;
+            border: 1px solid rgba(255,255,255,0.25);
+            background: linear-gradient(120deg, rgba(79, 104, 255, 0.95), rgba(77, 164, 255, 0.9));
+            color: #fff; padding: 11px 20px; border-radius: 999px;
+            font-size: 0.9rem; font-weight: 800; letter-spacing: .01em;
+            box-shadow: 0 14px 24px rgba(33, 83, 162, 0.35);
+            cursor: pointer; transition: transform .2s ease, box-shadow .2s ease;
+        }
+        #county-mode-btn:hover { transform: translateY(-1px); box-shadow: 0 18px 30px rgba(33, 83, 162, 0.5); }
+
+        #map {
+            margin: 16px auto 0;
+            width: min(1160px, calc(100% - 24px));
+            height: 64vh;
+            min-height: 420px;
+            max-height: 78vh;
+            z-index: 1;
+            border-radius: 22px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 22px 45px rgba(0,0,0,0.45);
+        }
+
+        #state-sidebar {
+            display: none; position: fixed; top: 10px; right: 10px; width: min(360px, calc(100vw - 20px)); height: calc(100% - 20px);
+            background: rgba(8, 14, 28, 0.95); border: 1px solid rgba(255,255,255,0.14); color: #fff; padding: 24px; z-index: 1200;
+            overflow-y: auto; box-shadow: -10px 0 34px rgba(0,0,0,0.45); border-radius: 20px; transform: translateX(110%); transition: transform 0.28s ease;
+        }
         #state-sidebar.active { display: block; transform: translateX(0); }
-        #close-sidebar-btn { position: absolute; top: 16px; right: 16px; background: #2a2f38; color: #fff; padding: 8px 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.2s, transform 0.1s; }
-        #close-sidebar-btn:hover { background: #e74c3c; transform: scale(1.05); }
+        #close-sidebar-btn { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.08); color: #fff; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; }
+        #close-sidebar-btn:hover { background: rgba(255, 90, 95, 0.85); }
         .candidate-row { display: flex; flex-direction: column; align-items: center; margin: 12px 0; }
-        .candidate-image-small { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; margin-bottom: 8px; }
-        .bar-graph { width: 100%; height: 20px; background: #3a404a; border-radius: 10px; overflow: hidden; position: relative; }
-        .bar-fill { height: 100%; transition: width 0.6s ease; }
-        .bar-fill.bush { background: #e74c3c; }
-        .bar-fill.gore { background: #3498db; }
-        .bar-fill.other { background: #bbb; }
-        .candidate-details { margin-top: 8px; text-align: center; font-size: 14px; font-weight: 400; }
-        .reporting-bar { width: 100%; height: 20px; background: #3a404a; border-radius: 10px; overflow: hidden; margin: 12px 0; }
-        .reporting-fill { height: 100%; background: #4CAF50; transition: width 0.6s ease; }
-        #county-mode-btn { position: absolute; top: 20px; right: 32px; z-index: 1100; background: #2a2f38; color: #fff; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; box-shadow: 0 3px 12px rgba(0,0,0,0.3); cursor: pointer; transition: background 0.2s, transform 0.1s; display: block; }
-        #county-mode-btn:hover { background: #3498db; transform: scale(1.05); }
+        .candidate-image-small { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 8px; border: 2px solid rgba(255,255,255,0.28); }
+        .bar-graph, .reporting-bar { width: 100%; height: 18px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.14); }
+        .bar-fill, .reporting-fill { height: 100%; transition: width 0.6s ease; }
+        .bar-fill.bush { background: linear-gradient(90deg, var(--bush), var(--bush-dark)); }
+        .bar-fill.gore { background: linear-gradient(90deg, var(--gore-dark), var(--gore)); }
+        .bar-fill.other { background: linear-gradient(90deg, #a7adb8, #d1d6df); }
+        .reporting-fill { background: linear-gradient(90deg, #59d38d, #41ba8f); }
 
-        /* NYT-style needle */
-        #projection-ticker-wrap { width: 100%; background: #191d22; padding: 48px 0 32px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 2; min-height: 390px; border-top: 2px solid #303540; }
-        .nyt-projection-title { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 18px; letter-spacing: 0.1px; text-align: center; text-shadow: 0 0 8px #222; }
+        #projection-ticker-wrap {
+            width: min(1160px, calc(100% - 24px));
+            margin: 18px auto 28px;
+            background: linear-gradient(160deg, rgba(11, 18, 33, 0.88), rgba(7, 11, 21, 0.92));
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.13);
+            padding: 34px 18px 26px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 370px;
+            box-shadow: 0 24px 44px rgba(0,0,0,0.35);
+        }
+        .nyt-projection-title { font-size: 1.2rem; font-weight: 700; color: #d6e1fb; margin-bottom: 12px; text-align: center; }
         .needle-svg-wrap { display: flex; flex-direction: column; align-items: center; position: relative; width: 100%; max-width: 540px; min-height: 270px; }
-        .needle-candidate-wrap { position: absolute; top: 60px; width: 48px; height: 80px; display: flex; flex-direction: column; align-items: center; z-index: 20; }
-        .needle-candidate-wrap.bush { left: 12px; }
-        .needle-candidate-wrap.gore { right: 12px; }
-        .needle-img-candidate { width: 48px; height: 48px; border-radius: 50%; border: 2.5px solid #fff; background: #191d22; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-        .needle-checkmark { margin-top: 3px; width: 28px; height: 28px; display: none; z-index: 20; }
+        .needle-candidate-wrap { position: absolute; top: 58px; width: 54px; height: 86px; display: flex; flex-direction: column; align-items: center; z-index: 20; }
+        .needle-candidate-wrap.bush { left: 8px; }
+        .needle-candidate-wrap.gore { right: 8px; }
+        .needle-img-candidate { width: 52px; height: 52px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.78); object-fit: cover; box-shadow: 0 8px 15px rgba(0,0,0,0.32); }
+        .needle-checkmark { margin-top: 4px; width: 24px; height: 24px; display: none; }
         .arc { stroke-linecap: round; }
-        .arc-vl-bush { stroke: #c0392b; }
-        .arc-l-bush { stroke: #e74c3c; }
-        .arc-le-bush { stroke: #f7a69a; }
-        .arc-tossup { stroke: #bbbbbb; }
-        .arc-le-gore { stroke: #97bbed; }
-        .arc-l-gore { stroke: #3498db; }
-        .arc-vl-gore { stroke: #215180; }
-        #nyt-needle-svg { display: block; margin: 0 auto; width: 100%; max-width: 500px; height: 260px; background: none; z-index: 5; overflow: visible; position: relative; }
-        .arc-label { font-size: 13px; fill: #bbb; text-anchor: middle; alignment-baseline: middle; font-weight: 600; pointer-events: none; opacity: 0.85; }
-        .arc-label-center { font-weight: 900; fill: #fff; font-size: 16px; }
-        .needle-arrow { fill: #777; stroke: #222; stroke-width: 1; }
-        #needle-dot { fill: #fff; stroke: #888; stroke-width: 3; }
-        .needle-candidate-labels { display: flex; flex-direction: row; justify-content: center; align-items: baseline; gap: 10px; margin-top: 6px; font-size: 17px; font-weight: 600; color: #eee; width: 100%; max-width: 370px; }
-        .needle-bush-label, .needle-gore-label { font-size: 17px; font-weight: 900; padding: 0 6px; }
-        .needle-bush-label { color: #e74c3c; }
-        .needle-gore-label { color: #3498db; }
-        .proj-big-num { font-size: 24px; font-weight: 900; min-width: 48px; display: inline-block; text-align: center; }
-        .proj-big-num.bush { color: #e74c3c; }
-        .proj-big-num.gore { color: #3498db; }
-        .proj-divider { font-size: 19px; font-weight: 400; color: #bbb; padding: 0 10px; opacity: 0.7; }
-        @media (max-width: 700px) { #projection-ticker-wrap { min-height: 310px; padding: 28px 0 18px 0; } .nyt-projection-title { font-size: 16px; margin-bottom: 10px; } .needle-candidate-wrap { width: 32px; height: 60px; top: 34px; } .needle-candidate-wrap.bush { left: 2px; } .needle-candidate-wrap.gore { right: 2px; } .needle-img-candidate { width: 32px; height: 32px; } .needle-checkmark { width: 17px; height: 17px; } #nyt-needle-svg { max-width: 99vw; height: 120px; } .needle-candidate-labels { font-size: 13px; max-width: 98vw; gap: 2px; } .proj-big-num { font-size: 14px; min-width: 22px; } }
+        .arc-vl-bush { stroke: #b82436; } .arc-l-bush { stroke: #e24452; } .arc-le-bush { stroke: #ff9ca5; }
+        .arc-tossup { stroke: #aeb9cd; }
+        .arc-le-gore { stroke: #99c5ff; } .arc-l-gore { stroke: #4ea1ff; } .arc-vl-gore { stroke: #245ec4; }
+        #nyt-needle-svg { display: block; margin: 0 auto; width: 100%; max-width: 500px; height: 260px; overflow: visible; }
+        .arc-label { font-size: 12px; fill: #9eb0d2; text-anchor: middle; font-weight: 700; opacity: .9; }
+        .arc-label-center { font-weight: 900; fill: #eaf1ff; font-size: 15px; }
+        .needle-arrow { fill: #eff5ff; stroke: #182437; stroke-width: 1; }
+        #needle-dot { fill: #fff; stroke: #7386ac; stroke-width: 3; }
+        .needle-candidate-labels { display: flex; flex-direction: row; justify-content: center; align-items: baseline; gap: 9px; margin-top: 4px; font-size: 1rem; font-weight: 700; color: #eef4ff; width: 100%; max-width: 440px; }
+        .needle-bush-label, .needle-gore-label { font-size: 1.02rem; font-weight: 900; }
+        .needle-bush-label, .proj-big-num.bush { color: var(--bush); }
+        .needle-gore-label, .proj-big-num.gore { color: var(--gore); }
+        .proj-big-num { font-size: 1.35rem; font-weight: 900; min-width: 44px; text-align: center; }
+        .proj-divider { color: #8190ad; padding: 0 8px; }
 
-        /* Error overlay */
-        #map-error { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 2000; }
-        #map-error .inner { background: #222; border: 1px solid #444; border-radius: 10px; padding: 20px; max-width: 520px; color: #fff; }
-    </style>
+        #map-error { position: fixed; inset: 0; background: rgba(0,0,0,0.72); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        #map-error .inner { background: #11182a; border: 1px solid #405073; border-radius: 14px; padding: 20px; max-width: 520px; color: #fff; }
+
+        @media (max-width: 760px) {
+            #header, #map, #projection-ticker-wrap { width: calc(100% - 12px); border-radius: 18px; }
+            #header { margin-top: 10px; padding: 16px 12px; }
+            .candidate-image { width: 62px; height: 62px; }
+            .candidate-stats { grid-template-columns: 1fr; text-align: center; }
+            .candidate-stat-right { text-align: center; }
+            #county-mode-btn { top: 16px; right: 16px; padding: 9px 14px; font-size: 0.78rem; }
+            #map { min-height: 340px; }
+            #projection-ticker-wrap { margin-bottom: 14px; min-height: 320px; padding-top: 24px; }
+            .nyt-projection-title { font-size: 0.98rem; margin-bottom: 7px; }
+            .needle-candidate-wrap { width: 34px; height: 66px; top: 42px; }
+            .needle-img-candidate { width: 34px; height: 34px; }
+            .needle-checkmark { width: 16px; height: 16px; }
+            #nyt-needle-svg { max-width: 99vw; height: 140px; }
+            .needle-candidate-labels { font-size: 12px; gap: 3px; }
+            .proj-big-num { font-size: 14px; min-width: 24px; }
+        }
+</style>
 </head>
 <body>
     <div id="header">
-        <div class="title">2000 Live Election Map</div>
+        <div class="title">Election Night 2000</div>
+        <div class="subtitle">Live presidential race dashboard with state and county drilldowns</div>
         <div class="progress-container">
             <div class="candidate-labels">
                 <span>Bush: <span id="bush-ev">0</span> EV</span>
