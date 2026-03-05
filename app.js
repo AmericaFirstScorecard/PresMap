@@ -1,167 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Election Command Center</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
-  <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
-
-  <style>
-    :root{--bg:#050915;--panel:#101a30cc;--border:#ffffff22;--text:#eaf0ff;--muted:#99a9c8;--a:#ff5c62;--b:#4ea1ff;--c:#a8b6cf;}
-    *{box-sizing:border-box} html,body{height:100%;margin:0;font-family:Inter,sans-serif;color:var(--text);background:radial-gradient(circle at 15% 0%,#1d2e5f55,transparent 35%),radial-gradient(circle at 80% 8%,#5f1d2e55,transparent 30%),linear-gradient(#060b19,#03050a);} 
-    .app{max-width:1250px;margin:0 auto;padding:12px}
-    .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--border);padding:10px 12px;border-radius:14px;backdrop-filter:blur(8px)}
-    .brand{font-weight:900;letter-spacing:.05em}
-    .tabs{display:flex;gap:8px}
-    .tab{border:1px solid var(--border);background:#ffffff10;color:var(--text);border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer}
-    .tab.active{background:linear-gradient(135deg,#324f97,#4964b3)}
-    .actions{display:flex;gap:8px}
-    .btn{border:1px solid var(--border);background:#ffffff10;color:var(--text);border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer}
-
-    .hero{margin-top:10px;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;position:relative}
-    .title{font-size:clamp(1.5rem,2.8vw,2.5rem);font-weight:900;text-align:center;margin:0 0 12px}
-    .score-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
-    .face{width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #fff8;}
-    .ev-wrap{position:relative}
-    .ev-meta{display:flex;justify-content:space-between;font-weight:800;margin-bottom:6px}
-    .ev-bar{height:30px;background:#adb8cd59;border:1px solid #fff2;border-radius:999px;position:relative;overflow:hidden}
-    .ev-a,.ev-b{position:absolute;top:0;bottom:0;transition:width .5s}
-    .ev-a{left:0;background:linear-gradient(90deg,#ff6e75,var(--a))}
-    .ev-b{right:0;background:linear-gradient(90deg,#2c75d3,var(--b))}
-    .marker{position:absolute;left:50.186%;top:0;bottom:0;width:2px;background:#fff}
-    .to-win{text-align:center;color:var(--muted);font-size:.8rem;margin-top:4px}
-    .votes{margin-top:10px;display:grid;grid-template-columns:1fr auto 1fr;gap:8px}
-    .card{border:1px solid var(--border);background:#ffffff0a;padding:8px 10px;border-radius:10px;font-size:.9rem}
-    .card.right{text-align:right}
-
-    .content{margin-top:10px;display:grid;grid-template-columns:1fr 350px;gap:10px}
-    #map{height:64vh;min-height:430px;border-radius:18px;border:1px solid var(--border)}
-    .sidebar{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:14px;overflow:auto;max-height:64vh}
-    .sidebar h3{margin:4px 0 8px}
-    .row{display:flex;justify-content:space-between;gap:8px;margin:6px 0;color:var(--muted);font-size:.88rem}
-    .bar{height:14px;background:#fff1;border:1px solid #fff2;border-radius:999px;overflow:hidden}.fill{height:100%}.fill.a{background:var(--a)}.fill.b{background:var(--b)}
-    .county-toggle{position:fixed;top:16px;right:16px;z-index:1000;background:linear-gradient(120deg,#3657ce,#2f8af8);border:1px solid #fff4;color:#fff;font-weight:900;letter-spacing:.05em;padding:10px 13px;border-radius:12px;cursor:pointer}
-
-    .panel{margin-top:10px;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px}
-    .projection-head{text-align:center}
-    .eyebrow{font-size:.72rem;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;font-weight:700}
-    .proj-title{font-size:clamp(1.4rem,2.3vw,2.3rem);font-weight:900;margin:6px 0}
-    .proj-sub{font-size:clamp(1.1rem,1.9vw,1.6rem);font-weight:800;color:#cfdcff}
-    #gauge{width:100%;height:220px}
-    .odds-line{display:none}
-    #odds-chart{width:100%;height:280px;background:#0002;border-radius:12px;border:1px solid #fff2}
-
-    .admin{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:2000}
-    .admin-inner{width:min(980px,96vw);max-height:92vh;overflow:auto;background:#0c152b;border:1px solid var(--border);border-radius:16px;padding:14px}
-    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    label{font-size:.8rem;color:var(--muted)} input,select{width:100%;background:#ffffff10;border:1px solid #ffffff33;color:#fff;padding:8px;border-radius:8px}
-    .small{font-size:.76rem;color:var(--muted)}
-    .state-bias-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-    @media(max-width:980px){.content{grid-template-columns:1fr}.sidebar{max-height:none} .grid,.state-bias-list{grid-template-columns:1fr} .score-row{grid-template-columns:60px 1fr 60px}.face{width:60px;height:60px}}
-  </style>
-</head>
-<body>
-  <div class="app">
-    <div class="topbar">
-      <div class="brand">ELECTION COMMAND CENTER</div>
-      <div class="tabs">
-        <button class="tab active" id="tab-dashboard">Dashboard</button>
-        <button class="tab" id="tab-odds">Election Odds</button>
-      </div>
-      <div class="actions"><button class="btn" id="admin-open">Admin Panel</button></div>
-    </div>
-
-    <section class="hero">
-      <h1 class="title" id="page-title">Election Night Live Returns</h1>
-      <div class="score-row">
-        <img id="candA-img" class="face" src="images/George-W-Bush.jpg" alt="Candidate A" />
-        <div class="ev-wrap">
-          <div class="ev-meta"><span id="candA-ev-label">Candidate A: 0 EV</span><span id="candB-ev-label">Candidate B: 0 EV</span></div>
-          <div class="ev-bar"><div class="marker"></div><div class="ev-a" id="ev-a"></div><div class="ev-b" id="ev-b"></div></div>
-          <div class="to-win">270 electoral votes to win</div>
-        </div>
-        <img id="candB-img" class="face" src="images/Al_Gore.jpg" alt="Candidate B" />
-      </div>
-      <div class="votes">
-        <div class="card"><span id="candA-vote-label">Candidate A</span>: <strong id="candA-votes">0</strong> votes</div>
-        <div class="card">Reporting: <strong id="national-reporting">0%</strong></div>
-        <div class="card right"><span id="candB-vote-label">Candidate B</span>: <strong id="candB-votes">0</strong> votes</div>
-      </div>
-    </section>
-
-    <button class="county-toggle" id="county-toggle">County View</button>
-
-    <section class="content" id="dashboard-view">
-      <div id="map"></div>
-      <aside class="sidebar" id="detail-sidebar">
-        <h3 id="detail-title">National Summary</h3>
-        <div class="small" id="detail-sub">Hover a state for details. Click a state for county breakdown.</div>
-        <div id="detail-body"></div>
-      </aside>
-    </section>
-
-    <section class="panel" id="projection-panel">
-      <div class="projection-head">
-        <div class="eyebrow">Live Forecast Engine</div>
-        <div class="proj-title">Chance of Winning <span style="font-weight:500;color:#b9c9ea">(Projection)</span></div>
-        <div class="proj-sub">Electoral Vote Projection</div>
-      </div>
-      <canvas id="gauge" width="1100" height="220"></canvas>
-    </section>
-
-    <section class="panel odds-line" id="odds-view">
-      <h3 style="margin-top:0">Election Odds History</h3>
-      <canvas id="odds-chart" width="1100" height="280"></canvas>
-      <div class="small">Chart tracks model output over time (not raw EV count only).</div>
-    </section>
-  </div>
-
-  <div class="admin" id="admin-modal">
-    <div class="admin-inner">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">Admin Control Center</h3><button class="btn" id="admin-close">Close</button></div>
-      <div id="auth-wrap">
-        <p class="small">Enter password to unlock controls.</p>
-        <input id="admin-pass" type="password" placeholder="Password" />
-        <button class="btn" id="admin-login" style="margin-top:8px">Unlock</button>
-        <div id="admin-auth-msg" class="small"></div>
-      </div>
-      <div id="admin-controls" style="display:none">
-        <div class="grid">
-          <div>
-            <h4>Candidate Settings</h4>
-            <label>Candidate A name</label><input id="set-a-name" />
-            <label>Candidate A image URL</label><input id="set-a-img" />
-            <label>Candidate B name</label><input id="set-b-name" />
-            <label>Candidate B image URL</label><input id="set-b-img" />
-            <button class="btn" id="save-candidates" style="margin-top:8px">Save Candidate Settings</button>
-          </div>
-          <div>
-            <h4>Selected County Editor</h4>
-            <div class="small" id="selected-county-name">Click a county in county view to edit.</div>
-            <label>County FIPS</label><input id="edit-fips" readonly />
-            <label>Votes: Candidate A</label><input id="edit-a-votes" type="number" min="0" />
-            <label>Votes: Candidate B</label><input id="edit-b-votes" type="number" min="0" />
-            <label>Votes: Other</label><input id="edit-other-votes" type="number" min="0" />
-            <label>Reporting %</label><input id="edit-reporting" type="number" min="0" max="100" step="0.1" />
-            <button class="btn" id="save-county" style="margin-top:8px">Save County</button>
-          </div>
-        </div>
-        <h4>State Odds Favoring (used for odds model only)</h4>
-        <div class="small">-20 = strong Candidate A lean, +20 = strong Candidate B lean.</div>
-        <div class="state-bias-list" id="bias-list"></div>
-      </div>
-    </div>
-  </div>
-
-  <script src="app.js"></script>
-
-<script>
 mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
 const ADMIN_PASSWORD = 'TGEPSWDKEY1301';
 const STORAGE_KEY = 'election-control-center-v1';
@@ -179,14 +15,21 @@ const appState={
 };
 let map, statePopup, countyPopup, statesGeo, countiesGeo;
 
-function seeded(n){let x=Math.sin(n)*10000;return x-Math.floor(x);} 
+const GORE_2000_STATES = new Set(['California','Connecticut','Delaware','District of Columbia','Hawaii','Illinois','Iowa','Maine','Maryland','Massachusetts','Michigan','Minnesota','New Jersey','New Mexico','New York','Oregon','Pennsylvania','Rhode Island','Vermont','Washington','Wisconsin']);
 function ensureCountySeed(feature){
   const fips=(feature.properties.GEOID||'').toString().padStart(5,'0');
   if(!fips) return;
   if(!appState.counties[fips]){
-    const r=seeded(Number(fips));
-    const a=Math.round(800+r*4200), b=Math.round(760+(1-r)*3900), o=Math.round(30+r*400), rep=Math.round((35+r*65)*10)/10;
-    appState.counties[fips]={a,b,o,reporting:rep,name:feature.properties.NAME||'Unknown',statefp:(feature.properties.STATEFP||'').toString().padStart(2,'0')};
+    const stateName = nameByFP[(feature.properties.STATEFP||'').toString().padStart(2,'0')] || '';
+    const goreWin = GORE_2000_STATES.has(stateName);
+    appState.counties[fips]={
+      a: goreWin ? 850 : 1200,
+      b: goreWin ? 1200 : 850,
+      o: 45,
+      reporting: 78,
+      name:feature.properties.NAME||'Unknown',
+      statefp:(feature.properties.STATEFP||'').toString().padStart(2,'0')
+    };
   }
 }
 function loadLocal(){
@@ -256,7 +99,7 @@ function applyUI(){
   drawGauge(pA,pB,odds.expEVA,odds.expEVB);
   const t=Date.now(); appState.oddsHistory.push({t,pA,pB}); appState.oddsHistory=appState.oddsHistory.slice(-150); drawOddsChart();
 
-  if(map&&map.getSource('states')) map.getSource('states').setData(statesGeo);
+  if(map&&map.getSource('states')) { enrichStatesGeo(); map.getSource('states').setData(statesGeo); }
   if(appState.selectedState) renderSidebar(appState.selectedState);
 }
 
@@ -276,6 +119,10 @@ function stateColorExpr(){
 function initMap(){
   map = new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/dark-v11',center:[-96.5,38.8],zoom:3});
   map.on('load',()=>{
+    const style = map.getStyle();
+    (style.layers || []).forEach(l=>{
+      if(l.type === 'symbol' && map.getLayer(l.id)) map.removeLayer(l.id);
+    });
     enrichStatesGeo();
     map.addSource('states',{type:'geojson',data:statesGeo});
     map.addLayer({id:'states-fill',type:'fill',source:'states',paint:{'fill-color':stateColorExpr(),'fill-opacity':0.87}});
@@ -291,37 +138,72 @@ function initMap(){
 
     map.on('click','states-fill',e=>{
       const p=e.features?.[0]?.properties; if(!p) return;
-      appState.selectedState=p.state_name; enterStateCountyView(p.state_name);
+      appState.selectedState=p.state_name; enterCountyView(p.state_name);
     });
 
     applyUI();
   });
 }
 
-function enterStateCountyView(stateName){
-  const fp=Object.keys(nameByFP).find(k=>nameByFP[k]===stateName); if(!fp) return;
-  appState.isCountyView=true; document.getElementById('county-toggle').textContent='State View';
-  const filtered={type:'FeatureCollection',features:countiesGeo.features.filter(f=>(f.properties.STATEFP||'').toString().padStart(2,'0')===fp)};
+function getFeatureBBox(fc){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  function walk(coords){
+    if(!Array.isArray(coords)) return;
+    if(typeof coords[0] === 'number' && typeof coords[1] === 'number'){
+      const x=coords[0], y=coords[1];
+      if(x<minX) minX=x; if(x>maxX) maxX=x; if(y<minY) minY=y; if(y>maxY) maxY=y;
+      return;
+    }
+    coords.forEach(walk);
+  }
+  (fc.features||[]).forEach(f=>walk(f.geometry?.coordinates));
+  if(!Number.isFinite(minX)) return [[-125.0011,24.9493],[-66.9326,49.5904]];
+  return [[minX,minY],[maxX,maxY]];
+}
+
+function enterCountyView(stateName=null){
+  appState.isCountyView=true;
+  document.getElementById('county-toggle').textContent='State View';
+  appState.selectedState = stateName || appState.selectedState;
+
+  let features = countiesGeo.features;
+  if(stateName){
+    const fp=Object.keys(nameByFP).find(k=>nameByFP[k]===stateName);
+    if(fp) features = countiesGeo.features.filter(f=>(f.properties.STATEFP||'').toString().padStart(2,'0')===fp);
+  }
+  const filtered={type:'FeatureCollection',features:[...features]};
   filtered.features.forEach(f=>{const d=appState.counties[(f.properties.GEOID||'').toString().padStart(5,'0')]||{a:0,b:0}; f.properties.winner=d.a>d.b?'A':d.b>d.a?'B':'T';});
+
   if(map.getLayer('counties-fill')){map.removeLayer('counties-fill'); map.removeLayer('counties-line'); map.removeSource('counties');}
   map.addSource('counties',{type:'geojson',data:filtered});
   map.addLayer({id:'counties-fill',type:'fill',source:'counties',paint:{'fill-color':['match',['get','winner'],'A','#e4555d','B','#4ea1ff','#aab6cd'],'fill-opacity':0.86}});
   map.addLayer({id:'counties-line',type:'line',source:'counties',paint:{'line-color':'#fff','line-opacity':0.2,'line-width':0.35}});
-  map.fitBounds(turfBbox(filtered),{padding:35,duration:800});
+  map.fitBounds(getFeatureBBox(filtered),{padding:35,duration:700});
+
+  map.off('mousemove','counties-fill',countyHover);
+  map.off('mouseleave','counties-fill',clearCountyHover);
+  map.off('click','counties-fill',countyClick);
   map.on('mousemove','counties-fill',countyHover);
   map.on('mouseleave','counties-fill',clearCountyHover);
   map.on('click','counties-fill',countyClick);
-  renderSidebar(stateName);
+
+  if(stateName) renderSidebar(stateName);
+  else {
+    document.getElementById('detail-title').textContent='County Editor Mode';
+    document.getElementById('detail-sub').textContent='County view active. Click a county to edit values in Admin Panel.';
+    renderNationalSidebar();
+  }
 }
-function turfBbox(fc){let minX=999,minY=999,maxX=-999,maxY=-999; fc.features.forEach(f=>{const coords=(f.geometry.type==='Polygon'?f.geometry.coordinates:[].concat(...f.geometry.coordinates)); coords.flat(2).forEach((v,i,a)=>{if(i%2===0){const x=v,y=a[i+1]; if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;}})}); return [[minX,minY],[maxX,maxY]];}
-function countyHover(e){const f=e.features?.[0]; if(!f) return; const fips=(f.properties.GEOID||'').toString().padStart(5,'0'); const c=appState.counties[fips]; if(!c) return; const html=`<div style="font:12px Inter"><strong>${c.name} County</strong><br>${appState.candA.name}: ${c.a.toLocaleString()}<br>${appState.candB.name}: ${c.b.toLocaleString()}<br>Reporting: ${c.reporting.toFixed(1)}%</div>`; if(!countyPopup) countyPopup=new mapboxgl.Popup({closeButton:false,closeOnClick:false}); countyPopup.setLngLat(e.lngLat).setHTML(html).addTo(map);}
-function clearCountyHover(){if(countyPopup) countyPopup.remove(); countyPopup=null;}
-function countyClick(e){const f=e.features?.[0]; if(!f) return; const fips=(f.properties.GEOID||'').toString().padStart(5,'0'); appState.selectedCounty=fips; const c=appState.counties[fips]; if(!c) return; document.getElementById('selected-county-name').textContent=`${c.name} County (${fips})`; document.getElementById('edit-fips').value=fips; document.getElementById('edit-a-votes').value=c.a; document.getElementById('edit-b-votes').value=c.b; document.getElementById('edit-other-votes').value=c.o; document.getElementById('edit-reporting').value=c.reporting; if(!appState.adminUnlocked){document.getElementById('selected-county-name').textContent+=' — unlock admin to edit';}}
 
 function exitCountyView(){
-  appState.isCountyView=false; appState.selectedState=null; document.getElementById('county-toggle').textContent='County View';
-  ['counties-fill','counties-line'].forEach(l=>{if(map.getLayer(l)) map.removeLayer(l)}); if(map.getSource('counties')) map.removeSource('counties');
-  map.off('mousemove','counties-fill',countyHover); map.off('mouseleave','counties-fill',clearCountyHover); map.off('click','counties-fill',countyClick);
+  appState.isCountyView=false;
+  appState.selectedCounty=null;
+  document.getElementById('county-toggle').textContent='County View';
+  ['counties-fill','counties-line'].forEach(l=>{if(map.getLayer(l)) map.removeLayer(l)});
+  if(map.getSource('counties')) map.removeSource('counties');
+  map.off('mousemove','counties-fill',countyHover);
+  map.off('mouseleave','counties-fill',clearCountyHover);
+  map.off('click','counties-fill',countyClick);
   map.fitBounds([[-125.0011,24.9493],[-66.9326,49.5904]],{padding:35,duration:700});
   renderNationalSidebar();
 }
@@ -382,16 +264,16 @@ function buildBiasList(){
 }
 
 function wireUI(){
-  document.getElementById('county-toggle').onclick=()=> appState.isCountyView?exitCountyView(): (appState.selectedState?enterStateCountyView(appState.selectedState):alert('Click a state first to open county view.'));
+  document.getElementById('county-toggle').onclick=()=> appState.isCountyView?exitCountyView(): enterCountyView(appState.selectedState || null);
   document.getElementById('tab-dashboard').onclick=()=>{document.getElementById('dashboard-view').style.display='grid';document.getElementById('projection-panel').style.display='block';document.getElementById('odds-view').style.display='none';document.getElementById('tab-dashboard').classList.add('active');document.getElementById('tab-odds').classList.remove('active');};
   document.getElementById('tab-odds').onclick=()=>{document.getElementById('dashboard-view').style.display='none';document.getElementById('projection-panel').style.display='none';document.getElementById('odds-view').style.display='block';document.getElementById('tab-odds').classList.add('active');document.getElementById('tab-dashboard').classList.remove('active');drawOddsChart();};
 
   document.getElementById('admin-open').onclick=()=>document.getElementById('admin-modal').style.display='flex';
   document.getElementById('admin-close').onclick=()=>document.getElementById('admin-modal').style.display='none';
-  document.getElementById('admin-login').onclick=()=>{const ok=document.getElementById('admin-pass').value===ADMIN_PASSWORD; appState.adminUnlocked=ok; document.getElementById('admin-auth-msg').textContent=ok?'Unlocked.':'Invalid password.'; document.getElementById('admin-controls').style.display=ok?'block':'none'; if(ok) buildBiasList();};
+  document.getElementById('admin-login').onclick=()=>{const ok=document.getElementById('admin-pass').value===ADMIN_PASSWORD; appState.adminUnlocked=ok; document.getElementById('admin-auth-msg').textContent=ok?'Unlocked. County editing enabled.':'Invalid password.'; document.getElementById('admin-controls').style.display=ok?'block':'none'; if(ok){ buildBiasList(); enterCountyView(appState.selectedState || null); }};
 
   document.getElementById('save-candidates').onclick=()=>{if(!appState.adminUnlocked) return; appState.candA.name=document.getElementById('set-a-name').value.trim()||appState.candA.name; appState.candB.name=document.getElementById('set-b-name').value.trim()||appState.candB.name; appState.candA.image=document.getElementById('set-a-img').value.trim()||appState.candA.image; appState.candB.image=document.getElementById('set-b-img').value.trim()||appState.candB.image; applyUI(); saveLocal();};
-  document.getElementById('save-county').onclick=()=>{if(!appState.adminUnlocked||!appState.selectedCounty) return; const c=appState.counties[appState.selectedCounty]; if(!c) return; c.a=Math.max(0,Number(document.getElementById('edit-a-votes').value||0)); c.b=Math.max(0,Number(document.getElementById('edit-b-votes').value||0)); c.o=Math.max(0,Number(document.getElementById('edit-other-votes').value||0)); c.reporting=Math.max(0,Math.min(100,Number(document.getElementById('edit-reporting').value||0))); applyUI(); if(appState.selectedState) enterStateCountyView(appState.selectedState); saveLocal();};
+  document.getElementById('save-county').onclick=()=>{if(!appState.adminUnlocked||!appState.selectedCounty) return; const c=appState.counties[appState.selectedCounty]; if(!c) return; c.a=Math.max(0,Number(document.getElementById('edit-a-votes').value||0)); c.b=Math.max(0,Number(document.getElementById('edit-b-votes').value||0)); c.o=Math.max(0,Number(document.getElementById('edit-other-votes').value||0)); c.reporting=Math.max(0,Math.min(100,Number(document.getElementById('edit-reporting').value||0))); applyUI(); if(appState.isCountyView) enterCountyView(appState.selectedState || null); saveLocal();};
 }
 
 Promise.all([fetch('data/us-states.geo.json').then(r=>r.json()),fetch('data/county-geo.json').then(r=>r.json())]).then(([s,c])=>{
@@ -400,6 +282,3 @@ Promise.all([fetch('data/us-states.geo.json').then(r=>r.json()),fetch('data/coun
   wireUI(); initMap(); renderNationalSidebar(); applyUI();
   setInterval(()=>{applyUI(); saveLocal();},25000);
 }).catch(err=>{document.body.innerHTML=`<div style='padding:20px;color:white'>Failed to load map data: ${err.message}</div>`;});
-</script>
-</body>
-</html>
