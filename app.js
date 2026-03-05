@@ -1,0 +1,284 @@
+mapboxgl.accessToken = 'pk.eyJ1IjoiNW00Y2s3NyIsImEiOiJjbWI4eXFqeDkwbzY1MmpwcDFzZDIwMmVqIn0.6JGe7JWhk28z5D3TLIJQwg';
+const ADMIN_PASSWORD = 'TGEPSWDKEY1301';
+const STORAGE_KEY = 'election-control-center-v1';
+
+const evByState = {"Alabama":9,"Alaska":3,"Arizona":11,"Arkansas":6,"California":54,"Colorado":10,"Connecticut":7,"Delaware":3,"District of Columbia":3,"Florida":30,"Georgia":16,"Hawaii":4,"Idaho":4,"Illinois":19,"Indiana":11,"Iowa":6,"Kansas":6,"Kentucky":8,"Louisiana":8,"Maine":4,"Maryland":10,"Massachusetts":11,"Michigan":15,"Minnesota":10,"Mississippi":6,"Missouri":10,"Montana":4,"Nebraska":5,"Nevada":6,"New Hampshire":4,"New Jersey":14,"New Mexico":5,"New York":28,"North Carolina":16,"North Dakota":3,"Ohio":17,"Oklahoma":7,"Oregon":8,"Pennsylvania":19,"Rhode Island":4,"South Carolina":9,"South Dakota":3,"Tennessee":11,"Texas":40,"Utah":6,"Vermont":3,"Virginia":13,"Washington":12,"West Virginia":4,"Wisconsin":10,"Wyoming":3};
+const nameByFP={"01":"Alabama","02":"Alaska","04":"Arizona","05":"Arkansas","06":"California","08":"Colorado","09":"Connecticut","10":"Delaware","11":"District of Columbia","12":"Florida","13":"Georgia","15":"Hawaii","16":"Idaho","17":"Illinois","18":"Indiana","19":"Iowa","20":"Kansas","21":"Kentucky","22":"Louisiana","23":"Maine","24":"Maryland","25":"Massachusetts","26":"Michigan","27":"Minnesota","28":"Mississippi","29":"Missouri","30":"Montana","31":"Nebraska","32":"Nevada","33":"New Hampshire","34":"New Jersey","35":"New Mexico","36":"New York","37":"North Carolina","38":"North Dakota","39":"Ohio","40":"Oklahoma","41":"Oregon","42":"Pennsylvania","44":"Rhode Island","45":"South Carolina","46":"South Dakota","47":"Tennessee","48":"Texas","49":"Utah","50":"Vermont","51":"Virginia","53":"Washington","54":"West Virginia","55":"Wisconsin","56":"Wyoming"};
+
+const appState={
+  candA:{name:'George W. Bush', image:'images/George-W-Bush.jpg'},
+  candB:{name:'Al Gore', image:'images/Al_Gore.jpg'},
+  stateBias:{}, counties:{}, states:{},
+  selectedState:null, selectedCounty:null,
+  isCountyView:false, adminUnlocked:false,
+  oddsHistory:[]
+};
+let map, statePopup, countyPopup, statesGeo, countiesGeo;
+
+const GORE_2000_STATES = new Set(['California','Connecticut','Delaware','District of Columbia','Hawaii','Illinois','Iowa','Maine','Maryland','Massachusetts','Michigan','Minnesota','New Jersey','New Mexico','New York','Oregon','Pennsylvania','Rhode Island','Vermont','Washington','Wisconsin']);
+function ensureCountySeed(feature){
+  const fips=(feature.properties.GEOID||'').toString().padStart(5,'0');
+  if(!fips) return;
+  if(!appState.counties[fips]){
+    const stateName = nameByFP[(feature.properties.STATEFP||'').toString().padStart(2,'0')] || '';
+    const goreWin = GORE_2000_STATES.has(stateName);
+    appState.counties[fips]={
+      a: goreWin ? 850 : 1200,
+      b: goreWin ? 1200 : 850,
+      o: 45,
+      reporting: 78,
+      name:feature.properties.NAME||'Unknown',
+      statefp:(feature.properties.STATEFP||'').toString().padStart(2,'0')
+    };
+  }
+}
+function loadLocal(){
+  const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return;
+  try{const s=JSON.parse(raw); Object.assign(appState,s); }catch{}
+}
+function saveLocal(){ localStorage.setItem(STORAGE_KEY, JSON.stringify({candA:appState.candA,candB:appState.candB,stateBias:appState.stateBias,counties:appState.counties,oddsHistory:appState.oddsHistory.slice(-200)})); }
+
+function aggregateStates(){
+  const by={};
+  Object.entries(appState.counties).forEach(([f,c])=>{
+    const nm=nameByFP[c.statefp]; if(!nm) return;
+    if(!by[nm]) by[nm]={a:0,b:0,o:0,reporting:0,n:0,ev:evByState[nm]||0};
+    by[nm].a+=Number(c.a||0); by[nm].b+=Number(c.b||0); by[nm].o+=Number(c.o||0); by[nm].reporting+=Number(c.reporting||0); by[nm].n++;
+  });
+  Object.keys(by).forEach(k=>{const s=by[k]; s.total=s.a+s.b+s.o; s.reporting=s.n? s.reporting/s.n:0; s.margin=s.total?((s.a-s.b)/s.total*100):0;});
+  appState.states=by;
+}
+function logistic(x){return 1/(1+Math.exp(-x));}
+function normCdf(x){const t=1/(1+0.2316419*Math.abs(x));const d=0.3989423*Math.exp(-x*x/2);let p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); if(x>0)p=1-p; return p;}
+
+function computeOdds(){
+  let natA=0,natB=0,natT=0,expEVB=0,varEV=0,calledA=0,calledB=0;
+  Object.entries(appState.states).forEach(([name,s])=>{
+    natA+=s.a; natB+=s.b; natT+=s.total;
+  });
+  const nationalLean = natT ? ((natB-natA)/natT*100) : 0; // + favors B
+  Object.entries(appState.states).forEach(([name,s])=>{
+    const bias=Number(appState.stateBias[name]||0); // + favors B
+    const marginForB = -s.margin;
+    const report = s.reporting;
+    const uncertainty = (100-report)/100;
+    const score = (marginForB*0.42) + ((report-50)*0.045) + (nationalLean*0.36) + (bias*0.12) - (uncertainty*1.2);
+    let pB = logistic(score);
+    if(report>=99 && Math.abs(s.margin)>=2){ pB = s.margin<0?1:0; }
+    expEVB += pB*s.ev;
+    varEV += pB*(1-pB)*s.ev*s.ev;
+    if(report>=99 && Math.abs(s.margin)>=2){ if(s.margin<0) calledB+=s.ev; else calledA+=s.ev; }
+  });
+  const sd=Math.sqrt(Math.max(varEV,1));
+  const pBWin = normCdf((expEVB-270)/sd);
+  return {pBWin, pAWin:1-pBWin, expEVB, expEVA:538-expEVB, calledA, calledB};
+}
+
+function applyUI(){
+  document.getElementById('candA-img').src=appState.candA.image;
+  document.getElementById('candB-img').src=appState.candB.image;
+  document.getElementById('candA-vote-label').textContent=appState.candA.name;
+  document.getElementById('candB-vote-label').textContent=appState.candB.name;
+  document.getElementById('set-a-name').value=appState.candA.name;
+  document.getElementById('set-b-name').value=appState.candB.name;
+  document.getElementById('set-a-img').value=appState.candA.image;
+  document.getElementById('set-b-img').value=appState.candB.image;
+
+  aggregateStates();
+  let evA=0,evB=0,vA=0,vB=0,rep=0,ns=0;
+  Object.values(appState.states).forEach(s=>{vA+=s.a;vB+=s.b;rep+=s.reporting;ns++; if(s.reporting>=99&&Math.abs(s.margin)>=2){if(s.margin>0)evA+=s.ev;else evB+=s.ev;}});
+  const odds=computeOdds();
+  const pA=Math.max(0,Math.min(100,odds.pAWin*100)), pB=100-pA;
+  document.getElementById('candA-ev-label').textContent=`${appState.candA.name}: ${evA} EV`;
+  document.getElementById('candB-ev-label').textContent=`${appState.candB.name}: ${evB} EV`;
+  document.getElementById('ev-a').style.width=`${(evA/538)*100}%`;
+  document.getElementById('ev-b').style.width=`${(evB/538)*100}%`;
+  document.getElementById('candA-votes').textContent=vA.toLocaleString();
+  document.getElementById('candB-votes').textContent=vB.toLocaleString();
+  document.getElementById('national-reporting').textContent=`${(ns?rep/ns:0).toFixed(1)}%`;
+  drawGauge(pA,pB,odds.expEVA,odds.expEVB);
+  const t=Date.now(); appState.oddsHistory.push({t,pA,pB}); appState.oddsHistory=appState.oddsHistory.slice(-150); drawOddsChart();
+
+  if(map&&map.getSource('states')) { enrichStatesGeo(); map.getSource('states').setData(statesGeo); }
+  if(appState.selectedState) renderSidebar(appState.selectedState);
+}
+
+function enrichStatesGeo(){
+  statesGeo.features.forEach(f=>{
+    const p=f.properties||{}; const nm=p.NAME||nameByFP[(p.STATEFP||'').toString().padStart(2,'0')]||'Unknown';
+    const s=appState.states[nm]||{a:0,b:0,o:0,total:0,reporting:0,margin:0,ev:evByState[nm]||0};
+    p.state_name=nm; p.a=s.a; p.b=s.b; p.o=s.o; p.total=s.total; p.reporting=s.reporting; p.ev=s.ev;
+    p.winner=s.margin>0?'A':s.margin<0?'B':'T';
+    f.properties=p;
+  });
+}
+function stateColorExpr(){
+  return ['match',['get','winner'],'A','#e4555d','B','#4ea1ff','#9aa9c7'];
+}
+
+function initMap(){
+  map = new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/dark-v11',center:[-96.5,38.8],zoom:3});
+  map.on('load',()=>{
+    const style = map.getStyle();
+    (style.layers || []).forEach(l=>{
+      if(l.type === 'symbol' && map.getLayer(l.id)) map.removeLayer(l.id);
+    });
+    enrichStatesGeo();
+    map.addSource('states',{type:'geojson',data:statesGeo});
+    map.addLayer({id:'states-fill',type:'fill',source:'states',paint:{'fill-color':stateColorExpr(),'fill-opacity':0.87}});
+    map.addLayer({id:'states-line',type:'line',source:'states',paint:{'line-color':'#fff','line-opacity':0.35,'line-width':1}});
+
+    map.on('mousemove','states-fill',e=>{
+      const p=e.features?.[0]?.properties; if(!p) return;
+      const html=`<div style="font:12px Inter"><strong>${p.state_name}</strong><br>${appState.candA.name}: ${Number(p.a).toLocaleString()}<br>${appState.candB.name}: ${Number(p.b).toLocaleString()}<br>Total: ${Number(p.total).toLocaleString()}<br>Reporting: ${Number(p.reporting).toFixed(1)}%</div>`;
+      if(!statePopup) statePopup=new mapboxgl.Popup({closeButton:false,closeOnClick:false});
+      statePopup.setLngLat(e.lngLat).setHTML(html).addTo(map);
+    });
+    map.on('mouseleave','states-fill',()=>{if(statePopup) statePopup.remove(); statePopup=null;});
+
+    map.on('click','states-fill',e=>{
+      const p=e.features?.[0]?.properties; if(!p) return;
+      appState.selectedState=p.state_name; enterCountyView(p.state_name);
+    });
+
+    applyUI();
+  });
+}
+
+function getFeatureBBox(fc){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  function walk(coords){
+    if(!Array.isArray(coords)) return;
+    if(typeof coords[0] === 'number' && typeof coords[1] === 'number'){
+      const x=coords[0], y=coords[1];
+      if(x<minX) minX=x; if(x>maxX) maxX=x; if(y<minY) minY=y; if(y>maxY) maxY=y;
+      return;
+    }
+    coords.forEach(walk);
+  }
+  (fc.features||[]).forEach(f=>walk(f.geometry?.coordinates));
+  if(!Number.isFinite(minX)) return [[-125.0011,24.9493],[-66.9326,49.5904]];
+  return [[minX,minY],[maxX,maxY]];
+}
+
+function enterCountyView(stateName=null){
+  appState.isCountyView=true;
+  document.getElementById('county-toggle').textContent='State View';
+  appState.selectedState = stateName || appState.selectedState;
+
+  let features = countiesGeo.features;
+  if(stateName){
+    const fp=Object.keys(nameByFP).find(k=>nameByFP[k]===stateName);
+    if(fp) features = countiesGeo.features.filter(f=>(f.properties.STATEFP||'').toString().padStart(2,'0')===fp);
+  }
+  const filtered={type:'FeatureCollection',features:[...features]};
+  filtered.features.forEach(f=>{const d=appState.counties[(f.properties.GEOID||'').toString().padStart(5,'0')]||{a:0,b:0}; f.properties.winner=d.a>d.b?'A':d.b>d.a?'B':'T';});
+
+  if(map.getLayer('counties-fill')){map.removeLayer('counties-fill'); map.removeLayer('counties-line'); map.removeSource('counties');}
+  map.addSource('counties',{type:'geojson',data:filtered});
+  map.addLayer({id:'counties-fill',type:'fill',source:'counties',paint:{'fill-color':['match',['get','winner'],'A','#e4555d','B','#4ea1ff','#aab6cd'],'fill-opacity':0.86}});
+  map.addLayer({id:'counties-line',type:'line',source:'counties',paint:{'line-color':'#fff','line-opacity':0.2,'line-width':0.35}});
+  map.fitBounds(getFeatureBBox(filtered),{padding:35,duration:700});
+
+  map.off('mousemove','counties-fill',countyHover);
+  map.off('mouseleave','counties-fill',clearCountyHover);
+  map.off('click','counties-fill',countyClick);
+  map.on('mousemove','counties-fill',countyHover);
+  map.on('mouseleave','counties-fill',clearCountyHover);
+  map.on('click','counties-fill',countyClick);
+
+  if(stateName) renderSidebar(stateName);
+  else {
+    document.getElementById('detail-title').textContent='County Editor Mode';
+    document.getElementById('detail-sub').textContent='County view active. Click a county to edit values in Admin Panel.';
+    renderNationalSidebar();
+  }
+}
+
+function exitCountyView(){
+  appState.isCountyView=false;
+  appState.selectedCounty=null;
+  document.getElementById('county-toggle').textContent='County View';
+  ['counties-fill','counties-line'].forEach(l=>{if(map.getLayer(l)) map.removeLayer(l)});
+  if(map.getSource('counties')) map.removeSource('counties');
+  map.off('mousemove','counties-fill',countyHover);
+  map.off('mouseleave','counties-fill',clearCountyHover);
+  map.off('click','counties-fill',countyClick);
+  map.fitBounds([[-125.0011,24.9493],[-66.9326,49.5904]],{padding:35,duration:700});
+  renderNationalSidebar();
+}
+
+function renderNationalSidebar(){
+  document.getElementById('detail-title').textContent='National Summary';
+  document.getElementById('detail-sub').textContent='Hover states for instant returns. Click a state for county detail.';
+  const odds=computeOdds();
+  document.getElementById('detail-body').innerHTML=`<div class='row'><span>${appState.candA.name} win chance</span><strong>${(odds.pAWin*100).toFixed(1)}%</strong></div><div class='row'><span>${appState.candB.name} win chance</span><strong>${(odds.pBWin*100).toFixed(1)}%</strong></div><div class='row'><span>Projected EV (${appState.candA.name})</span><strong>${odds.expEVA.toFixed(1)}</strong></div><div class='row'><span>Projected EV (${appState.candB.name})</span><strong>${odds.expEVB.toFixed(1)}</strong></div>`;
+}
+function renderSidebar(stateName){
+  const s=appState.states[stateName]||{a:0,b:0,o:0,total:0,reporting:0,ev:0};
+  const aPct=s.total?(s.a/s.total*100):0, bPct=s.total?(s.b/s.total*100):0;
+  document.getElementById('detail-title').textContent=`${stateName} Detailed Breakdown`;
+  document.getElementById('detail-sub').textContent=`EV: ${s.ev} • Reporting: ${s.reporting.toFixed(1)}%`;
+  document.getElementById('detail-body').innerHTML=`
+    <div class='row'><span>${appState.candA.name}</span><strong>${s.a.toLocaleString()} (${aPct.toFixed(1)}%)</strong></div>
+    <div class='bar'><div class='fill a' style='width:${aPct}%'></div></div>
+    <div class='row'><span>${appState.candB.name}</span><strong>${s.b.toLocaleString()} (${bPct.toFixed(1)}%)</strong></div>
+    <div class='bar'><div class='fill b' style='width:${bPct}%'></div></div>
+    <div class='row'><span>Total votes</span><strong>${s.total.toLocaleString()}</strong></div>
+    <div class='row'><span>Reporting</span><strong>${s.reporting.toFixed(1)}%</strong></div>
+  `;
+}
+
+function drawGauge(pA,pB,evA,evB){
+  const c=document.getElementById('gauge'),x=c.getContext('2d'); const w=c.width,h=c.height; x.clearRect(0,0,w,h);
+  const cx=w/2, cy=180, r=120;
+  x.lineWidth=28; x.lineCap='round';
+  x.strokeStyle='#d0d7e433'; x.beginPath(); x.arc(cx,cy,r,Math.PI,2*Math.PI); x.stroke();
+  x.strokeStyle='#e64e59'; x.beginPath(); x.arc(cx,cy,r,Math.PI,Math.PI+(pA/100)*Math.PI); x.stroke();
+  x.strokeStyle='#4ea1ff'; x.beginPath(); x.arc(cx,cy,r,2*Math.PI-(pB/100)*Math.PI,2*Math.PI); x.stroke();
+  const angle=Math.PI+(pB/100)*Math.PI; const nx=cx+Math.cos(angle)*95, ny=cy+Math.sin(angle)*95;
+  x.strokeStyle='#dfe7fb'; x.lineWidth=10; x.beginPath(); x.moveTo(cx,cy); x.lineTo(nx,ny); x.stroke(); x.fillStyle='#fff'; x.beginPath(); x.arc(cx,cy,13,0,Math.PI*2); x.fill();
+  x.fillStyle='#eaf1ff'; x.font='800 22px Inter'; x.textAlign='center'; x.fillText(`${appState.candA.name} ${pA.toFixed(1)}% • ${evA.toFixed(1)} EV    |    ${appState.candB.name} ${pB.toFixed(1)}% • ${evB.toFixed(1)} EV`,cx,35);
+}
+function drawOddsChart(){
+  const c=document.getElementById('odds-chart'),x=c.getContext('2d'); const w=c.width,h=c.height; x.clearRect(0,0,w,h);
+  x.strokeStyle='#ffffff22'; for(let i=0;i<=5;i++){const y=20+i*(h-40)/5; x.beginPath(); x.moveTo(20,y); x.lineTo(w-20,y); x.stroke();}
+  if(appState.oddsHistory.length<2) return;
+  const pts=appState.oddsHistory.slice(-120);
+  const minT=pts[0].t,maxT=pts[pts.length-1].t;
+  function draw(color,key){x.strokeStyle=color; x.lineWidth=2.5; x.beginPath(); pts.forEach((p,i)=>{const px=20+((p.t-minT)/(maxT-minT||1))*(w-40); const py=20+(1-p[key]/100)*(h-40); if(i===0)x.moveTo(px,py); else x.lineTo(px,py);}); x.stroke();}
+  draw('#ff5c62','pA'); draw('#4ea1ff','pB');
+}
+
+function buildBiasList(){
+  const wrap=document.getElementById('bias-list'); wrap.innerHTML='';
+  Object.keys(evByState).sort().forEach(s=>{
+    const v=Number(appState.stateBias[s]||0);
+    const id='bias-'+s.replace(/\W+/g,'');
+    const row=document.createElement('div');
+    row.innerHTML=`<label>${s}</label><input id='${id}' type='range' min='-20' max='20' step='1' value='${v}' /><div class='small' id='${id}-val'>${v}</div>`;
+    const input=row.querySelector('input');
+    input.addEventListener('input',()=>{appState.stateBias[s]=Number(input.value); row.querySelector('.small').textContent=input.value; applyUI(); saveLocal();});
+    wrap.appendChild(row);
+  });
+}
+
+function wireUI(){
+  document.getElementById('county-toggle').onclick=()=> appState.isCountyView?exitCountyView(): enterCountyView(appState.selectedState || null);
+  document.getElementById('tab-dashboard').onclick=()=>{document.getElementById('dashboard-view').style.display='grid';document.getElementById('projection-panel').style.display='block';document.getElementById('odds-view').style.display='none';document.getElementById('tab-dashboard').classList.add('active');document.getElementById('tab-odds').classList.remove('active');};
+  document.getElementById('tab-odds').onclick=()=>{document.getElementById('dashboard-view').style.display='none';document.getElementById('projection-panel').style.display='none';document.getElementById('odds-view').style.display='block';document.getElementById('tab-odds').classList.add('active');document.getElementById('tab-dashboard').classList.remove('active');drawOddsChart();};
+
+  document.getElementById('admin-open').onclick=()=>document.getElementById('admin-modal').style.display='flex';
+  document.getElementById('admin-close').onclick=()=>document.getElementById('admin-modal').style.display='none';
+  document.getElementById('admin-login').onclick=()=>{const ok=document.getElementById('admin-pass').value===ADMIN_PASSWORD; appState.adminUnlocked=ok; document.getElementById('admin-auth-msg').textContent=ok?'Unlocked. County editing enabled.':'Invalid password.'; document.getElementById('admin-controls').style.display=ok?'block':'none'; if(ok){ buildBiasList(); enterCountyView(appState.selectedState || null); }};
+
+  document.getElementById('save-candidates').onclick=()=>{if(!appState.adminUnlocked) return; appState.candA.name=document.getElementById('set-a-name').value.trim()||appState.candA.name; appState.candB.name=document.getElementById('set-b-name').value.trim()||appState.candB.name; appState.candA.image=document.getElementById('set-a-img').value.trim()||appState.candA.image; appState.candB.image=document.getElementById('set-b-img').value.trim()||appState.candB.image; applyUI(); saveLocal();};
+  document.getElementById('save-county').onclick=()=>{if(!appState.adminUnlocked||!appState.selectedCounty) return; const c=appState.counties[appState.selectedCounty]; if(!c) return; c.a=Math.max(0,Number(document.getElementById('edit-a-votes').value||0)); c.b=Math.max(0,Number(document.getElementById('edit-b-votes').value||0)); c.o=Math.max(0,Number(document.getElementById('edit-other-votes').value||0)); c.reporting=Math.max(0,Math.min(100,Number(document.getElementById('edit-reporting').value||0))); applyUI(); if(appState.isCountyView) enterCountyView(appState.selectedState || null); saveLocal();};
+}
+
+Promise.all([fetch('data/us-states.geo.json').then(r=>r.json()),fetch('data/county-geo.json').then(r=>r.json())]).then(([s,c])=>{
+  loadLocal(); statesGeo=s; countiesGeo=c;
+  countiesGeo.features.forEach(ensureCountySeed);
+  wireUI(); initMap(); renderNationalSidebar(); applyUI();
+  setInterval(()=>{applyUI(); saveLocal();},25000);
+}).catch(err=>{document.body.innerHTML=`<div style='padding:20px;color:white'>Failed to load map data: ${err.message}</div>`;});
