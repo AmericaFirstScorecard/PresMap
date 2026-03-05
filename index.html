@@ -41,6 +41,23 @@
                 linear-gradient(180deg, #080d18 0%, #05070f 55%, #04050a 100%);
         }
 
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            pointer-events: none;
+            inset: 0;
+            z-index: 0;
+        }
+        body::before {
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: radial-gradient(circle at center, rgba(0,0,0,.9), transparent 84%);
+        }
+        body::after {
+            background: radial-gradient(circle at 50% 20%, rgba(127, 142, 255, 0.18), transparent 42%);
+        }
+
         #header {
             position: relative;
             z-index: 5;
@@ -55,7 +72,18 @@
             flex-direction: column;
             gap: 18px;
             box-shadow: 0 28px 50px rgba(0, 0, 0, 0.35);
+            overflow: hidden;
         }
+
+        #header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(110deg, rgba(78, 161, 255, 0.12), transparent 38%, rgba(255,90,95,0.1));
+            pointer-events: none;
+        }
+
+        #header > * { position: relative; z-index: 1; }
 
         .title {
             font-size: clamp(1.7rem, 2.8vw, 2.8rem);
@@ -74,8 +102,26 @@
             font-weight: 600;
         }
 
+        .hero-pills {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .hero-pill {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #d8e4ff;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: 999px;
+            padding: 6px 10px;
+        }
+
         .progress-container { width: 100%; display: flex; flex-direction: column; gap: 14px; }
-        .candidate-labels { display: flex; justify-content: space-between; font-size: 1rem; font-weight: 700; color: #c9d7f6; }
+        .candidate-labels { display: flex; justify-content: space-between; font-size: 1rem; font-weight: 700; color: #c9d7f6; text-transform: uppercase; letter-spacing: .04em; }
         .progress-bar-container { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px; }
         .candidate-image {
             width: 84px; height: 84px; border-radius: 50%; object-fit: cover;
@@ -106,6 +152,12 @@
             font-size: 0.92rem;
             color: #d4e0fb;
         }
+        .candidate-stat-left, .candidate-stat-right {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            padding: 9px 12px;
+        }
         .candidate-stat-right { text-align: right; }
         .stat-box { padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); font-weight: 700; }
         .last-updated { font-size: 0.76rem; color: var(--muted); text-align: center; }
@@ -132,6 +184,16 @@
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.16);
             box-shadow: 0 22px 45px rgba(0,0,0,0.45);
+        }
+
+        .map-caption {
+            width: min(1160px, calc(100% - 24px));
+            margin: 8px auto 0;
+            text-align: right;
+            color: #97a8cb;
+            font-size: 0.78rem;
+            letter-spacing: .03em;
+            text-transform: uppercase;
         }
 
         #state-sidebar {
@@ -161,7 +223,18 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 370px;
             box-shadow: 0 24px 44px rgba(0,0,0,0.35);
+            position: relative;
+            overflow: hidden;
         }
+
+        #projection-ticker-wrap::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.12), transparent 55%);
+            pointer-events: none;
+        }
+        #projection-ticker-wrap > * { position: relative; z-index: 1; }
         .nyt-projection-title { font-size: 1.2rem; font-weight: 700; color: #d6e1fb; margin-bottom: 12px; text-align: center; }
         .needle-svg-wrap { display: flex; flex-direction: column; align-items: center; position: relative; width: 100%; max-width: 540px; min-height: 270px; }
         .needle-candidate-wrap { position: absolute; top: 58px; width: 54px; height: 86px; display: flex; flex-direction: column; align-items: center; z-index: 20; }
@@ -191,11 +264,14 @@
         @media (max-width: 760px) {
             #header, #map, #projection-ticker-wrap { width: calc(100% - 12px); border-radius: 18px; }
             #header { margin-top: 10px; padding: 16px 12px; }
+            .hero-pills { gap: 6px; }
+            .hero-pill { font-size: .68rem; padding: 5px 8px; }
             .candidate-image { width: 62px; height: 62px; }
             .candidate-stats { grid-template-columns: 1fr; text-align: center; }
             .candidate-stat-right { text-align: center; }
             #county-mode-btn { top: 16px; right: 16px; padding: 9px 14px; font-size: 0.78rem; }
             #map { min-height: 340px; }
+            .map-caption { width: calc(100% - 12px); text-align: center; font-size: .7rem; }
             #projection-ticker-wrap { margin-bottom: 14px; min-height: 320px; padding-top: 24px; }
             .nyt-projection-title { font-size: 0.98rem; margin-bottom: 7px; }
             .needle-candidate-wrap { width: 34px; height: 66px; top: 42px; }
@@ -211,6 +287,11 @@
     <div id="header">
         <div class="title">Election Night 2000</div>
         <div class="subtitle">Live presidential race dashboard with state and county drilldowns</div>
+        <div class="hero-pills">
+            <span class="hero-pill">🇺🇸 National Snapshot</span>
+            <span class="hero-pill">📍 Hover states for live detail</span>
+            <span class="hero-pill">🗳️ Tap County Mode for drilldown</span>
+        </div>
         <div class="progress-container">
             <div class="candidate-labels">
                 <span>Bush: <span id="bush-ev">0</span> EV</span>
@@ -245,6 +326,7 @@
 
     <button id="county-mode-btn">County Mode</button>
     <div id="map"></div>
+    <div class="map-caption">Interactive map • Click any state to open the race breakdown panel</div>
 
     <div id="state-sidebar">
         <button id="close-sidebar-btn">Close</button>
